@@ -3,6 +3,12 @@ import time
 import ccxt
 #import json
 
+"""Azul (\033[94m) para información general.
+Amarillo (\033[93m) para valores clave como precios de ingreso.
+Verde (\033[92m) para operaciones exitosas como compras y ventas.
+Rojo (\033[91m) para advertencias y errores.
+Cian (\033[96m) para detalles adicionales."""
+
 class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance()
@@ -28,8 +34,8 @@ class TradingBot:
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
         self.precio_ingreso = self.get_precio_actual()
-        print("Precio de ingreso registrado: ", self.precio_ingreso)
-        print("Cantidad fija a invertir por compra: ", self.fixed_buyer)
+        print("\n\033[93mPrecio de ingreso registrado:\033[0m ", self.precio_ingreso)
+        print("\nCantidad fija a invertir por compra: ", self.fixed_buyer)
 
     def get_precio_actual(self):
         try:
@@ -63,7 +69,7 @@ class TradingBot:
                 print("Fondos insuficientes para comprar.")
                 return
             else:
-                print(f"\nEL PORCENTAJE HABILITA A COMPRAR. ({self.varVenta:.3f})")
+                print(f"\n\033[96mEL PORCENTAJE HABILITA A COMPRAR.\033[0m ({self.varVenta:.3f})")
                 self.usdt -= self.fixed_buyer
                 self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
                 self.precio_ult_comp = self.precio_actual
@@ -92,10 +98,11 @@ class TradingBot:
                     self.usdt += usdt_obtenido
                     self.btc -= self.btc_vendido
                     self.precios_ventas.append(self.precio_actual) 
+                    self.precio_ult_venta = self.precio_actual
                     self.actualizar_balance()
                     transacciones_vendidas.append(transaccion)
                             
-                    print(f"\nVenta realizada: {usdt_obtenido:.2f} USDT obtenidos a {self.precio_actual:.2f} USDT")
+                    print(f"\n\033[92mVenta realizada:\033[0m {usdt_obtenido:.2f} USDT obtenidos a {self.precio_actual:.2f} USDT")
                     print("Precios de venta: USDT$", self.precios_ventas)
                     print("BTC vendido: ", self.btc_comprado)
                     
@@ -135,7 +142,8 @@ class TradingBot:
         #PRINTS
         print("Precios de compra: USDT: $", self.precios_compras)        
         print("BTC comprado: ",self.btc_comprado) 
-        print("BTC comprado representado en USDT: $", (self.fixed_buyer))         
+        print("BTC comprado representado en USDT: $", (self.fixed_buyer))  
+        print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")       
         
         print("\n... INICIANDO BUCLE ...\n")
 
