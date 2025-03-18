@@ -1,6 +1,7 @@
 #import threading
 import time
 import ccxt
+#import json
 
 class TradingBot:
     def __init__(self):
@@ -25,6 +26,7 @@ class TradingBot:
         self.varVenta = 0
         self.transacciones = []
         self.btc_vendido = 0
+        self.precio_objetivo_venta = 0
         
 
         print("Cantidad fija a invertir por compra: ", self.fixed_buyer)
@@ -61,7 +63,7 @@ class TradingBot:
                 print("Fondos insuficientes para comprar.")
                 return
             else:
-                print(f"EL PORCENTAJE HABILITA A COMPRAR. ({self.varVenta:.3f})")
+                print(f"\nEL PORCENTAJE HABILITA A COMPRAR. ({self.varVenta:.3f})")
                 self.usdt -= self.fixed_buyer
                 self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
                 self.precio_ult_comp = self.precio_actual
@@ -80,7 +82,7 @@ class TradingBot:
 
     def vender(self):
             if not self.transacciones:
-                print("No hay BTC disponible para vender.")
+                print("\nNo hay BTC disponible para vender.")
                 return
             transacciones_vendidas = []
             for transaccion in self.transacciones:
@@ -93,7 +95,7 @@ class TradingBot:
                     self.actualizar_balance()
                     transacciones_vendidas.append(transaccion)
                             
-                    print(f"Venta realizada: {usdt_obtenido:.2f} USDT obtenidos a {self.precio_actual:.2f} USDT")
+                    print(f"\nVenta realizada: {usdt_obtenido:.2f} USDT obtenidos a {self.precio_actual:.2f} USDT")
                     print("Precios de venta: USDT$", self.precios_ventas)
                     print("BTC vendido: ", self.btc_comprado)
                     
@@ -102,7 +104,7 @@ class TradingBot:
                 self.transacciones.remove(transaccion)
 
             if not transacciones_vendidas:
-                print("No hay transacciones listas para vender. Esperando precio objetivo.")
+                print("Esperando precio objetivo.")
             else:
                 print(f"Precios de venta registrados: {self.precios_ventas}")    
 
@@ -126,8 +128,9 @@ class TradingBot:
         self.btc_comprado = (1/self.precio_actual) * (self.fixed_buyer)
         self.btc = self.btc_comprado
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
-        self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
-        print(self.transacciones)
+        #self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
+        #print(json.dumps(self.transacciones, indent=4))
+
         
         #PRINTS
         print("Precios de compra: USDT: $", self.precios_compras)        
@@ -148,20 +151,20 @@ class TradingBot:
             
             
             print("\n- - - - - - - - - - - ")
-            print("Precio actual: ", self.precio_actual)
             print("Precio de la ultima compra: ", self.precio_ult_comp)
-            print("Precio objetivo de siguiente venta: $", self.precio_objetivo_venta)
             print(f"Porcentaje de variación del precio desde ultima compra, contra el actual: ({self.varCompra:.3f})")
             print(f"Porcentaje de variación del precio desde ultima venta, contra el actual: ({self.varVenta:.3f})")
             #print(f"EL PORCENTAJE NO ES SUFICIENTE PARA TRADEAR.")
             print("\n---- BALANCE ACTUAL ----")      
-            print(f"- Btc + Usdt: ${self.usdt_mas_btc:.2f} Usdt")
+            print(f"Btc + Usdt: ${self.usdt_mas_btc:.2f} Usdt")
             print("Usdt: $", self.usdt)
+            print("Precio actual:" ,self.precio_actual)
+            print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")
             
             if self.btc > 0:
                 print(f"Btc: {self.btc:.4f} (En usdt: ${self.btc * self.precio_actual:.2f})")
             else:
-                 print("Btc Insuficiente para vender")
+                 print("Btc: 0")
             
             if self.precio_ult_venta > 0:
                 self.parametro_rango()
@@ -170,7 +173,7 @@ class TradingBot:
 
             self.vender()
             
-            time.sleep(3)
+            time.sleep(5)
 
     def detener(self):
         self.running = False
