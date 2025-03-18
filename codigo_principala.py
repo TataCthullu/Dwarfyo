@@ -1,21 +1,32 @@
-import threading
+#import threading
 import time
 import ccxt
-from tkinter import *
 
 class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance()
         self.usdt = 10000
         self.btc = 0
+        self.btc_usdt = 0
         self.btc_comprado = 0
-        self.precio_ult_comp = self.get_precio_actual()
+        self.precio_actual = self.get_precio_actual()
         self.precio_ult_venta = 0
         self.porc_por_compra = 0.007
         self.porc_por_venta = 0.007
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
+        self.precio_ult_comp = self.precio_actual
+        self.usdt_mas_btc = 0
+        self.precios_compras = []
+        self.precios_ventas = []
+        self.kant_usdt_vendido = 0
+        self.varCompra = 0
+        self.varVenta = 0
+        self.transacciones = []
+        
+
+        print("Cantidad fija a invertir por compra: ", self.fixed_buyer)
 
     def get_precio_actual(self):
         try:
@@ -23,123 +34,131 @@ class TradingBot:
             return ticker['last']
         except Exception as e:
             print(f"Error obteniendo el precio: {e}")
-            return 
+            return
+    
+    #Variacion de precio con respecto a ultima compra
+    def varpor_compra(self, precio_ult_comp, precio_act_btc):
+                variante = ((precio_act_btc - precio_ult_comp) / precio_ult_comp) * 100
+                return variante 
 
+    #Variacion desde ultima venta 
+    def varpor_venta(self, precio_ult_venta, precio_act_btc):
+        if precio_ult_venta == 0:
+            return 0
+        variante = ((precio_act_btc - precio_ult_venta) / precio_ult_venta) * 100
+        return variante
 
     def cant_inv(self):
         return (self.usdt * self.porc_inv_por_compra) / 100
 
     def comprar(self):
-        if self.usdt < self.fixed_buyer:
-            return
-        self.usdt -= self.fixed_buyer
-        self.btc_comprado = (1 / self.get_precio_actual()) * self.fixed_buyer
-        self.btc += self.btc_comprado
-        self.precio_ult_comp = self.get_precio_actual()
+            if self.usdt < self.fixed_buyer:
+                print("Fondos insuficientes para comprar.")
+                return
+            else:
+                print(f"EL PORCENTAJE HABILITA A COMPRAR. ({self.varVenta:.3f})")
+                self.usdt -= self.fixed_buyer
+                self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
+                self.precio_ult_comp = self.precio_actual
+                self.precios_compras.append(self.precio_ult_comp)
+                self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
+                self.btc += self.btc_comprado 
+                self.usdt_mas_btc = self.usdt + (self.btc * self.precio_actual)
+                
+                print("Precios de compra: USDT: $", self.precios_compras)  
+                print("BTC comprado: ", (1/self.precio_actual) * self.fixed_buyer) 
+                print("BTC comprado representado en USDT: $", self.fixed_buyer)  
 
     def vender(self):
-        if self.btc < self.btc_comprado:
-            return
-        self.precio_ult_venta = self.get_precio_actual()
-        kant_usdt_vendido = self.btc_comprado * self.precio_ult_venta
-        self.usdt += kant_usdt_vendido
-        self.btc -= self.btc_comprado
+            if self.btc < self.btc_comprado:
+                print("No hay BTC disponible para vender.")
+                return
+            else:
+                self.precio_ult_venta = self.precio_actual
+                print(f"EL PORCENTAJE HABILITA A VENDER. ({self.varCompra:.3f})")
+                self.kant_usdt_vendido = self.btc_comprado * self.precio_actual
+                #pdiff_ult = self.kant_usdt_vendido - self.fixed_buyer
+                self.usdt += self.kant_usdt_vendido
+                self.btc -= self.btc_comprado
+                self.btc_usdt -= ((1/self.precio_ult_comp) * self.fixed_buyer) * self.precio_actual
+                self.precio_ult_comp = self.precio_actual
+                self.precios_ventas.append(self.precio_ult_venta)
+                self.usdt_mas_btc = self.usdt + (self.btc * self.precio_actual)
+                
+                #print("Profit diferencial de la ultima venta: ", pdiff_ult) 
+                #print("Profit diferencial total: ", pdiff)
+            
+                print("Precios de venta: USDT$", self.precios_ventas)
+                
+                print("BTC vendido: ", self.btc_comprado)   
+                print("BTC vendido representado en USDT: $", self.kant_usdt_vendido)  
 
+    def parametro_rango(self):
+        if (self.varVenta <= -self.porc_por_compra) and self.usdt >= self.fixed_buyer:
+            self.comprar()
+                
+        if self.varCompra >= self.porc_por_venta and self.btc >= self.btc_comprado:      
+            self.vender()
+
+    def parametro_tendencial(self):
+        if self.varCompra >= self.porc_por_venta and self.btc >= self.btc_comprado:
+            self.vender()
+                
+        if self.varCompra <= -self.porc_por_compra and self.usdt >= self.fixed_buyer:      
+            self.comprar()
+                          
+                                  
+            
     def iniciar(self):
         self.running = True
+        print("\n... PRIMERA COMPRA ...\n")
+        self.usdt -= self.fixed_buyer 
+        self.btc_usdt += (((1/self.precio_actual) * (self.fixed_buyer)) * self.precio_actual)
+        self.precios_compras.append(self.precio_ult_comp)
+        self.precio_ult_comp = self.precio_actual
+        self.btc_comprado = (1/self.precio_actual) * (self.fixed_buyer)
+        self.btc = self.btc_comprado
+        self.usdt_mas_btc = self.usdt + (self.btc * self.precio_actual)
+        
+        #PRINTS
+        print("Precios de compra: USDT: $", self.precios_compras)        
+        print("BTC comprado: ",self.btc_comprado) 
+        print("BTC comprado representado en USDT: $", (self.fixed_buyer))         
+
+        print("\n... INICIANDO BUCLE ...\n")
+
         while self.running:
-            precio_actual = self.get_precio_actual()
-            varpor_compra = ((precio_actual - self.precio_ult_comp) / self.precio_ult_comp) * 100
-            varpor_venta = ((precio_actual - self.precio_ult_venta) / self.precio_ult_venta) * 100
+            self.precio_actual = self.get_precio_actual()
+            self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
+            self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 
+            self.usdt_mas_btc = self.usdt + (self.btc * self.precio_actual)
+            
+            
+            print("\n- - - - - - - - - - - ")
+            print("Valor BTC actual en UDST: ", self.precio_actual)
+            print("Valor de la ultima compra en USDT: ", self.precio_ult_comp)
+            print(f"Porcentaje de variación del precio desde ultima compra, contra el actual: ({self.varCompra:.3f})")
+            print(f"Porcentaje de variación del precio desde ultima venta, contra el actual: ({self.varVenta:.3f})")
+            #print(f"EL PORCENTAJE NO ES SUFICIENTE PARA TRADEAR.")
+            print("\n---- BALANCE ACTUAL ----")      
+            print(f"- USDT: ${self.usdt:.2f}")
+            #print(f"- Profit neto: ${pdiff:.2f}")
+            print(f"- BTC: {self.btc} (USDT ${self.btc * self.precio_actual:.2f})")
+            print(f"- BTC + USDT, en USDT: ${self.usdt_mas_btc:.2f}")
+            
+            if self.precio_ult_venta > 0:
+                self.parametro_rango()
+            else:
+                self.parametro_tendencial()
 
-            if varpor_venta <= -self.porc_por_compra:
-                self.comprar()
-            if varpor_compra >= self.porc_por_venta:
-                self.vender()
             time.sleep(3)
-
     def detener(self):
         self.running = False
 
-# Interfaz Tkinter
-ventana_principal = Tk()
-ventana_principal.title("Dwarf") 
-ventana_principal.minsize(width=1200, height=700)
-ventana_principal.iconbitmap("imagenes/miner.ico")
-ventana_principal.configure(bg="LightBlue")
-ventana_principal.resizable(False, False)
-ventana_principal.geometry("1200x700+200+200")
-ventana_principal.attributes("-alpha",0.9)
+if __name__ == "__main__":
+    bot = TradingBot()
+    bot.iniciar()
 
-bot = TradingBot()
-
-"""label_balance = Label(ventana_principal, text=f"Balance: {bot.usdt:.2f} USDT", font=("Arial", 14))
-label_balance.pack()
-
-label_btc = Label(ventana_principal, text=f"BTC: {bot.btc:.6f}", font=("Arial", 14))
-label_btc.pack()"""
-
-#Funciones
-def abrir_sbv_config():
-    sbv_conf = Toplevel(ventana_principal)
-    sbv_conf.title("Configuración de operativa")
-    sbv_conf.geometry("400x300")
-
-    Label(sbv_conf, text="Configurar operativa", font=("Arial", 14))
-
-def abrir_Compras():
-    compras_lst = Toplevel(ventana_principal)
-    compras_lst.title("Lista de compras realizadas")
-    compras_lst.geometry("600x500")
-
-    Label(compras_lst, text="Lista de compras", font=("Arial", 14))
-
-def abrir_ventas():
-    ventas_lst = Toplevel(ventana_principal)
-    ventas_lst.title("Lista de ventas")
-    ventas_lst.geometry("500x800")
-
-
-# Variables UI
-precio_act_var = StringVar()
-cant_btc_str = StringVar()
-cant_usdt_str = StringVar()
-balance_var = StringVar()
-
-# Etiquetas UI
-Label(ventana_principal, text="Precio actual BTC/USDT:", bg="LightBlue").place(x=10, y=10)
-Label(ventana_principal, textvariable=precio_act_var, bg="LightGreen").place(x=200, y=10)
-Label(ventana_principal, text="BTC Disponible:", bg="LightBlue").place(x=10, y=50)
-Label(ventana_principal, textvariable=cant_btc_str, bg="LightGreen").place(x=200, y=50)
-Label(ventana_principal, text="USDT Disponible:", bg="LightBlue").place(x=10, y=90)
-Label(ventana_principal, textvariable=cant_usdt_str, bg="LightGreen").place(x=200, y=90)
-Label(ventana_principal, text="Balance Total:", bg="LightBlue").place(x=10, y=130)
-Label(ventana_principal, textvariable=balance_var, bg="LightGreen").place(x=200, y=130)
-
-#Función para actualizar UI periódicamente
-def actualizar_ui():
-    if bot.running:
-        precio_act_var.set(f"{bot.get_precio_actual():.2f} USDT")
-        cant_btc_str.set(f"{bot.btc:.6f} BTC")
-        cant_usdt_str.set(f"{bot.usdt:.2f} USDT")
-        balance_var.set(f"{bot.usdt + (bot.btc * bot.get_precio_actual()):.2f} USDT")
-    ventana_principal.after(3000, actualizar_ui)  # Llama de nuevo cada 3 segundos
-
-# Funciones de control
-def iniciar_bot():
-    if not bot.running:
-        bot.running = True
-        threading.Thread(target=bot.iniciar, daemon=True).start()
-        actualizar_ui()  # Iniciar la actualización UI al mismo tiempo
-
-def detener_bot():
-    bot.detener()
-
-# Botones
-Button(ventana_principal, text="Iniciar Bot", command=iniciar_bot).place(x=10, y=180)
-Button(ventana_principal, text="Detener Bot", command=detener_bot).place(x=100, y=180)
-
-ventana_principal.mainloop()
 
 
 

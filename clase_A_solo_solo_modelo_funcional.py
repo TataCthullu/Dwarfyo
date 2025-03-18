@@ -50,7 +50,9 @@ class TradingBot:
         return (self.usdt * self.porc_inv_por_compra) / 100
 
     def comprar(self):
-         
+            if self.usdt < self.fixed_buyer:
+                print("Fondos insuficientes para comprar.")
+                return
             print(f"EL PORCENTAJE HABILITA A COMPRAR. ({self.varVenta:.3f})")
             self.usdt -= self.fixed_buyer
             self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
@@ -67,7 +69,9 @@ class TradingBot:
             print("BTC comprado representado en USDT: $", self.fixed_buyer)  
 
     def vender(self):
-         
+            if self.btc <= self.btc_comprado:
+                print("No hay BTC disponible para vender.")
+                return
             self.precio_ult_venta = self.precio_actual
             print(f"EL PORCENTAJE HABILITA A VENDER. ({self.varCompra:.3f})")
             self.kant_usdt_vendido = self.btc_comprado * self.precio_actual
