@@ -27,8 +27,8 @@ class TradingBot:
         self.transacciones = []
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
-        
-
+        self.precio_ingreso = self.get_precio_actual()
+        print("Precio de ingreso registrado: ", self.precio_ingreso)
         print("Cantidad fija a invertir por compra: ", self.fixed_buyer)
 
     def get_precio_actual(self):
