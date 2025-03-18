@@ -128,7 +128,7 @@ class TradingBot:
         self.btc_comprado = (1/self.precio_actual) * (self.fixed_buyer)
         self.btc = self.btc_comprado
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
-        #self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
+        self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
         #print(json.dumps(self.transacciones, indent=4))
 
         
