@@ -1,4 +1,4 @@
-#import threading
+import threading
 import time
 import ccxt
 #import json
@@ -123,28 +123,26 @@ class TradingBot:
         if self.varCompra <= -self.porc_por_compra and self.usdt >= self.fixed_buyer:      
             self.comprar()
                           
-                                  
-            
-    def iniciar(self):
-        self.running = True
+    def realizar_primera_compra(self):
         print("\n... PRIMERA COMPRA ...\n")
         self.usdt -= self.fixed_buyer 
-        self.btc_usdt += (((1/self.precio_actual) * (self.fixed_buyer)) * self.precio_actual)
+        self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
         self.precios_compras.append(self.precio_ult_comp)
         self.precio_ult_comp = self.precio_actual
-        self.btc_comprado = (1/self.precio_actual) * (self.fixed_buyer)
+        self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
         self.btc = self.btc_comprado
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
-        #print(json.dumps(self.transacciones, indent=4))
 
-        
-        #PRINTS
         print("Precios de compra: USDT: $", self.precios_compras)        
-        print("BTC comprado: ",self.btc_comprado) 
-        print("BTC comprado representado en USDT: $", (self.fixed_buyer))  
-        print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")       
-        
+        print("BTC comprado: ", self.btc_comprado) 
+        print("BTC comprado representado en USDT: $", self.fixed_buyer)  
+        print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")                               
+                
+    def iniciar(self):
+        self.running = True
+        print("Bot iniciado")
+        self.realizar_primera_compra()
         print("\n... INICIANDO BUCLE ...\n")
 
         while self.running:
@@ -162,7 +160,7 @@ class TradingBot:
             print("Precio de la ultima compra: ", self.precio_ult_comp)
             print(f"Porcentaje de variación del precio desde ultima compra, contra el actual: ({self.varCompra:.3f})")
             print(f"Porcentaje de variación del precio desde ultima venta, contra el actual: ({self.varVenta:.3f})")
-            #print(f"EL PORCENTAJE NO ES SUFICIENTE PARA TRADEAR.")
+            print(f"EL PORCENTAJE NO ES SUFICIENTE PARA TRADEAR.")
             print("\n---- BALANCE ACTUAL ----")      
             print(f"Btc + Usdt: ${self.usdt_mas_btc:.2f} Usdt")
             print("Usdt: $", self.usdt)
