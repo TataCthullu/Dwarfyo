@@ -103,6 +103,7 @@ class TradingBot:
                     self.precio_ult_venta = self.precio_actual
                     self.actualizar_balance()
 
+                    transaccion["ejecutado"] = True  # Marcar como ejecutado    
                     self.precios_ventas.append({
                         "venta": self.precio_actual,
                         "btc_vendido": transaccion["btc"],

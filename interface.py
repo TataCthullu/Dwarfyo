@@ -153,20 +153,22 @@ def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
 
     for transaccion in bot.transacciones:
         timestamp = transaccion.get('timestamp', 'Sin fecha')
+        estado = "✅ Ejecutado" if transaccion.get('ejecutado', False) else "⏳ Pendiente"
         compras_lista.insert(
             END, 
-            f"[{timestamp}] Compra: {transaccion['compra']:.2f} USDT | BTC: {transaccion['btc']:.6f} | Objetivo: {transaccion['venta_obj']:.2f} USDT"
+            f"[{timestamp}] Compra: {transaccion['compra']:.2f} USDT | BTC: {transaccion['btc']:.6f} | Objetivo: {transaccion['venta_obj']:.2f} USDT | {estado}"
         )
 
     for venta in bot.precios_ventas:
         timestamp = venta.get('timestamp', 'Sin fecha')
         ventas_lista.insert(
             END, 
-            f"[{timestamp}] Venta: {venta['venta']:.2f} USDT | BTC: {venta['btc_vendido']:.6f} | Ganancia: {venta['ganancia']:.2f} USDT"
+            f"[{timestamp}] Venta: {venta['venta']:.2f} USDT | BTC: {venta['btc_vendido']:.6f} | Ganancia: {venta['ganancia']:.2f} USDT ✅ Ejecutado"
         )
     
     # Programar la siguiente actualización solo si la ventana del historial sigue abierta
     historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
+
 
 
 ventana_principal.mainloop()
