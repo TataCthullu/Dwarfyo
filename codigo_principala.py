@@ -1,5 +1,6 @@
 import time
 import ccxt
+import datetime
 #import json
 
 """Azul (\033[94m) para información general.
@@ -74,7 +75,12 @@ class TradingBot:
                 self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
                 self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
                 self.btc += self.btc_comprado 
-                self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
+                self.transacciones.append({
+                    "compra": self.precio_actual,
+                    "venta_obj": self.precio_objetivo_venta,
+                    "btc": self.btc_comprado,
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
                 
                 self.actualizar_balance()
                 
@@ -93,19 +99,24 @@ class TradingBot:
                     self.btc_vendido = transaccion["btc"]
                     usdt_obtenido = self.btc_vendido * self.precio_actual
                     self.usdt += usdt_obtenido
-                    self.btc -= self.btc_vendido
-                    self.precios_ventas.append(self.precio_actual) 
+                    self.btc -= self.btc_vendido 
                     self.precio_ult_venta = self.precio_actual
                     self.actualizar_balance()
+
+                    self.precios_ventas.append({
+                        "venta": self.precio_actual,
+                        "btc_vendido": transaccion["btc"],
+                        "ganancia": transaccion["btc"] * self.precio_actual,
+                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
                     transacciones_vendidas.append(transaccion)
-                            
-                    print(f"\n\033[92mVenta realizada:\033[0m {usdt_obtenido:.2f} Usdt obtenidos a ${self.precio_actual:.2f}")
-                    #print("\033[94mPrecios de venta: $", self.precios_ventas)
-                    print("BTC vendido: ", self.btc_comprado)
-                    
-            # Eliminar transacciones que ya se vendieron
+            
+            # Eliminar las transacciones vendidas para evitar superposición
             for transaccion in transacciones_vendidas:
                 self.transacciones.remove(transaccion)
+                                                   
+                print(f"\n\033[92mVenta realizada:\033[0m {usdt_obtenido:.2f} Usdt obtenidos a ${self.precio_actual:.2f}")
+                print("BTC vendido: ", self.btc_comprado)
 
             if not transacciones_vendidas:
                 print("\033[96mEsperando precio objetivo.\033[0m")
@@ -203,6 +214,7 @@ class TradingBot:
 if __name__ == "__main__":
     bot = TradingBot()
     bot.iniciar()
+    
 
 
 

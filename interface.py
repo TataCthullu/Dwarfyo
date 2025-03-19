@@ -1,6 +1,5 @@
 #Ventana de Login
-"""from tkinter import *
-
+"""
 ventana_principal = Tk()
 ventana_principal.title("Dwarf") 
 ventana_principal.minsize(width=300, height=400)
@@ -19,13 +18,12 @@ caja_de_texto2.grid(column=0, row=4)
 
 boton1 = Button(text="Aceptar", font=("Arial", 14))
 boton1.grid(column=0, row=6)
-
-
-ventana_principal.mainloop()"""
+"""
 
 import threading
 from tkinter import *
 from codigo_principala import TradingBot
+import datetime
 
 # Instancia del bot
 bot = TradingBot()
@@ -59,13 +57,13 @@ Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=50
 Label(ventana_principal, text="USDT Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
 
-Label(ventana_principal, text="Balance Total:", bg="DarkGoldenrod").place(x=10, y=130)
+Label(ventana_principal, text="Balance Total, Usdt + Btc:", bg="DarkGoldenrod").place(x=10, y=130)
 Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=130)
 
-Label(ventana_principal, text="Variación desde la ultima compra:", bg="DarkGoldenrod").place(x=10, y=170)
+Label(ventana_principal, text="Variación desde ultima compra:", bg="DarkGoldenrod").place(x=10, y=170)
 Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=200, y=170)
 
-Label(ventana_principal, text="Variación desde la ultima venta:", bg="DarkGoldenrod").place(x=10, y=210)
+Label(ventana_principal, text="Variación desde ultima venta:", bg="DarkGoldenrod").place(x=10, y=210)
 Label(ventana_principal, textvariable=varpor_set_venta_str, bg="Gold").place(x=200, y=210)
 
 Label(ventana_principal, text="Porcentaje para compra:", bg="DarkGoldenrod").place(x=500, y=10)
@@ -74,12 +72,6 @@ Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=6
 Label(ventana_principal, text="Porcentaje para venta:", bg="DarkGoldenrod").place(x=500, y=40)
 Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=640, y=40)
 
-"""etiqueta_varpor_set_venta_str = Label(ventana_principal, textvariable=varpor_set_venta_str, font=("Arial", 14), bg="DarkGoldenrod")
-etiqueta_varpor_set_compra_str = Label(ventana_principal, textvariable=varpor_set_compra_str, font=("Arial", 14), bg="DarkGoldenrod")
-tiqueta_porc_desde_compra_str = Label(ventana_principal, textvariable=porc_desde_compra_str, font=("Arial", 14), bg="DarkGoldenrod")
-tiqueta_porc_desde_venta_str = Label(ventana_principal, textvariable=porc_desde_venta_str, font=("Arial", 14), bg="DarkGoldenrod")
-etiqueta_cant_usdt_str = Label(ventana_principal, textvariable=cant_usdt_str, font=("Arial", 14), bg="DarkGoldenrod")
-"""
 # Función para actualizar UI
 def actualizar_ui():
     if bot.running:
@@ -121,22 +113,60 @@ def abrir_sbv_config():
     sbv_conf.geometry("400x300")
     Label(sbv_conf, text="Configurar operativa", font=("Arial", 14)).pack()
 
-def abrir_Compras():
-    compras_lst = Toplevel(ventana_principal)
-    compras_lst.title("Lista de compras realizadas")
-    compras_lst.geometry("600x500")
-    Label(compras_lst, text="Lista de compras", font=("Arial", 14)).pack()
+def abrir_historial():
+    historial_ventana = Toplevel(ventana_principal)
+    historial_ventana.title("Historial de Operaciones")
+    historial_ventana.geometry("600x500")
 
-def abrir_Ventas():
-    ventas_lst = Toplevel(ventana_principal)
-    ventas_lst.title("Lista de ventas")
-    ventas_lst.geometry("500x800")
-    Label(ventas_lst, text="Lista de ventas", font=("Arial", 14)).pack()
+    Label(historial_ventana, text="📜 Historial de Operaciones", font=("Arial", 14, "bold")).pack()
 
-Button(text="Compras", command=abrir_Compras, background="Goldenrod").place(x=1000,y=10)
-Button(text="Ventas", command=abrir_Ventas, background="Goldenrod").place(x=1000,y=90)
+    frame_compras = Frame(historial_ventana)
+    frame_compras.pack(pady=10)
+    Label(frame_compras, text="📈 Compras con Objetivo de Venta", font=("Arial", 12, "bold"), fg="blue").pack()
+    compras_lista = Listbox(frame_compras, width=80, height=10)
+    compras_lista.pack()
+
+    frame_ventas = Frame(historial_ventana)
+    frame_ventas.pack(pady=10)
+    Label(frame_ventas, text="📉 Ventas Realizadas", font=("Arial", 12, "bold"), fg="green").pack()
+    ventas_lista = Listbox(frame_ventas, width=80, height=10)
+    ventas_lista.pack()
+
+    # Llenar listas y programar actualizaciones
+    actualizar_historial(compras_lista, ventas_lista, historial_ventana)
+    historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
+
+    Button(historial_ventana, text="Cerrar", command=historial_ventana.destroy, bg="gray").pack(pady=5)
+
+# Botón Historial
+Button(ventana_principal, text="📜 Historial", command=abrir_historial, background="Goldenrod").place(x=700, y=300)
+#Button(text="Historial", command=historial, background="Goldenrod").place(x=1000,y=10)
 Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)
 
+def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
+    # Verificar si la ventana del historial sigue abierta antes de actualizar
+    if not historial_ventana.winfo_exists():
+        return
+
+    compras_lista.delete(0, END)
+    ventas_lista.delete(0, END)
+
+    for transaccion in bot.transacciones:
+        timestamp = transaccion.get('timestamp', 'Sin fecha')
+        compras_lista.insert(
+            END, 
+            f"[{timestamp}] Compra: {transaccion['compra']:.2f} USDT | BTC: {transaccion['btc']:.6f} | Objetivo: {transaccion['venta_obj']:.2f} USDT"
+        )
+
+    for venta in bot.precios_ventas:
+        timestamp = venta.get('timestamp', 'Sin fecha')
+        ventas_lista.insert(
+            END, 
+            f"[{timestamp}] Venta: {venta['venta']:.2f} USDT | BTC: {venta['btc_vendido']:.6f} | Ganancia: {venta['ganancia']:.2f} USDT"
+        )
+    
+    # Programar la siguiente actualización solo si la ventana del historial sigue abierta
+    historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
 
 
 ventana_principal.mainloop()
