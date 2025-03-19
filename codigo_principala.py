@@ -34,7 +34,7 @@ class TradingBot:
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
         self.precio_ingreso = self.get_precio_actual()
-        print("\n\033[93mPrecio de ingreso registrado:\033[0m ", self.precio_ingreso)
+        
         print("\nCantidad fija a invertir por compra: ", self.fixed_buyer)
 
     def get_precio_actual(self):
@@ -69,7 +69,7 @@ class TradingBot:
                 print("Fondos insuficientes para comprar.")
                 return
             else:
-                print(f"\n\033[96mEL PORCENTAJE HABILITA A COMPRAR.\033[0m ({self.varVenta:.3f})")
+                print(f"\n\033[96mCompra realizada.\033[0m ({self.varVenta:.3f})")
                 self.usdt -= self.fixed_buyer
                 self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
                 self.precio_ult_comp = self.precio_actual
@@ -81,10 +81,10 @@ class TradingBot:
                 
                 self.actualizar_balance()
                 
-                print("Precios de compra: USDT: $", self.precios_compras)  
-                print("BTC comprado: ", (1/self.precio_actual) * self.fixed_buyer) 
-                print("BTC comprado representado en USDT: $", self.fixed_buyer)  
-                print(f"Objetivo de venta: ${self.precio_objetivo_venta:.2f} USDT")
+                print("Precios de compra: $", self.precios_compras)  
+                print("Btc comprado: ", (1/self.precio_actual) * self.fixed_buyer) 
+                print("Btc comprado representado en Usdt: $", self.fixed_buyer)  
+                print(f"Objetivo de venta: ${self.precio_objetivo_venta:.2f}")
 
     def vender(self):
             if not self.transacciones:
@@ -102,8 +102,8 @@ class TradingBot:
                     self.actualizar_balance()
                     transacciones_vendidas.append(transaccion)
                             
-                    print(f"\n\033[92mVenta realizada:\033[0m {usdt_obtenido:.2f} USDT obtenidos a {self.precio_actual:.2f} USDT")
-                    print("Precios de venta: USDT$", self.precios_ventas)
+                    print(f"\n\033[92mVenta realizada:\033[0m {usdt_obtenido:.2f} Usdt obtenidos a ${self.precio_actual:.2f}")
+                    print("Precios de venta: $", self.precios_ventas)
                     print("BTC vendido: ", self.btc_comprado)
                     
             # Eliminar transacciones que ya se vendieron
@@ -116,12 +116,22 @@ class TradingBot:
                 print(f"Precios de venta registrados: {self.precios_ventas}")    
 
     def parametro_rango(self):
+        # Si el precio ha bajado más del doble del porcentaje de venta, comprar
+        if self.varVenta <= -2 * self.porc_por_venta and self.usdt >= self.fixed_buyer:
+            print(f"\n\033[96mCondición de sobreventa cumplida: ({self.varVenta:.3f}). Comprando...\033[0m")
+            self.comprar()
+
         if (self.varVenta <= -self.porc_por_compra) and self.usdt >= self.fixed_buyer:
             self.comprar()
 
     def parametro_tendencial(self):
         if self.varCompra <= -self.porc_por_compra and self.usdt >= self.fixed_buyer:      
             self.comprar()
+
+        # Si el precio ha subido más del doble del porcentaje de compra, permitir una compra
+        if self.varCompra >= 2 * self.porc_por_compra and self.usdt >= self.fixed_buyer:
+            print(f"\n\033[96mCondición de tendencia alcista cumplida: ({self.varCompra:.3f}). Comprando...\033[0m")
+            self.comprar()    
                           
     def realizar_primera_compra(self):
         print("\n... PRIMERA COMPRA ...\n")
@@ -134,7 +144,8 @@ class TradingBot:
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
 
-        print("Precios de compra: USDT: $", self.precios_compras)        
+        print("Precios de compra: USDT: $", self.precios_compras) 
+        print("\n\033[93mPrecio de ingreso registrado:\033[0m ", self.precio_ingreso)       
         print("BTC comprado: ", self.btc_comprado) 
         print("BTC comprado representado en USDT: $", self.fixed_buyer)  
         print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")                               
@@ -144,6 +155,7 @@ class TradingBot:
         print("Bot iniciado")
         self.realizar_primera_compra()
         print("\n... INICIANDO BUCLE ...\n")
+        print("\n\033[93mPrecio de ingreso registrado:\033[0m ", self.precio_ingreso)
 
         while self.running:
             self.precio_actual = self.get_precio_actual()
@@ -162,20 +174,19 @@ class TradingBot:
             print(f"Porcentaje de variación del precio desde ultima venta, contra el actual: ({self.varVenta:.3f})")
             print(f"EL PORCENTAJE NO ES SUFICIENTE PARA TRADEAR.")
             print("\n---- BALANCE ACTUAL ----")      
-            print(f"Btc + Usdt: ${self.usdt_mas_btc:.2f} Usdt")
+            print(f"Btc + Usdt: ${self.usdt_mas_btc:.2f}")
             print("Usdt: $", self.usdt)
-            print("Precio actual:" ,self.precio_actual)
+            print("Precio actual: $",self.precio_actual)
             print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")
             
             if self.btc > 0:
                 print(f"Btc: {self.btc:.4f} (En usdt: ${self.btc * self.precio_actual:.2f})")
             else:
                  print("Btc: 0")
+                        
+            self.parametro_rango()
             
-            if self.precio_ult_venta > 0:
-                self.parametro_rango()
-            else:
-                self.parametro_tendencial()
+            self.parametro_tendencial()
 
             self.vender()
             
