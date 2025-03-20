@@ -41,6 +41,7 @@ precio_act_var = StringVar()
 cant_btc_str = StringVar()
 cant_usdt_str = StringVar()
 balance_var = StringVar()
+btc_en_usdt = StringVar()
 
 varpor_set_venta_str = StringVar()
 varpor_set_compra_str = StringVar()
@@ -51,8 +52,11 @@ porc_desde_venta_str = StringVar()
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
 Label(ventana_principal, textvariable=precio_act_var, bg="Gold").place(x=200, y=10)
 
-Label(ventana_principal, text="BTC Disponible:", bg="DarkGoldenrod").place(x=10, y=50)
+Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod").place(x=10, y=50)
 Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=50)
+
+Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod").place(x=10, y=250)
+Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
 
 Label(ventana_principal, text="USDT Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
@@ -80,6 +84,7 @@ def actualizar_ui():
         cant_btc_str.set(f"{bot.btc:.6f} BTC")
         cant_usdt_str.set(f"{bot.usdt:.2f} USDT")
         balance_var.set(f"{bot.usdt + (bot.btc * bot.precio_actual):.2f} USDT")
+        btc_en_usdt.set(f"{bot.btc_usdt:.2f} USDT")
 
         varpor_set_compra_str.set(f"{bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
         varpor_set_venta_str.set(f"{bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")

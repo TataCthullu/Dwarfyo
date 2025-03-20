@@ -14,15 +14,16 @@ class TradingBot:
         self.exchange = ccxt.binance()
         self.usdt = 1000
         self.btc = 0
-        self.btc_usdt = 0
+        
         self.btc_comprado = 0
         self.precio_actual = self.get_precio_actual()
+        self.btc_usdt = self.btc * self.precio_actual
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.precio_ult_venta = 0
         self.porc_por_compra = 0.007
         self.porc_por_venta = 0.007
-        self.porc_inv_por_compra = 5
+        self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -84,7 +85,7 @@ class TradingBot:
                 
                 self.actualizar_balance()
                 
-                print("\033[94mPrecios de compra: $\033[0m", self.precios_compras)  
+                #print("\033[94mPrecios de compra: $\033[0m", self.precios_compras)  
                 print("Btc comprado: ", (1/self.precio_actual) * self.fixed_buyer) 
                 print("Btc comprado representado en Usdt: $", self.fixed_buyer)  
                 print(f"Objetivo de venta: ${self.precio_objetivo_venta:.2f}")
@@ -121,8 +122,8 @@ class TradingBot:
 
             if not transacciones_vendidas:
                 print("\033[96mEsperando precio objetivo.\033[0m")
-            else:
-                print(f"\033[96mPrecios de venta registrados: {self.precios_ventas}\033[0m")    
+            #else:
+                #print(f"\033[96mPrecios de venta registrados: {self.precios_ventas}\033[0m")    
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
@@ -185,7 +186,7 @@ class TradingBot:
             self.actualizar_balance()
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
-            
+            self.btc_usdt = self.btc * self.precio_actual
             
             print("\n- - - - - - - - - - - ")
             print("Precio de la ultima compra: ", self.precio_ult_comp)
@@ -198,10 +199,11 @@ class TradingBot:
             print("\033[93mPrecio actual: $\033[0m",self.precio_actual)
             print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")
             
-            if self.btc > 0:
-                print(f"Btc: {self.btc:.4f} (En usdt: ${self.btc * self.precio_actual:.2f})")
+            
+            if self.btc == 0:
+                 print("\033[0\033[0m")
             else:
-                 print("\033[91mError btc < 0\033[0m")
+                print(f"Btc: {self.btc:.4f} (En usdt: ${self.btc * self.precio_actual:.2f})")
                         
             self.parametro_compra_desde_compra
             self.parametro_compra_desde_venta
