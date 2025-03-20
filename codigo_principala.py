@@ -122,8 +122,7 @@ class TradingBot:
 
             if not transacciones_vendidas:
                 print("\033[96mEsperando precio objetivo.\033[0m")
-            #else:
-                #print(f"\033[96mPrecios de venta registrados: {self.precios_ventas}\033[0m")    
+               
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
@@ -131,6 +130,7 @@ class TradingBot:
             self.comprar()
 
     def parametro_compra_B(self):
+        #Compra con referencia a la ultima venta
         if self.varVenta <= -self.porc_por_compra and self.usdt >= self.fixed_buyer:
             self.comprar()        
 
@@ -166,7 +166,18 @@ class TradingBot:
         print("\n\033[93mPrecio de ingreso registrado:\033[0m", self.precio_ingreso)       
         print("BTC comprado: ", self.btc_comprado) 
         print("BTC comprado representado en USDT: $", self.fixed_buyer)  
-        print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")                               
+        print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")  
+
+    """def estado(self):
+        print("\033[93mFondos insuficientes para comprar.\033[0m") 
+        print(f"\n\033[96mCompra realizada.\033[0m") 
+        print(f"\033[91mError obteniendo el precio: {e}\033[0m")
+        print("\n\033[94mNo hay BTC disponible para vender.\033[0m") 
+        print(f"\n\033[92mVenta realizada:\033[0m")  
+        print("\n\033[94m... PRIMERA COMPRA ...\n\033[0m")
+        print("\033[93mBot iniciado\033[0m") 
+        print("\033[96mEsperando precio objetivo.\033[0m")    
+        print("\033[91mAdvertencia: No se puede operar sin datos de precios.\033[0m") """                   
                 
     def iniciar(self):
         self.running = True
@@ -174,6 +185,7 @@ class TradingBot:
         self.realizar_primera_compra()
         print("\n\033[94m... INICIANDO BUCLE ...\n\033[0m")
         print("\n\033[93mCantidad fija a invertir por compra: \033[0m", self.fixed_buyer)
+        print("\033[96mEsperando precio objetivo.\033[0m")
         
         while self.running:
             self.precio_actual = self.get_precio_actual()

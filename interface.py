@@ -47,6 +47,8 @@ varpor_set_venta_str = StringVar()
 varpor_set_compra_str = StringVar()
 porc_desde_compra_str = StringVar()
 porc_desde_venta_str = StringVar()
+precio_de_ingreso_str = StringVar()
+inv_por_compra_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -76,15 +78,23 @@ Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=6
 Label(ventana_principal, text="Porcentaje para venta:", bg="DarkGoldenrod").place(x=500, y=40)
 Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=640, y=40)
 
+Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod").place(x=500, y=70)
+Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=640, y=70)
+
+Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod").place(x=500, y=100)
+Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=640, y=100)
+
 # Función para actualizar UI
 def actualizar_ui():
     if bot.running:
         bot.precio_actual = bot.get_precio_actual()
         precio_act_var.set(f"{bot.precio_actual:.2f} USDT")
         cant_btc_str.set(f"{bot.btc:.6f} BTC")
-        cant_usdt_str.set(f"{bot.usdt:.2f} USDT")
+        cant_usdt_str.set(f"{bot.usdt:.4f} USDT")
         balance_var.set(f"{bot.usdt + (bot.btc * bot.precio_actual):.2f} USDT")
-        btc_en_usdt.set(f"{bot.btc_usdt:.2f} USDT")
+        btc_en_usdt.set(f"{bot.btc_usdt:.4f} USDT")
+        precio_de_ingreso_str.set(f"{bot.precio_ingreso:.2f} USDT")
+        inv_por_compra_str.set(f"{bot.porc_inv_por_compra:.2f}")
 
         varpor_set_compra_str.set(f"{bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
         varpor_set_venta_str.set(f"{bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
@@ -116,32 +126,33 @@ def abrir_sbv_config():
     sbv_conf = Toplevel(ventana_principal)
     sbv_conf.title("Configuración de operativa")
     sbv_conf.geometry("400x300")
-    Label(sbv_conf, text="Configurar operativa", font=("Arial", 14)).pack()
+    Label(sbv_conf, text="Configurar operativa").pack()
 
 def abrir_historial():
     historial_ventana = Toplevel(ventana_principal)
     historial_ventana.title("Historial de Operaciones")
     historial_ventana.geometry("600x500")
+    historial_ventana.configure(bg="DarkGoldenrod")
 
-    Label(historial_ventana, text="📜 Historial de Operaciones", font=("Arial", 14, "bold")).pack()
+    Label(historial_ventana, text="📜 Historial de Operaciones", bg="DarkGoldenrod").pack()
 
     frame_compras = Frame(historial_ventana)
     frame_compras.pack(pady=10)
-    Label(frame_compras, text="📈 Compras con Objetivo de Venta", font=("Arial", 12, "bold"), fg="blue").pack()
-    compras_lista = Listbox(frame_compras, width=80, height=10)
+    Label(frame_compras, text="📈 Compras con Objetivo de Venta", fg="blue", bg="DarkGoldenrod").pack()
+    compras_lista = Listbox(frame_compras, width=80, height=10, bg="DarkGoldenrod")
     compras_lista.pack()
 
     frame_ventas = Frame(historial_ventana)
     frame_ventas.pack(pady=10)
-    Label(frame_ventas, text="📉 Ventas Realizadas", font=("Arial", 12, "bold"), fg="green").pack()
-    ventas_lista = Listbox(frame_ventas, width=80, height=10)
+    Label(frame_ventas, text="📉 Ventas Realizadas", fg="green", bg="DarkGoldenrod").pack()
+    ventas_lista = Listbox(frame_ventas, width=80, height=10, bg="DarkGoldenrod")
     ventas_lista.pack()
 
     # Llenar listas y programar actualizaciones
     actualizar_historial(compras_lista, ventas_lista, historial_ventana)
     historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
 
-    Button(historial_ventana, text="Cerrar", command=historial_ventana.destroy, bg="gray").pack(pady=5)
+    Button(historial_ventana, text="Cerrar", command=historial_ventana.destroy, bg="Goldenrod").pack(pady=5)
 
 # Botón Historial
 Button(ventana_principal, text="📜 Historial", command=abrir_historial, background="Goldenrod").place(x=700, y=300)
