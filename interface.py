@@ -22,11 +22,13 @@ boton1.grid(column=0, row=6)
 
 import threading
 from tkinter import *
+from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
 
 
 # Instancia del bot
 bot = TradingBot()
+
 
 # Interfaz Tkinter
 ventana_principal = Tk()
@@ -85,7 +87,7 @@ Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=
 Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod").place(x=500, y=100)
 Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=640, y=100)
 
-Label(ventana_principal, text="Variación desde precio de inicio:", bg="DarkGoldenrod").place(x=500, y=130)
+Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod").place(x=500, y=130)
 Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=640, y=130)
 
 # Función para actualizar UI
@@ -125,6 +127,11 @@ def detener_bot():
 Button(ventana_principal, text="Iniciar Bot", command=iniciar_bot, background="Goldenrod").place(x=500, y=300)
 Button(ventana_principal, text="Detener Bot", command=detener_bot, background="Goldenrod").place(x=600, y=300)
 
+def log_en_consola(mensaje):
+    consola.insert(END, mensaje + "\n")
+    consola.see(END)
+
+bot.log_fn = log_en_consola  # Función que imprime en la consola de Tkinter
 
 # Subventanas
 def abrir_sbv_config():
@@ -163,6 +170,10 @@ def abrir_historial():
 Button(ventana_principal, text="📜 Historial", command=abrir_historial, background="Goldenrod").place(x=700, y=300)
 #Button(text="Historial", command=historial, background="Goldenrod").place(x=1000,y=10)
 Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)
+
+# Consola para mostrar estado
+consola = ScrolledText(ventana_principal, width=120, height=10, bg="Goldenrod", fg="Gold", font=("Courier", 10))
+consola.place(x=10, y=400)
 
 def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
     # Verificar si la ventana del historial sigue abierta antes de actualizar
