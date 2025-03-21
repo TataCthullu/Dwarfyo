@@ -21,9 +21,9 @@ class TradingBot:
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 1
-        self.porc_por_venta = 1
-        self.porc_inv_por_compra = 10
+        self.porc_por_compra = 0.5
+        self.porc_por_venta = 0.5
+        self.porc_inv_por_compra = 20
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -76,6 +76,15 @@ class TradingBot:
             if self.usdt < self.fixed_buyer:
                 print("\033[93mFondos insuficientes para comprar.\033[0m")
             else:
+                #Espectro minimo a superar para no ser considerado compra repetida
+                tolerancia_precio = 0.01  
+
+                if self.precios_compras:
+                    precio_anterior = self.precios_compras[-1]
+                    diferencia_relativa = abs(self.precio_actual - precio_anterior) / precio_anterior
+                    if diferencia_relativa < tolerancia_precio:
+                        print("\033[96mPrecio demasiado similar al anterior. Compra evitada para no repetir.\033[0m")
+                        return
                 print(f"\n\033[96mCompra realizada.\033[0m")
                 self.usdt -= self.fixed_buyer
                 self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
