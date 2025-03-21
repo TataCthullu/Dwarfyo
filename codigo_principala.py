@@ -21,8 +21,8 @@ class TradingBot:
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 0.007
-        self.porc_por_venta = 0.007
+        self.porc_por_compra = 1
+        self.porc_por_venta = 1
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
@@ -37,6 +37,7 @@ class TradingBot:
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
         self.precio_ingreso = self.get_precio_actual()
+        self.var_inicio = 0
                
     def get_precio_actual(self):
         try:
@@ -60,6 +61,13 @@ class TradingBot:
             return 0
         variante = ((precio_act_btc - precio_ult_venta) / precio_ult_venta) * 100
         return variante
+    
+    def varpor_ingreso(self):
+        if self.precio_ingreso == 0:
+            return 0  # Para evitar división por cero
+        variacion = ((self.precio_actual - self.precio_ingreso) / self.precio_ingreso) * 100
+        return variacion
+
 
     def cant_inv(self):
         return (self.usdt * self.porc_inv_por_compra) / 100
@@ -199,6 +207,7 @@ class TradingBot:
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
             self.btc_usdt = self.btc * self.precio_actual
+            self.var_inicio =self.varpor_ingreso()
             
             print("\n- - - - - - - - - - - ")
             print("Precio de la ultima compra: ", self.precio_ult_comp)
@@ -210,6 +219,8 @@ class TradingBot:
             print("Usdt: $", self.usdt)
             print("\033[93mPrecio actual: $\033[0m",self.precio_actual)
             print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")
+            print(f"\033[96mVariación desde precio de ingreso: %({self.varpor_ingreso():.3f})\033[0m")
+
             
             
             if self.btc == 0:

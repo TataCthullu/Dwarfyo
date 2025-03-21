@@ -23,7 +23,7 @@ boton1.grid(column=0, row=6)
 import threading
 from tkinter import *
 from codigo_principala import TradingBot
-import datetime
+
 
 # Instancia del bot
 bot = TradingBot()
@@ -49,6 +49,7 @@ porc_desde_compra_str = StringVar()
 porc_desde_venta_str = StringVar()
 precio_de_ingreso_str = StringVar()
 inv_por_compra_str = StringVar()
+var_inicio_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -84,6 +85,9 @@ Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=
 Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod").place(x=500, y=100)
 Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=640, y=100)
 
+Label(ventana_principal, text="Variación desde precio de inicio:", bg="DarkGoldenrod").place(x=500, y=130)
+Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=640, y=130)
+
 # Función para actualizar UI
 def actualizar_ui():
     if bot.running:
@@ -100,6 +104,7 @@ def actualizar_ui():
         varpor_set_venta_str.set(f"{bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
         porc_desde_compra_str.set(f"{bot.porc_por_compra}")   
         porc_desde_venta_str.set(f"{bot.porc_por_venta}")
+        var_inicio_str.set(f"{bot.var_inicio:.4f}")
 
     # Reprogramar la actualización cada 3 segundos
     ventana_principal.after(3000, actualizar_ui)
