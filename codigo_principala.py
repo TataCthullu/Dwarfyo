@@ -53,29 +53,27 @@ class TradingBot:
             return ticker['last']
         except Exception as e:
             self.log(f"\n❌ Error obteniendo el precio: {e}")
-            return
+            return None
     
     def actualizar_balance(self):
         self.usdt_mas_btc = self.usdt + (self.btc * self.precio_actual)
 
     #Variacion de precio con respecto a ultima compra
     def varpor_compra(self, precio_ult_comp, precio_act_btc):
-                variante = ((precio_act_btc - precio_ult_comp) / precio_ult_comp) * 100
-                return variante 
-
-    #Variacion desde ultima venta 
-    def varpor_venta(self, precio_ult_venta, precio_act_btc):
-        if precio_ult_venta == 0:
+        if precio_ult_comp is None or precio_act_btc is None:
             return 0
-        variante = ((precio_act_btc - precio_ult_venta) / precio_ult_venta) * 100
-        return variante
+        return ((precio_act_btc - precio_ult_comp) / precio_ult_comp) * 100
+
+
+    def varpor_venta(self, precio_ult_venta, precio_act_btc):
+        if precio_ult_venta == 0 or precio_act_btc is None:
+            return 0
+        return ((precio_act_btc - precio_ult_venta) / precio_ult_venta) * 100
     
     def varpor_ingreso(self):
-        if self.precio_ingreso == 0:
-            return 0  # Para evitar división por cero
-        variacion = ((self.precio_actual - self.precio_ingreso) / self.precio_ingreso) * 100
-        return variacion
-
+        if self.precio_ingreso == 0 or self.precio_actual is None:
+            return 0
+        return ((self.precio_actual - self.precio_ingreso) / self.precio_ingreso) * 100
 
     def cant_inv(self):
         return (self.usdt * self.porc_inv_por_compra) / 100
@@ -184,7 +182,7 @@ class TradingBot:
               
         while self.running:
             self.precio_actual = self.get_precio_actual()
-            if self.precio_actual == 0:
+            if not self.precio_actual:
                 self.log("\n⚠️ No se puede operar sin datos de precios.")
                 time.sleep(3)
                 continue
