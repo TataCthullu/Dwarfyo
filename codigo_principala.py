@@ -18,7 +18,7 @@ class TradingBot:
         
         self.btc_comprado = 0
         self.precio_actual = self.get_precio_actual()
-        self.btc_usdt = self.btc * self.precio_actual
+        self.btc_usdt = 0
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.precio_ult_venta = 0
@@ -40,6 +40,7 @@ class TradingBot:
         self.precio_ingreso = self.get_precio_actual()
         self.var_inicio = 0
         self.log_fn = None
+        self.usdt_obtenido = 0
         
 
     def log(self, mensaje):
@@ -51,7 +52,7 @@ class TradingBot:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
             return ticker['last']
         except Exception as e:
-            self.log(f"❌ Error obteniendo el precio: {e}")
+            self.log(f"\n❌ Error obteniendo el precio: {e}")
             return
     
     def actualizar_balance(self):
@@ -81,7 +82,7 @@ class TradingBot:
 
     def comprar(self):
             if self.usdt < self.fixed_buyer:
-                self.log("⚠️ Usd insuficiente para comprar.")
+                self.log("\n⚠️ Usd insuficiente para comprar.")
                 return
             
             self.usdt -= self.fixed_buyer
@@ -99,21 +100,21 @@ class TradingBot:
                 })
                 
             self.actualizar_balance()
-            self.log("✅ Compra realizada.")
-            self.log(f"📉 Precio de compra: $ {self.precio_actual:.6f}")
-            self.log(f"🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
-            self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")           
+            self.log("\n✅ Compra realizada.")
+            self.log(f"\n📉 Precio de compra: $ {self.precio_actual:.6f}")
+            self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
+            self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")           
 
     def vender(self):
             if not self.transacciones:
-                self.log("ℹ️ No hay BTC disponible para vender.")
+                self.log("\nℹ️ No hay BTC disponible para vender.")
                 return
             transacciones_vendidas = []
             for transaccion in self.transacciones:
                 if self.precio_actual >= transaccion["venta_obj"]:
                     self.btc_vendido = transaccion["btc"]
-                    usdt_obtenido = self.btc_vendido * self.precio_actual
-                    self.usdt += usdt_obtenido
+                    self.usdt_obtenido = self.btc_vendido * self.precio_actual
+                    self.usdt += self.usdt_obtenido
                     self.btc -= self.btc_vendido 
                     self.precio_ult_venta = self.precio_actual
                     self.actualizar_balance()
@@ -127,16 +128,16 @@ class TradingBot:
                     })
                     transacciones_vendidas.append(transaccion)
 
-                    self.log(f"✅ Venta realizada: $ {usdt_obtenido:.2f} a $ {self.precio_actual:.2f}")
-                    self.log(f"📤 BTC vendido: ₿ {self.btc_vendido:.6f}")
+                    self.log(f"\n✅ Venta realizada: $ {self.usdt_obtenido:.2f} a $ {self.precio_actual:.2f}")
+                    self.log(f"\n📤 Btc vendido: ₿ {self.btc_vendido:.6f}")
             
             """# Eliminar las transacciones vendidas para evitar superposición
             for transaccion in transacciones_vendidas:
                 self.transacciones.remove(transaccion)"""
                                                    
-            print(f"\n\033[92m✅ Venta realizada:\033[0m {usdt_obtenido:.2f} Usdt obtenidos a ${self.precio_actual:.2f}")
-            print("BTC vendido: ₿ ", self.btc_comprado)
-
+            """print(f"\n\033[92m✅ Venta realizada:\033[0m {self.usdt_obtenido:.2f} Usdt obtenidos a ${self.precio_actual:.2f}")
+            print("Btc vendido: ₿ ", self.btc_comprado)
+"""
             """if not transacciones_vendidas:
                 self.log("⌛ Esperando precio objetivo para venta...")"""
                
@@ -152,14 +153,7 @@ class TradingBot:
             self.comprar()        
 
 
-        """# Si el precio ha bajado más del doble del porcentaje de venta, comprar 
-        if self.usdt >= self.fixed_buyer:
-            if self.varVenta <= -2 * self.porc_por_venta:
-                print(f"\n\033[96mCondición de sobreventa cumplida: ({self.varVenta:.3f})\033[0m")
-                self.comprar()
-
-        # Luego evaluar la compra por bajada normal
-        el    
+        """
 
 #  Condición 1: Compra si el precio sube más del doble del porcentaje de compra y no ha comprado recientemente
         elif self.varCompra >= 2 * self.porc_por_compra and self.usdt >= self.fixed_buyer:
@@ -169,7 +163,7 @@ class TradingBot:
     
                           
     def realizar_primera_compra(self):
-        self.log("\n🚀 Realizando primera compra")
+        self.log("\n🚀 Realizando primera compra a: $ ", self.precio_actual)
         self.usdt -= self.fixed_buyer 
         self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
         self.precios_compras.append(self.precio_ult_comp)
@@ -181,37 +175,28 @@ class TradingBot:
 
         
         self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
-        self.log(f"\n🎯 Objetivo de venta: {self.precio_objetivo_venta:.2f} USDT")
-
+        self.log(f"\n🎯 Objetivo de venta: {self.precio_objetivo_venta:.2f}")
+        
 
         """print("Precios de compra: USDT: $", self.precios_compras) 
         print("\n\033[93mPrecio de ingreso registrado:\033[0m", self.precio_ingreso)       
         print("BTC comprado: ", self.btc_comprado) 
         print("BTC comprado representado en USDT: $", self.fixed_buyer)  
         print(f"Precio objetivo de siguiente venta: ${self.precio_objetivo_venta:.3f}")"""  
-
-    """def estado(self):
-        print("\033[93mFondos insuficientes para comprar.\033[0m") 
-        print(f"\n\033[96mCompra realizada.\033[0m") 
-        print(f"\033[91mError obteniendo el precio: {e}\033[0m")
-        print("\n\033[94mNo hay BTC disponible para vender.\033[0m") 
-        print(f"\n\033[92mVenta realizada:\033[0m")  
-        print("\n\033[94m... PRIMERA COMPRA ...\n\033[0m")
-        print("\033[93mBot iniciado\033[0m") 
-        print("\033[96mEsperando precio objetivo.\033[0m")    
-        print("\033[91mAdvertencia: No se puede operar sin datos de precios.\033[0m") """                   
+                 
                 
     def iniciar(self):
         self.running = True
-        self.log("🟡 Bot iniciado.")
+        self.log("\n🟡 Bot iniciado.")
         self.realizar_primera_compra()
-        self.log("🔄 Iniciando bucle...")
+        self.log("\n🔄 Iniciando bucle...")
+        print("\n\033[93mPrecio de ingreso registrado:\033[0m $ ", self.precio_ingreso)
         
         
         while self.running:
             self.precio_actual = self.get_precio_actual()
             if self.precio_actual == 0:
-                self.log("⚠️ No se puede operar sin datos de precios.")
+                self.log("\n⚠️ No se puede operar sin datos de precios.")
                 time.sleep(3)
                 continue
             self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
@@ -221,22 +206,21 @@ class TradingBot:
             self.parametro_compra_desde_venta = self.parametro_compra_B()
             self.btc_usdt = self.btc * self.precio_actual
             self.var_inicio =self.varpor_ingreso()
-            self.log("🟡 Bot Trabajando.")
-            
-            self.log("- - - - - - - - - -")
-            self.log(f"💰 Última compra: $ {self.precio_ult_comp:.2f}")
-            self.log(f"🎯 Objetivo venta: $ {self.precio_objetivo_venta:.2f}")
+            self.log("\n- - - - - - - - - -")
+            self.log("\n🟡 Bot Trabajando.")
+            self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.2f}")
+            self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}\n")
             
             
             if self.btc <= 0:
-                self.log("ℹ️No hay Btc disponible para vender")
+                self.log("\nℹ️No hay Btc disponible para vender")
             else:               
                 self.vender()
             time.sleep(3)
 
     def detener(self):
         self.running = False
-        self.log("🔴 Bot detenido.")
+        self.log("\n🔴 Bot detenido.")
 
 if __name__ == "__main__":
     bot = TradingBot()

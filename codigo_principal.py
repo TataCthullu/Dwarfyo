@@ -130,7 +130,7 @@ while True:
    
 #Logica de compra
     if (varporVenta <= -porc_por_compra) and usdt >= fixed_buyer: 
-        print(f"{bcolors.OKCYAN}EL PORCENTAJE HABILITA A COMPRAR. ({varporVenta:.3f}){bcolors.ENDC}")
+        print(f"{bcolors.OKCYAN}PORCENTAJE HABILITA A COMPRAR. ({varporVenta:.3f}){bcolors.ENDC}")
         usdt -= fixed_buyer
         btcusdt += ((1/precio_act_btc) * fixed_buyer) * precio_act_btc
         precio_ult_comp = precio_act_btc

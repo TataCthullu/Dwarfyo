@@ -177,7 +177,7 @@ Button(ventana_principal, text="📜 Historial", command=abrir_historial, backgr
 Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)"""
 
 # Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=60, height=10, bg="Goldenrod", fg="Black", font=("Courier", 10))
+consola = ScrolledText(ventana_principal, width=50, height=10, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)
 
 """def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
