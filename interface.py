@@ -145,6 +145,10 @@ def abrir_sbv_config():
     sbv_conf.geometry("400x300")
     Label(sbv_conf, text="Configurar operativa").pack()
 
+# Consola para mostrar estado
+consola = ScrolledText(ventana_principal, width=50, height=10, bg="Goldenrod", fg="Black", font=("Courier", 10))
+consola.place(x=10, y=400)    
+
 """def abrir_historial():
     historial_ventana = Toplevel(ventana_principal)
     historial_ventana.title("Historial de Operaciones")
@@ -176,9 +180,7 @@ Button(ventana_principal, text="📜 Historial", command=abrir_historial, backgr
 #Button(text="Historial", command=historial, background="Goldenrod").place(x=1000,y=10)
 Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)"""
 
-# Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=50, height=10, bg="Goldenrod", fg="Black", font=("Courier", 10))
-consola.place(x=10, y=400)
+
 
 """def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
     # Verificar si la ventana del historial sigue abierta antes de actualizar
