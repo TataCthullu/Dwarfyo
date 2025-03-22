@@ -52,6 +52,7 @@ porc_desde_venta_str = StringVar()
 precio_de_ingreso_str = StringVar()
 inv_por_compra_str = StringVar()
 var_inicio_str = StringVar()
+fixed_buyer_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -63,10 +64,10 @@ Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=50
 Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod").place(x=10, y=250)
 Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
 
-Label(ventana_principal, text="USDT Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
+Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
 
-Label(ventana_principal, text="Balance Total, Usdt + Btc:", bg="DarkGoldenrod").place(x=10, y=130)
+Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod").place(x=10, y=130)
 Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=130)
 
 Label(ventana_principal, text="Variación desde ultima compra:", bg="DarkGoldenrod").place(x=10, y=170)
@@ -90,23 +91,27 @@ Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=640
 Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod").place(x=500, y=130)
 Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=640, y=130)
 
+Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod").place(x=500, y=160)
+Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y=160)
+
 # Función para actualizar UI
 def actualizar_ui():
     if bot.running:
         bot.precio_actual = bot.get_precio_actual()
-        precio_act_var.set(f"{bot.precio_actual:.2f} USDT")
-        cant_btc_str.set(f"{bot.btc:.6f} BTC")
-        cant_usdt_str.set(f"{bot.usdt:.4f} USDT")
-        balance_var.set(f"{bot.usdt + (bot.btc * bot.precio_actual):.2f} USDT")
-        btc_en_usdt.set(f"{bot.btc_usdt:.4f} USDT")
-        precio_de_ingreso_str.set(f"{bot.precio_ingreso:.2f} USDT")
-        inv_por_compra_str.set(f"{bot.porc_inv_por_compra:.2f}")
+        precio_act_var.set(f"$ {bot.precio_actual:.2f}")
+        cant_btc_str.set(f"₿ {bot.btc:.6f}")
+        cant_usdt_str.set(f"$ {bot.usdt:.4f}")
+        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.2f}")
+        btc_en_usdt.set(f"$ {bot.btc_usdt:.4f}")
+        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.2f}")
+        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.2f}")
 
-        varpor_set_compra_str.set(f"{bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
-        varpor_set_venta_str.set(f"{bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
-        porc_desde_compra_str.set(f"{bot.porc_por_compra}")   
-        porc_desde_venta_str.set(f"{bot.porc_por_venta}")
-        var_inicio_str.set(f"{bot.var_inicio:.4f}")
+        varpor_set_compra_str.set(f"% {bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
+        varpor_set_venta_str.set(f"% {bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
+        porc_desde_compra_str.set(f"% {bot.porc_por_compra}")   
+        porc_desde_venta_str.set(f"% {bot.porc_por_venta}")
+        var_inicio_str.set(f"% {bot.var_inicio:.2f}")
+        fixed_buyer_str.set(f"$ {bot.fixed_buyer:.2f}")
 
     # Reprogramar la actualización cada 3 segundos
     ventana_principal.after(3000, actualizar_ui)
@@ -140,7 +145,7 @@ def abrir_sbv_config():
     sbv_conf.geometry("400x300")
     Label(sbv_conf, text="Configurar operativa").pack()
 
-def abrir_historial():
+"""def abrir_historial():
     historial_ventana = Toplevel(ventana_principal)
     historial_ventana.title("Historial de Operaciones")
     historial_ventana.geometry("600x500")
@@ -164,18 +169,18 @@ def abrir_historial():
     actualizar_historial(compras_lista, ventas_lista, historial_ventana)
     historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
 
-    Button(historial_ventana, text="Cerrar", command=historial_ventana.destroy, bg="Goldenrod").pack(pady=5)
+    Button(historial_ventana, text="Cerrar", command=historial_ventana.destroy, bg="Goldenrod").pack(pady=5)"""
 
-# Botón Historial
+"""# Botón Historial
 Button(ventana_principal, text="📜 Historial", command=abrir_historial, background="Goldenrod").place(x=700, y=300)
 #Button(text="Historial", command=historial, background="Goldenrod").place(x=1000,y=10)
-Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)
+Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)"""
 
 # Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=120, height=10, bg="Goldenrod", fg="Gold", font=("Courier", 10))
+consola = ScrolledText(ventana_principal, width=60, height=10, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)
 
-def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
+"""def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
     # Verificar si la ventana del historial sigue abierta antes de actualizar
     if not historial_ventana.winfo_exists():
         return
@@ -188,7 +193,7 @@ def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
         estado = "✅ Ejecutado" if transaccion.get('ejecutado', False) else "⏳ Pendiente"
         compras_lista.insert(
             END, 
-            f"[{timestamp}] Compra: {transaccion['compra']:.2f} USDT | BTC: {transaccion['btc']:.6f} | Objetivo: {transaccion['venta_obj']:.2f} USDT | {estado}"
+            f"[{timestamp}] Compra: {transaccion['compra']:.6f} USDT | BTC: {transaccion['btc']:.6f} | Objetivo: {transaccion['venta_obj']:.6f} USDT | {estado}"
         )
 
     for venta in bot.precios_ventas:
@@ -199,7 +204,7 @@ def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
         )
     
     # Programar la siguiente actualización solo si la ventana del historial sigue abierta
-    historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
+    historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))"""
 
 
 
