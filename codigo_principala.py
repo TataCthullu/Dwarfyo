@@ -178,7 +178,7 @@ class TradingBot:
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
        
         self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}")
-        self.log(f"\nBtc comprado representado en Usdt: $ {self.fixed_buyer:.2f}")
+        self.log(f"\n✅ Btc comprado, en Usdt: $ {self.fixed_buyer:.2f}")
         self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
          
                 
@@ -210,7 +210,7 @@ class TradingBot:
             
             
             if self.btc == 0:
-                self.log("\nℹ️No hay Btc disponible para vender")
+                self.log("\nℹ️ No hay Btc disponible para vender")
             else:               
                 self.vender()
             time.sleep(3)

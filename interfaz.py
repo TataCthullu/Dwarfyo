@@ -98,19 +98,19 @@ Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y
 def actualizar_ui():
     if bot.running:
         bot.precio_actual = bot.get_precio_actual()
-        precio_act_var.set(f"$ {bot.precio_actual:.2f}")
+        precio_act_var.set(f"$ {bot.precio_actual:.6f}")
         cant_btc_str.set(f"₿ {bot.btc:.6f}")
-        cant_usdt_str.set(f"$ {bot.usdt:.4f}")
-        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.2f}")
-        btc_en_usdt.set(f"$ {bot.btc_usdt:.4f}")
-        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.2f}")
-        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.2f}")
+        cant_usdt_str.set(f"$ {bot.usdt:.6f}")
+        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}")
+        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}")
+        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.6f}")
+        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.6f}")
 
         varpor_set_compra_str.set(f"% {bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
         varpor_set_venta_str.set(f"% {bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
         porc_desde_compra_str.set(f"% {bot.porc_por_compra}")   
         porc_desde_venta_str.set(f"% {bot.porc_por_venta}")
-        var_inicio_str.set(f"% {bot.var_inicio:.2f}")
+        var_inicio_str.set(f"% {bot.var_inicio:.6f}")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.2f}")
 
     # Reprogramar la actualización cada 3 segundos
