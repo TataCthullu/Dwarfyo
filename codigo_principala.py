@@ -56,7 +56,9 @@ class TradingBot:
             return None
     
     def actualizar_balance(self):
-        self.usdt_mas_btc = self.usdt + (self.btc * self.precio_actual)
+        self.btc_usdt = self.btc * self.precio_actual
+        self.usdt_mas_btc = self.usdt + self.btc_usdt
+
 
     #Variacion de precio con respecto a ultima compra
     def varpor_compra(self, precio_ult_comp, precio_act_btc):
@@ -84,7 +86,8 @@ class TradingBot:
                 return
             
             self.usdt -= self.fixed_buyer
-            self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
+            self.btc_usdt = self.btc * self.precio_actual  # valor actualizado
+
             self.precio_ult_comp = self.precio_actual
             self.precios_compras.append(self.precio_ult_comp)
             self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
@@ -104,11 +107,12 @@ class TradingBot:
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")           
 
     def vender(self):
-            if not self.transacciones:
-                self.log("\nℹ️ No hay BTC disponible para vender.")
-                return
+
             transacciones_vendidas = []
             for transaccion in self.transacciones:
+                if self.precio_actual >= transaccion["venta_obj"]:
+                    if self.btc < transaccion["btc"]:
+                        continue  # Evita vender más BTC del disponible
                 if self.precio_actual >= transaccion["venta_obj"]:
                     self.btc_vendido = transaccion["btc"]
                     self.usdt_obtenido = self.btc_vendido * self.precio_actual
@@ -126,13 +130,17 @@ class TradingBot:
                     })
                     transacciones_vendidas.append(transaccion)
 
-                    self.log(f"\n✅ Venta realizada: $ {self.usdt_obtenido:.2f} a $ {self.precio_actual:.2f}")
-                    self.log(f"\n📤 Btc vendido: ₿ {self.btc_vendido:.6f}")
+            for transaccion in transacciones_vendidas:
+                self.transacciones.remove(transaccion)
+        
+
+                self.log(f"\n✅ Venta realizada: $ {self.usdt_obtenido:.2f} a $ {self.precio_actual:.2f}")
+                self.log(f"\n📤 Btc vendido: ₿ {self.btc_vendido:.6f}")
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_por_compra:
-            if self.usdt >= self.fixed_buyer():      
+            if self.usdt >= self.fixed_buyer:      
                 self.comprar()
             else:
                 self.log("⚠️ Fondos insuficientes para comprar (A).") 
@@ -141,10 +149,10 @@ class TradingBot:
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
         if self.varVenta <= -self.porc_por_compra:
-            if self.usdt >= self.fixed_buyer():      
+            if self.usdt >= self.fixed_buyer:      
                 self.comprar()
             else:
-                self.log("⚠️ Fondos insuficientes para comprar (A).")  
+                self.log("⚠️ Fondos insuficientes para comprar (B).")  
                 return      
 
 
@@ -160,7 +168,8 @@ class TradingBot:
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
         self.usdt -= self.fixed_buyer 
-        self.btc_usdt += ((1/self.precio_actual) * self.fixed_buyer) * self.precio_actual
+        self.btc_usdt = self.btc * self.precio_actual
+
         self.precios_compras.append(self.precio_ult_comp)
         self.precio_ult_comp = self.precio_actual
         self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
