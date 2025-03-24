@@ -1,6 +1,6 @@
 import time
 import ccxt
-import datetime
+#import datetime
 
 #import json
 
@@ -51,7 +51,7 @@ class TradingBot:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
             return ticker['last']
         except Exception as e:
-            self.log(f"\n❌ Error obteniendo el precio: {e}")
+            self.log(f"\n❌ Error obteniendo el precio: {e}\n")
             return None
     
     def actualizar_balance(self):
@@ -81,7 +81,7 @@ class TradingBot:
 
     def comprar(self):
             if self.usdt < self.fixed_buyer:
-                self.log("\n⚠️ Usdt insuficiente para comprar.")
+                self.log("\n⚠️ Usdt insuficiente para comprar.\n")
                 return
             
             self.usdt -= self.fixed_buyer             
@@ -152,7 +152,7 @@ class TradingBot:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
             else:
-                self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes") 
+                self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes\n") 
                 return   
 
     def parametro_compra_B(self):
@@ -161,7 +161,7 @@ class TradingBot:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
             else:
-                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes")  
+                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")  
                 return      
 
 
@@ -188,7 +188,7 @@ class TradingBot:
         
 
 
-        self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}")
+        self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}\n")
         #self.log(f"\n✅ Btc comprado, en Usdt: $ {self.fixed_buyer:.2f}")
         #self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
          
@@ -203,7 +203,7 @@ class TradingBot:
         while self.running:
             self.precio_actual = self.get_precio_actual()
             if not self.precio_actual:
-                self.log("\n⚠️ No se puede operar sin datos de precios.")
+                self.log("\n⚠️ No se puede operar sin datos de precios.\n")
                 time.sleep(3)
                 continue
             self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
@@ -222,14 +222,14 @@ class TradingBot:
             
             
             if self.btc == 0:
-                self.log("\nℹ️ No hay Btc disponible para vender")
+                self.log("\nℹ️ No hay Btc disponible para vender\n")
             else:               
                 self.vender()
             time.sleep(3)
 
     def detener(self):
         self.running = False
-        self.log("\n🔴 Bot detenido.")
+        self.log("\n🔴 Bot detenido.\n")
 
 if __name__ == "__main__":
     bot = TradingBot()
