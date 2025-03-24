@@ -14,8 +14,7 @@ class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance()
         self.usdt = 1000
-        self.btc = 0
-        
+        self.btc = 0        
         self.btc_comprado = 0
         self.precio_actual = self.get_precio_actual()
         self.btc_usdt = 0
@@ -66,7 +65,7 @@ class TradingBot:
             return 0
         return ((precio_act_btc - precio_ult_comp) / precio_ult_comp) * 100
 
-
+    #Variacion de precio con respecto a ultima venta
     def varpor_venta(self, precio_ult_venta, precio_act_btc):
         if precio_ult_venta == 0 or precio_act_btc is None:
             return 0
@@ -85,14 +84,13 @@ class TradingBot:
                 self.log("\n⚠️ Usdt insuficiente para comprar.")
                 return
             
-            self.usdt -= self.fixed_buyer
-            self.btc_usdt = self.btc * self.precio_actual  # valor actualizado
-
+            self.usdt -= self.fixed_buyer             
             self.precio_ult_comp = self.precio_actual
             self.precios_compras.append(self.precio_ult_comp)
             self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
             self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
             self.btc += self.btc_comprado 
+            
             self.transacciones.append({
                     "compra": self.precio_actual,
                     "venta_obj": self.precio_objetivo_venta,
@@ -103,39 +101,46 @@ class TradingBot:
             self.actualizar_balance()
             self.log("\n✅ Compra realizada.")
             self.log(f"\n📉 Precio de compra: $ {self.precio_actual:.6f}")
+            #self.log(f"🕒 Hora: {self.transacciones['timestamp']}")
             self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")           
 
     def vender(self):
+        transacciones_vendidas = []
 
-            transacciones_vendidas = []
-            for transaccion in self.transacciones:
-                if self.precio_actual >= transaccion["venta_obj"]:
-                    if self.btc < transaccion["btc"]:
-                        continue  # Evita vender más BTC del disponible
-                if self.precio_actual >= transaccion["venta_obj"]:
-                    self.btc_vendido = transaccion["btc"]
-                    self.usdt_obtenido = self.btc_vendido * self.precio_actual
-                    self.usdt += self.usdt_obtenido
-                    self.btc -= self.btc_vendido 
-                    self.precio_ult_venta = self.precio_actual
-                    self.actualizar_balance()
+        for transaccion in self.transacciones:
+            if self.btc < transaccion["btc"]:
+                continue  # Evita vender más BTC del disponible
+            
+            if self.precio_actual >= transaccion["venta_obj"]:
+                btc_vender = transaccion["btc"]
+                usdt_obtenido = btc_vender * self.precio_actual
+                timestamp = transaccion["timestamp"]
 
-                    transaccion["ejecutado"] = True  # Marcar como ejecutado    
-                    self.precios_ventas.append({
-                        "venta": self.precio_actual,
-                        "btc_vendido": transaccion["btc"],
-                        "ganancia": transaccion["btc"] * self.precio_actual,
-                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    })
-                    transacciones_vendidas.append(transaccion)
+                self.usdt += usdt_obtenido
+                self.btc -= btc_vender
+                self.precio_ult_venta = self.precio_actual
+                self.actualizar_balance()
 
-            for transaccion in transacciones_vendidas:
-                self.transacciones.remove(transaccion)
-        
+                transaccion["ejecutado"] = True
+                self.precios_ventas.append({
+                    "venta": self.precio_actual,
+                    "btc_vendido": btc_vender,
+                    "ganancia": usdt_obtenido,
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                transacciones_vendidas.append(transaccion)
 
-                self.log(f"\n✅ Venta realizada: $ {self.usdt_obtenido:.2f} a $ {self.precio_actual:.2f}")
-                self.log(f"\n📤 Btc vendido: ₿ {self.btc_vendido:.6f}")
+                self.log(f"\n✅ Venta realizada: $ {usdt_obtenido:.2f} a $ {self.precio_actual:.2f}")
+                self.log(f"🕒 Compra original: {timestamp}")
+                self.log(f"📈 Precio de compra: $ {self.precio_ult_comp:.6f}")
+                self.log(f"💰 Precio de venta: $ {self.precio_actual:.6f}")
+                self.log(f"\n📤 Btc vendido: ₿ {btc_vender:.6f}")
+
+        # Eliminar las vendidas después del bucle
+        for trans in transacciones_vendidas:
+            self.transacciones.remove(trans)
+
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
@@ -168,7 +173,7 @@ class TradingBot:
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
         self.usdt -= self.fixed_buyer 
-        self.btc_usdt = self.btc * self.precio_actual
+        self.actualizar_balance()
 
         self.precios_compras.append(self.precio_ult_comp)
         self.precio_ult_comp = self.precio_actual
@@ -176,7 +181,9 @@ class TradingBot:
         self.btc = self.btc_comprado
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
-       
+        
+
+
         self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}")
         self.log(f"\n✅ Btc comprado, en Usdt: $ {self.fixed_buyer:.2f}")
         self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
@@ -200,7 +207,7 @@ class TradingBot:
             self.actualizar_balance()
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
-            self.btc_usdt = self.btc * self.precio_actual
+            
             self.var_inicio =self.varpor_ingreso()
             self.log("\n- - - - - - - - - -")
             self.log("\n🟡 Bot Trabajando...")
