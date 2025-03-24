@@ -58,8 +58,8 @@ fixed_buyer_str = StringVar()
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
 Label(ventana_principal, textvariable=precio_act_var, bg="Gold").place(x=200, y=10)
 
-Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod").place(x=10, y=50)
-Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=50)
+Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod").place(x=10, y=130)
+Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=130)
 
 Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod").place(x=10, y=250)
 Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
@@ -67,8 +67,8 @@ Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
 
-Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod").place(x=10, y=130)
-Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=130)
+Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod").place(x=10, y=50)
+Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=50)
 
 Label(ventana_principal, text="Variación desde ultima compra:", bg="DarkGoldenrod").place(x=10, y=170)
 Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=200, y=170)
@@ -98,20 +98,20 @@ Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y
 def actualizar_ui():
     if bot.running:
         bot.precio_actual = bot.get_precio_actual()
-        precio_act_var.set(f"$ {bot.precio_actual:.6f}")
+        precio_act_var.set(f"$ {bot.precio_actual:.4f}")
         cant_btc_str.set(f"₿ {bot.btc:.6f}")
-        cant_usdt_str.set(f"$ {bot.usdt:.6f}")
+        cant_usdt_str.set(f"$ {bot.usdt:.4f}")
         balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}")
         btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}")
-        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.6f}")
-        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.6f}")
+        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}")
+        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
 
         varpor_set_compra_str.set(f"% {bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
         varpor_set_venta_str.set(f"% {bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
-        porc_desde_compra_str.set(f"% {bot.porc_por_compra}")   
-        porc_desde_venta_str.set(f"% {bot.porc_por_venta}")
+        porc_desde_compra_str.set(f"% {bot.porc_por_compra:.4f}")   
+        porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}")
-        fixed_buyer_str.set(f"$ {bot.fixed_buyer:.2f}")
+        fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
 
     # Reprogramar la actualización cada 3 segundos
     ventana_principal.after(3000, actualizar_ui)
@@ -146,7 +146,7 @@ def abrir_sbv_config():
     Label(sbv_conf, text="Configurar operativa").pack()
 
 # Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=50, height=10, bg="Goldenrod", fg="Black", font=("Courier", 10))
+consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)    
 
 """def abrir_historial():
