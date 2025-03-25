@@ -110,8 +110,8 @@ def crear_nuevo_bot():
 bot = crear_nuevo_bot()
 
 # === Consola Historial a la derecha ===
-historial_box = ScrolledText(ventana_principal, width=50, height=30, bg="Goldenrod", fg="Black", font=("Courier", 10))
-historial_box.place(x=750, y=10)
+historial_box = ScrolledText(ventana_principal, width=55, height=30, bg="Goldenrod", fg="Black", font=("Courier", 10))
+historial_box.place(x=700, y=10)
 
 def actualizar_historial_consola():
     historial_box.delete('1.0', END)
@@ -119,11 +119,13 @@ def actualizar_historial_consola():
         compra = trans.get('compra', 'N/A')
         venta_obj = trans.get('venta_obj', 'N/A')
         ejecutado = trans.get('ejecutado', False)
-        venta_txt = f"{venta_obj:.2f} USDT" if ejecutado else "(no vendida)"
-        historial_box.insert(END, f"Compra: {compra:.2f} USDT  -> Venta: {venta_txt}\n")
+        venta_txt = f"$ {venta_obj:.6f}" if ejecutado else "(no vendida)"
+        ganancia = trans.get('ganancia', None)
+        ganancia_txt = f" | Ganancia: $ {ganancia:.2f}" if ganancia is not None else ""
+        historial_box.insert(END, f"Compra: $ {compra:.6f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: {venta['venta']:.2f} USDT\n")
-    
+        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.4f}\n")
+
 
 # === LÓGICA DE BOTONES ===
 
