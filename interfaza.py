@@ -120,9 +120,7 @@ def actualizar_ui():
     # Reprogramar la actualización cada 3 segundos
     ventana_principal.after(3000, actualizar_ui)
 
-
-
-
+#asdasd
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
     consola.see(END)
