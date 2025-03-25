@@ -117,10 +117,14 @@ def actualizar_ui():
     boton_limpiar.place_forget()  # Oculta siempre por defecto
     if not bot.running:
         boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
+
+    actualizar_historial_consola()    
     # Reprogramar la actualización cada 3 segundos
     ventana_principal.after(3000, actualizar_ui)
 
-#asdasd
+
+
+
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
     consola.see(END)
@@ -135,6 +139,22 @@ def crear_nuevo_bot():
 
 # Instancia global del bot
 bot = crear_nuevo_bot()
+
+# === Consola Historial a la derecha ===
+historial_box = ScrolledText(ventana_principal, width=50, height=30, bg="Goldenrod", fg="Black", font=("Courier", 10))
+historial_box.place(x=750, y=10)
+
+def actualizar_historial_consola():
+    historial_box.delete('1.0', END)
+    for trans in bot.transacciones:
+        compra = trans.get('compra', 'N/A')
+        venta_obj = trans.get('venta_obj', 'N/A')
+        ejecutado = trans.get('ejecutado', False)
+        venta_txt = f"{venta_obj:.2f} USDT" if ejecutado else "(no vendida)"
+        historial_box.insert(END, f"Compra: {compra:.2f} USDT  -> Venta: {venta_txt}\n")
+    for venta in bot.precios_ventas:
+        historial_box.insert(END, f"Venta ejecutada a: {venta['venta']:.2f} USDT\n")
+    
 
 # === LÓGICA DE BOTONES ===
 
@@ -249,5 +269,5 @@ Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenr
     historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))"""
 
 
-
+actualizar_ui()
 ventana_principal.mainloop()

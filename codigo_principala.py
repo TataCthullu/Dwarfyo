@@ -95,6 +95,7 @@ class TradingBot:
                     "compra": self.precio_actual,
                     "venta_obj": self.precio_objetivo_venta,
                     "btc": self.btc_comprado,
+                    "ejecutado": False
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
                 
