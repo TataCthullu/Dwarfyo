@@ -89,12 +89,12 @@ def actualizar_ui():
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
         actualizar_historial_consola()  
 
-    boton_limpiar.place_forget()  # Oculta siempre por defecto
-    if not bot.running:
+    
+    if not bot.running and not boton_limpiar.winfo_ismapped():
         boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
-         
+    actualizar_historial_consola()     
         # Reprogramar la actualización cada 3 segundos
-        ventana_principal.after(3000, actualizar_ui)
+    ventana_principal.after(3000, actualizar_ui)
 
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
@@ -142,6 +142,7 @@ def limpiar_bot():
     global bot
     if not bot.running:
         consola.delete('1.0', END)
+        
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
         boton_limpiar.place_forget()
