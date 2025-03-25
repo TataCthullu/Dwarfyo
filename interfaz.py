@@ -1,35 +1,10 @@
-#Ventana de Login
-"""
-ventana_principal = Tk()
-ventana_principal.title("Dwarf") 
-ventana_principal.minsize(width=300, height=400)
-ventana_principal.config(padx=35, pady=35)
-
-
-etiqueta1 = Label(text="Escribe tu nombre de usuario: ", font=("Arial", 14))
-etiqueta1.grid(column=0, row=1)
-caja_de_texto = Entry(width=20, font=("Arial", 14))
-caja_de_texto.grid(column=0, row=2) 
-
-etiqueta2 = Label(text="Escribe tu contraseña: ", font=("Arial", 14))
-etiqueta2.grid(column=0, row=3)
-caja_de_texto2 = Entry(width=20, font=("Arial", 14), show="*")
-caja_de_texto2.grid(column=0, row=4) 
-
-boton1 = Button(text="Aceptar", font=("Arial", 14))
-boton1.grid(column=0, row=6)
-"""
-
 import threading
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
 
-
 # Instancia del bot
 bot = TradingBot()
-
-
 
 # Interfaz Tkinter
 ventana_principal = Tk()
@@ -45,7 +20,6 @@ cant_btc_str = StringVar()
 cant_usdt_str = StringVar()
 balance_var = StringVar()
 btc_en_usdt = StringVar()
-
 varpor_set_venta_str = StringVar()
 varpor_set_compra_str = StringVar()
 porc_desde_compra_str = StringVar()
@@ -113,17 +87,14 @@ def actualizar_ui():
         porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
+        actualizar_historial_consola()  
 
     boton_limpiar.place_forget()  # Oculta siempre por defecto
     if not bot.running:
         boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
-
-    actualizar_historial_consola()    
-    # Reprogramar la actualización cada 3 segundos
-    ventana_principal.after(3000, actualizar_ui)
-
-
-
+         
+        # Reprogramar la actualización cada 3 segundos
+        ventana_principal.after(3000, actualizar_ui)
 
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
@@ -208,66 +179,6 @@ def abrir_sbv_config():
 # Consola para mostrar estado
 consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)    
-
-"""def abrir_historial():
-    historial_ventana = Toplevel(ventana_principal)
-    historial_ventana.title("Historial de Operaciones")
-    historial_ventana.geometry("600x500")
-    historial_ventana.configure(bg="DarkGoldenrod")
-
-    Label(historial_ventana, text="📜 Historial de Operaciones", bg="DarkGoldenrod").pack()
-
-    frame_compras = Frame(historial_ventana)
-    frame_compras.pack(pady=10)
-    Label(frame_compras, text="📈 Compras con Objetivo de Venta", fg="blue", bg="DarkGoldenrod").pack()
-    compras_lista = Listbox(frame_compras, width=80, height=10, bg="DarkGoldenrod")
-    compras_lista.pack()
-
-    frame_ventas = Frame(historial_ventana)
-    frame_ventas.pack(pady=10)
-    Label(frame_ventas, text="📉 Ventas Realizadas", fg="green", bg="DarkGoldenrod").pack()
-    ventas_lista = Listbox(frame_ventas, width=80, height=10, bg="DarkGoldenrod")
-    ventas_lista.pack()
-
-    # Llenar listas y programar actualizaciones
-    actualizar_historial(compras_lista, ventas_lista, historial_ventana)
-    historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))
-
-    Button(historial_ventana, text="Cerrar", command=historial_ventana.destroy, bg="Goldenrod").pack(pady=5)"""
-
-"""# Botón Historial
-Button(ventana_principal, text="📜 Historial", command=abrir_historial, background="Goldenrod").place(x=700, y=300)
-#Button(text="Historial", command=historial, background="Goldenrod").place(x=1000,y=10)
-Button(text="Seteo de operatoria", command=abrir_sbv_config, background="Goldenrod").place(x=1000,y=170)"""
-
-
-
-"""def actualizar_historial(compras_lista, ventas_lista, historial_ventana):
-    # Verificar si la ventana del historial sigue abierta antes de actualizar
-    if not historial_ventana.winfo_exists():
-        return
-
-    compras_lista.delete(0, END)
-    ventas_lista.delete(0, END)
-
-    for transaccion in bot.transacciones:
-        timestamp = transaccion.get('timestamp', 'Sin fecha')
-        estado = "✅ Ejecutado" if transaccion.get('ejecutado', False) else "⏳ Pendiente"
-        compras_lista.insert(
-            END, 
-            f"[{timestamp}] Compra: {transaccion['compra']:.6f} USDT | BTC: {transaccion['btc']:.6f} | Objetivo: {transaccion['venta_obj']:.6f} USDT | {estado}"
-        )
-
-    for venta in bot.precios_ventas:
-        timestamp = venta.get('timestamp', 'Sin fecha')
-        ventas_lista.insert(
-            END, 
-            f"[{timestamp}] Venta: {venta['venta']:.2f} USDT | BTC: {venta['btc_vendido']:.6f} | Ganancia: {venta['ganancia']:.2f} USDT ✅ Ejecutado"
-        )
-    
-    # Programar la siguiente actualización solo si la ventana del historial sigue abierta
-    historial_ventana.after(5000, lambda: actualizar_historial(compras_lista, ventas_lista, historial_ventana))"""
-
 
 actualizar_ui()
 ventana_principal.mainloop()
