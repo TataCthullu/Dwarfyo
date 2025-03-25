@@ -87,9 +87,7 @@ def actualizar_ui():
         porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-        actualizar_historial_consola()  
-
-    
+             
     if not bot.running and not boton_limpiar.winfo_ismapped():
         boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
     actualizar_historial_consola()     
