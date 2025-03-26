@@ -171,11 +171,11 @@ boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod"
 
 
 # Subventanas
-def abrir_sbv_config():
+"""def abrir_sbv_config():
     sbv_conf = Toplevel(ventana_principal)
     sbv_conf.title("Configuración de operativa")
     sbv_conf.geometry("400x300")
-    Label(sbv_conf, text="Configurar operativa").pack()
+    Label(sbv_conf, text="Configurar operativa").pack()"""
 
 # Consola para mostrar estado
 consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
