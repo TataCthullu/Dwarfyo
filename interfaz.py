@@ -111,7 +111,7 @@ bot = crear_nuevo_bot()
 
 # === Consola Historial a la derecha ===
 historial_box = ScrolledText(ventana_principal, width=55, height=30, bg="Goldenrod", fg="Black", font=("Courier", 10))
-historial_box.place(x=700, y=10)
+historial_box.place(x=725, y=10)
 
 def actualizar_historial_consola():
     historial_box.delete('1.0', END)
