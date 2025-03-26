@@ -21,8 +21,8 @@ class TradingBot:
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 0.01
-        self.porc_por_venta = 0.01
+        self.porc_por_compra = 0.007
+        self.porc_por_venta = 0.007
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
@@ -95,6 +95,7 @@ class TradingBot:
                     "compra": self.precio_actual,
                     "venta_obj": self.precio_objetivo_venta,
                     "btc": self.btc_comprado,
+                    "ejecutado": False
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
                 
@@ -189,7 +190,7 @@ class TradingBot:
 
 
         self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}\n")
-        #self.log(f"\n✅ Btc comprado, en Usdt: $ {self.fixed_buyer:.2f}")
+        
         #self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
          
                 
@@ -198,7 +199,7 @@ class TradingBot:
         self.log("\n🟡 Bot iniciado.")
         self.realizar_primera_compra()
         self.log(f"\n✅ Precio de ingreso registrado: {self.precio_ingreso:.6f} USDT")
-        self.log("\n🔄 Iniciando bucle...")
+        self.log("\n🔄 Iniciando bucle...\n")
               
         while self.running:
             self.precio_actual = self.get_precio_actual()
