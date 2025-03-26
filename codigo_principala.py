@@ -20,6 +20,7 @@ class TradingBot:
         self.btc_usdt = 0
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
+        self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
         self.porc_por_compra = 0.007
         self.porc_por_venta = 0.007
@@ -166,13 +167,11 @@ class TradingBot:
                 return      
 
 
-        """
-
-#  Condición 1: Compra si el precio sube más del doble del porcentaje de compra y no ha comprado recientemente
-        elif self.varCompra >= 2 * self.porc_por_compra and self.usdt >= self.fixed_buyer:
-            if not self.transacciones or self.transacciones[-1]["compra"] < self.precio_actual:
-                print(f"\n\033[96mCondición de tendencia alcista cumplida: ({self.varCompra:.3f})\033[0m")
-                self.comprar()"""
+    def parametro_compra_C(self):
+        if self.btc < self.btc_comprado and self.varVenta >= self.porc_por_venta:
+            self.precio_ult_venta = self.precio_actual
+            self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
+          
     
                           
     def realizar_primera_compra(self):
@@ -212,8 +211,8 @@ class TradingBot:
             self.actualizar_balance()
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
-            
-            self.var_inicio =self.varpor_ingreso()
+            self.parametro_venta_fantasma = self.parametro_compra_C()
+            self.var_inicio = self.varpor_ingreso()
             self.log("\n- - - - - - - - - -")
             self.log("\n🟡 Bot Trabajando...")
             self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
