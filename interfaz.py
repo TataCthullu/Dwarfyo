@@ -91,7 +91,7 @@ def actualizar_ui():
         porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-        ganancia_total_str.set(f"$ {bot.total_ganancia:.4f}")
+        ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
 
 
     if not bot.running and not boton_limpiar.winfo_ismapped():
@@ -127,10 +127,10 @@ def actualizar_historial_consola():
         ejecutado = trans.get('ejecutado', False)
         venta_txt = f"$ {venta_obj:.6f}" if ejecutado else "(no vendida)"
         ganancia = trans.get('ganancia', None)
-        ganancia_txt = f" | Ganancia: $ {ganancia:.2f}" if ganancia is not None else ""
+        ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
         historial_box.insert(END, f"Compra: $ {compra:.6f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.4f}\n")
+        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.8f}\n")
 
 
 # === LÓGICA DE BOTONES ===
@@ -167,6 +167,7 @@ def limpiar_bot():
         porc_desde_venta_str.set("")
         var_inicio_str.set("")
         fixed_buyer_str.set("")
+        ganancia_total_str.set("")
     
 
 # Botones
