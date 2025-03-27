@@ -179,6 +179,8 @@ class TradingBot:
             self.sin_evento_counter = 0
           
     
+
+    
                           
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")

@@ -20,6 +20,7 @@ class TradingBot:
         self.btc_usdt = 0
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
+        self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
         self.porc_por_compra = 0.007
         self.porc_por_venta = 0.007
@@ -30,6 +31,7 @@ class TradingBot:
         self.usdt_mas_btc = 0
         self.precios_compras = []
         self.precios_ventas = []
+        self.ventas_fantasma = []
         self.kant_usdt_vendido = 0
         self.varCompra = 0
         self.varVenta = 0
@@ -40,6 +42,7 @@ class TradingBot:
         self.var_inicio = 0
         self.log_fn = None
         self.usdt_obtenido = 0
+        self.sin_evento_counter = 0
         
 
     def log(self, mensaje):
@@ -107,6 +110,7 @@ class TradingBot:
             self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("\n- - - - - - - - - -\n")           
+            self.sin_evento_counter = 0
 
     def vender(self):
         transacciones_vendidas = []
@@ -141,6 +145,7 @@ class TradingBot:
                 self.log(f"\n💰 Usdt obtenido: $ {usdt_obtenido:.4f}")
                 self.log(f"\n📤 Btc vendido: ₿ {btc_vender:.6f}")
                 self.log("\n- - - - - - - - - -\n")
+                self.sin_evento_counter = 0
 
         # Eliminar las vendidas después del bucle
         for trans in transacciones_vendidas:
@@ -166,13 +171,15 @@ class TradingBot:
                 return      
 
 
-        """
+    def parametro_compra_C(self):
+        if self.btc < self.btc_comprado and self.varVenta >= self.porc_por_venta:
+            self.precio_ult_venta = self.precio_actual
+            self.ventas_fantasma.append(self.precio_actual)
+            self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
+            self.sin_evento_counter = 0
+          
+    
 
-#  Condición 1: Compra si el precio sube más del doble del porcentaje de compra y no ha comprado recientemente
-        elif self.varCompra >= 2 * self.porc_por_compra and self.usdt >= self.fixed_buyer:
-            if not self.transacciones or self.transacciones[-1]["compra"] < self.precio_actual:
-                print(f"\n\033[96mCondición de tendencia alcista cumplida: ({self.varCompra:.3f})\033[0m")
-                self.comprar()"""
     
                           
     def realizar_primera_compra(self):
@@ -207,21 +214,29 @@ class TradingBot:
                 self.log("\n⚠️ No se puede operar sin datos de precios.\n")
                 time.sleep(3)
                 continue
+            evento_antes = self.sin_evento_counter
             self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
             self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 
             self.actualizar_balance()
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
-            
-            self.var_inicio =self.varpor_ingreso()
-            self.log("\n- - - - - - - - - -")
-            self.log("\n🟡 Bot Trabajando...")
-            self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
-            self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.4f}")
-            self.log(f"\n🎯 Precio Actual: $ {self.precio_actual:.4f}")
-            self.log("\n- - - - - - - - - -\n")
-            
-            
+            self.parametro_venta_fantasma = self.parametro_compra_C()
+            self.var_inicio = self.varpor_ingreso()
+            if self.sin_evento_counter == evento_antes:
+                self.sin_evento_counter += 1
+            else:
+                self.sin_evento_counter = 0
+
+            if self.sin_evento_counter >= 3:    
+                self.log("\n- - - - - - - - - -")
+                self.log("\n🟡 Bot Trabajando...")
+                self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
+                self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.4f}")
+                self.log(f"\n🎯 Precio Actual: $ {self.precio_actual:.4f}")
+                self.log("\n- - - - - - - - - -\n")
+                self.sin_evento_counter = 0
+                
+                
             if self.btc == 0:
                 self.log("\nℹ️ No hay Btc disponible para vender\n")
             else:               
