@@ -24,7 +24,7 @@ class TradingBot:
         self.precio_ult_venta = 0
         self.porc_por_compra = 0.007
         self.porc_por_venta = 0.007
-        self.porc_inv_por_compra = 10
+        self.porc_inv_por_compra = 0.2
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -32,10 +32,11 @@ class TradingBot:
         self.precios_compras = []
         self.precios_ventas = []
         self.ventas_fantasma = []
-        self.kant_usdt_vendido = 0
-        self.varCompra = 0
-        self.varVenta = 0
+        self.compras_fantasma = []
         self.transacciones = []
+        self.kant_usdt_vendido = 0       
+        self.varCompra = 0
+        self.varVenta = 0       
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
         self.precio_ingreso = self.get_precio_actual()
@@ -43,7 +44,8 @@ class TradingBot:
         self.log_fn = None
         self.usdt_obtenido = 0
         self.sin_evento_counter = 0
-        
+        self.parametro_compra_fantasma = 0
+        self.total_ganancia = 0
 
     def log(self, mensaje):
         if self.log_fn:
@@ -179,8 +181,12 @@ class TradingBot:
             self.sin_evento_counter = 0
           
     
-
-    
+    def parametro_compra_D(self):
+        if self.usdt < self.fixed_buyer and self.varCompra <= self.porc_por_compra:
+            self.precio_ult_comp = self.precio_actual
+            self.compras_fantasma.append(self.precio_actual)
+            self.log("\n📌 Parámetro D: Sin Usdt para comprar, nueva compra fantasma registrada.\nPrecio ultima compra actualizado")
+            self.sin_evento_counter = 0
                           
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
@@ -221,6 +227,7 @@ class TradingBot:
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
             self.parametro_venta_fantasma = self.parametro_compra_C()
+            self.parametro_compra_fantasma = self.parametro_compra_D()
             self.var_inicio = self.varpor_ingreso()
             if self.sin_evento_counter == evento_antes:
                 self.sin_evento_counter += 1

@@ -28,6 +28,7 @@ precio_de_ingreso_str = StringVar()
 inv_por_compra_str = StringVar()
 var_inicio_str = StringVar()
 fixed_buyer_str = StringVar()
+ganancia_total_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -38,6 +39,9 @@ Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=13
 
 Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod").place(x=10, y=250)
 Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
+
+Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod").place(x=10, y=290)
+Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
 
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
@@ -81,13 +85,15 @@ def actualizar_ui():
         precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}")
         inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
 
-        varpor_set_compra_str.set(f"% {bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
-        varpor_set_venta_str.set(f"% {bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
+        varpor_set_compra_str.set(f"% {bot.varCompra:.6f}")
+        varpor_set_venta_str.set(f"% {bot.varVenta:.6f}")
         porc_desde_compra_str.set(f"% {bot.porc_por_compra:.4f}")   
         porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-             
+        ganancia_total_str.set(f"$ {bot.total_ganancia:.4f}")
+
+
     if not bot.running and not boton_limpiar.winfo_ismapped():
         boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
     actualizar_historial_consola()     

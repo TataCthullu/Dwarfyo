@@ -24,7 +24,7 @@ class TradingBot:
         self.precio_ult_venta = 0
         self.porc_por_compra = 0.007
         self.porc_por_venta = 0.007
-        self.porc_inv_por_compra = 10
+        self.porc_inv_por_compra = 0.2
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -32,10 +32,11 @@ class TradingBot:
         self.precios_compras = []
         self.precios_ventas = []
         self.ventas_fantasma = []
-        self.kant_usdt_vendido = 0
-        self.varCompra = 0
-        self.varVenta = 0
+        self.compras_fantasma = []
         self.transacciones = []
+        self.kant_usdt_vendido = 0       
+        self.varCompra = 0
+        self.varVenta = 0       
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
         self.precio_ingreso = self.get_precio_actual()
@@ -43,7 +44,9 @@ class TradingBot:
         self.log_fn = None
         self.usdt_obtenido = 0
         self.sin_evento_counter = 0
-        
+        self.parametro_compra_fantasma = 0
+        self.total_ganancia = 0
+        self.ganancia_neta = 0
 
     def log(self, mensaje):
         if self.log_fn:
@@ -96,6 +99,7 @@ class TradingBot:
             
             self.transacciones.append({
                     "compra": self.precio_actual,
+                    
                     "venta_obj": self.precio_objetivo_venta,
                     "btc": self.btc_comprado,
                     "ejecutado": False
@@ -111,6 +115,8 @@ class TradingBot:
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("\n- - - - - - - - - -\n")           
             self.sin_evento_counter = 0
+    
+         
 
     def vender(self):
         transacciones_vendidas = []
@@ -122,20 +128,25 @@ class TradingBot:
             if self.precio_actual >= transaccion["venta_obj"]:
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual
+                inversion = self.fixed_buyer
                 #timestamp = transaccion["timestamp"]
-
+                
+                
                 self.usdt += usdt_obtenido
                 self.btc -= btc_vender
                 self.precio_ult_venta = self.precio_actual
+                
                 self.actualizar_balance()
 
                 transaccion["ejecutado"] = True
                 self.precios_ventas.append({
                     "venta": self.precio_actual,
                     "btc_vendido": btc_vender,
-                    "ganancia": usdt_obtenido,
+                    "ganancia": self.ganancia_neta,
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
+                self.ganancia_neta = usdt_obtenido - inversion
+                self.total_ganancia += self.ganancia_neta
                 transacciones_vendidas.append(transaccion)
 
                 self.log("\n- - - - - - - - - -")
@@ -144,6 +155,8 @@ class TradingBot:
                 self.log(f"\n📈 Precio de venta: $ {self.precio_actual:.2f}")
                 self.log(f"\n💰 Usdt obtenido: $ {usdt_obtenido:.4f}")
                 self.log(f"\n📤 Btc vendido: ₿ {btc_vender:.6f}")
+                self.log(f"\n💹 Ganancia de esta operación: $ {self.ganancia_neta:.2f}")
+                self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.2f}")
                 self.log("\n- - - - - - - - - -\n")
                 self.sin_evento_counter = 0
 
@@ -160,7 +173,7 @@ class TradingBot:
             else:
                 self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes\n") 
                 return   
-
+        self.sin_evento_counter = 0
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
         if self.varVenta <= -self.porc_por_compra:
@@ -169,7 +182,7 @@ class TradingBot:
             else:
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")  
                 return      
-
+        self.sin_evento_counter = 0
 
     def parametro_compra_C(self):
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_por_venta:
@@ -179,8 +192,12 @@ class TradingBot:
             self.sin_evento_counter = 0
           
     
-
-    
+    def parametro_compra_D(self):
+        if self.usdt < self.fixed_buyer and self.varCompra <= self.porc_por_compra:
+            self.precio_ult_comp = self.precio_actual
+            self.compras_fantasma.append(self.precio_actual)
+            self.log("\n📌 Parámetro D: Sin Usdt para comprar, nueva compra fantasma registrada.\nPrecio ultima compra actualizado")
+            self.sin_evento_counter = 0
                           
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
@@ -221,13 +238,14 @@ class TradingBot:
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
             self.parametro_venta_fantasma = self.parametro_compra_C()
+            self.parametro_compra_fantasma = self.parametro_compra_D()
             self.var_inicio = self.varpor_ingreso()
             if self.sin_evento_counter == evento_antes:
                 self.sin_evento_counter += 1
             else:
                 self.sin_evento_counter = 0
 
-            if self.sin_evento_counter >= 3:    
+            if self.sin_evento_counter >= 10:    
                 self.log("\n- - - - - - - - - -")
                 self.log("\n🟡 Bot Trabajando...")
                 self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
@@ -239,8 +257,10 @@ class TradingBot:
                 
             if self.btc == 0:
                 self.log("\nℹ️ No hay Btc disponible para vender\n")
+                self.sin_evento_counter = 0
             else:               
                 self.vender()
+
             time.sleep(3)
 
     def detener(self):
