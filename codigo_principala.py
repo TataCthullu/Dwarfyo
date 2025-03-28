@@ -22,9 +22,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 0.007
-        self.porc_por_venta = 0.007
-        self.porc_inv_por_compra = 0.2
+        self.porc_por_compra = 1
+        self.porc_por_venta = 1
+        self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -133,20 +133,19 @@ class TradingBot:
                 #timestamp = transaccion["timestamp"]               
                 self.usdt += usdt_obtenido
                 self.btc -= btc_vender
-                self.precio_ult_venta = self.precio_actual                
+                self.precio_ult_venta = self.precio_actual  
+                invertido_usdt = transaccion.get("invertido_usdt", self.fixed_buyer)
+                self.ganancia_neta = usdt_obtenido - invertido_usdt
+                self.total_ganancia += self.ganancia_neta              
                 self.actualizar_balance()
                 transaccion["ejecutado"] = True
                 self.precios_ventas.append({
                     "venta": self.precio_actual,
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
-                    "inverstido_usdt": self.fixed_buyer,
-                    "ejecutado": False
+                    "inverstido_usdt": invertido_usdt,
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
-                invertido_usdt = transaccion.get("invertido_usdt", 0)
-                self.ganancia_neta = usdt_obtenido - invertido_usdt
-                self.total_ganancia += self.ganancia_neta
                 transacciones_vendidas.append(transaccion)
                 self.log("\n- - - - - - - - - -")
                 self.log(f"\n✅ Venta realizada.")

@@ -77,19 +77,18 @@ Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y
 def actualizar_ui():
     if bot.running:
         bot.precio_actual = bot.get_precio_actual()
-        precio_act_var.set(f"$ {bot.precio_actual:.4f}")
+        precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
         cant_btc_str.set(f"₿ {bot.btc:.6f}")
         cant_usdt_str.set(f"$ {bot.usdt:.4f}")
-        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}")
-        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}")
-        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}")
+        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
+        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
+        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
         inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
-
-        varpor_set_compra_str.set(f"% {bot.varCompra:.6f}")
-        varpor_set_venta_str.set(f"% {bot.varVenta:.6f}")
+        varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
+        varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
         porc_desde_compra_str.set(f"% {bot.porc_por_compra:.4f}")   
         porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
-        var_inicio_str.set(f"% {bot.var_inicio:.6f}")
+        var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
         ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
 
@@ -130,7 +129,7 @@ def actualizar_historial_consola():
         ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
         historial_box.insert(END, f"Compra: $ {compra:.6f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.8f}\n")
+        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.6f}\n")
 
 
 # === LÓGICA DE BOTONES ===
