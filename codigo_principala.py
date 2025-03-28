@@ -32,8 +32,8 @@ class TradingBot:
         self.precios_compras = []
         self.precios_ventas = []
         self.ventas_fantasma = []
-        self.compras_fantasma = []
-        self.compras_fantasma_E = []
+        #self.compras_fantasma = []
+        #self.compras_fantasma_E = []
         self.transacciones = []
         self.kant_usdt_vendido = 0       
         self.varCompra = 0
@@ -45,7 +45,7 @@ class TradingBot:
         self.log_fn = None
         self.usdt_obtenido = 0
         self.sin_evento_counter = 0
-        self.parametro_compra_fantasma = 0
+        #self.parametro_compra_fantasma = 0
         self.total_ganancia = 0
         self.ganancia_neta = 0
 
@@ -197,12 +197,12 @@ class TradingBot:
             self.log("\n📌 Parámetro D: Sin Usdt para comprar, nueva compra fantasma registrada.\nPrecio ultima compra actualizado")
             self.sin_evento_counter = 0
 
-    def parametro_compra_E(self):
+    """def parametro_compra_E(self):
         if self.precio_actual == self.precio_ult_comp:
-            self.precio_ult_comp = self.precio_actual
+            
             self.compras_fantasma_E.append(self.precio_actual)
             self.log("\n📌 Parámetro E: Precio no varió desde última compra. Actualizando con compra fantasma tipo E.")
-            self.sin_evento_counter = 0        
+            self.sin_evento_counter = 0  """      
                           
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
@@ -243,7 +243,7 @@ class TradingBot:
             self.parametro_compra_desde_venta = self.parametro_compra_B()
             self.parametro_venta_fantasma = self.parametro_compra_C()
             self.parametro_compra_fantasma = self.parametro_compra_D()
-            self.parametro_compra_fantasma_E = self.parametro_compra_E()
+            #self.parametro_compra_fantasma_E = self.parametro_compra_E()
             self.var_inicio = self.varpor_ingreso()
             if self.sin_evento_counter == evento_antes:
                 self.sin_evento_counter += 1
