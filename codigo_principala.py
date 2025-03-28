@@ -129,36 +129,33 @@ class TradingBot:
             
             if self.precio_actual >= transaccion["venta_obj"]:
                 btc_vender = transaccion["btc"]
-                usdt_obtenido = btc_vender * self.precio_actual
-                inversion = self.fixed_buyer
-                #timestamp = transaccion["timestamp"]
-                
-                
+                usdt_obtenido = btc_vender * self.precio_actual               
+                #timestamp = transaccion["timestamp"]               
                 self.usdt += usdt_obtenido
                 self.btc -= btc_vender
-                self.precio_ult_venta = self.precio_actual
-                
+                self.precio_ult_venta = self.precio_actual                
                 self.actualizar_balance()
-
                 transaccion["ejecutado"] = True
                 self.precios_ventas.append({
                     "venta": self.precio_actual,
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
+                    "inverstido_usdt": self.fixed_buyer,
+                    "ejecutado": False
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
-                self.ganancia_neta = usdt_obtenido - inversion
+                invertido_usdt = transaccion.get("invertido_usdt", 0)
+                self.ganancia_neta = usdt_obtenido - invertido_usdt
                 self.total_ganancia += self.ganancia_neta
                 transacciones_vendidas.append(transaccion)
-
                 self.log("\n- - - - - - - - - -")
                 self.log(f"\n✅ Venta realizada.")
                 #self.log(f"🕒 Compra original: {timestamp}")
                 self.log(f"\n📈 Precio de venta: $ {self.precio_actual:.2f}")
                 self.log(f"\n💰 Usdt obtenido: $ {usdt_obtenido:.4f}")
                 self.log(f"\n📤 Btc vendido: ₿ {btc_vender:.6f}")
-                self.log(f"\n💹 Ganancia de esta operación: $ {self.ganancia_neta:.2f}")
-                self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.2f}")
+                self.log(f"\n💹 Ganancia de esta operación: $ {self.ganancia_neta:.8f}")
+                self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.8f}")
                 self.log("\n- - - - - - - - - -\n")
                 self.sin_evento_counter = 0
 
