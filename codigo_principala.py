@@ -22,8 +22,8 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 1
-        self.porc_por_venta = 1
+        self.porc_por_compra = 0.5
+        self.porc_por_venta = 0.5
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
@@ -48,6 +48,7 @@ class TradingBot:
         #self.parametro_compra_fantasma = 0
         self.total_ganancia = 0
         self.ganancia_neta = 0
+        self.reportado_trabajando = False 
 
     def log(self, mensaje):
         if self.log_fn:
@@ -117,6 +118,7 @@ class TradingBot:
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("\n- - - - - - - - - -\n")           
             self.sin_evento_counter = 0
+            self.reportado_trabajando = False
     
          
 
@@ -157,6 +159,7 @@ class TradingBot:
                 self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.8f}")
                 self.log("\n- - - - - - - - - -\n")
                 self.sin_evento_counter = 0
+                self.reportado_trabajando = False
 
         # Eliminar las vendidas después del bucle
         for trans in transacciones_vendidas:
@@ -167,11 +170,11 @@ class TradingBot:
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_por_compra:
             if self.usdt >= self.fixed_buyer:      
-                self.comprar()
+                self.comprar()              
             else:
                 self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes\n") 
                 return   
-        self.sin_evento_counter = 0
+              
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
         if self.varVenta <= -self.porc_por_compra:
@@ -180,7 +183,7 @@ class TradingBot:
             else:
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")  
                 return      
-        self.sin_evento_counter = 0
+        
 
     def parametro_compra_C(self):
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_por_venta:
@@ -250,13 +253,14 @@ class TradingBot:
             else:
                 self.sin_evento_counter = 0
 
-            if self.sin_evento_counter >= 3:    
+            if self.sin_evento_counter >= 3 and not self.reportado_trabajando:    
                 self.log("\n- - - - - - - - - -")
                 self.log("\n🟡 Bot Trabajando...")
                 self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
                 self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.4f}")
                 self.log(f"\n🎯 Precio Actual: $ {self.precio_actual:.4f}")
-                self.log("\n- - - - - - - - - -\n")               
+                self.log("\n- - - - - - - - - -\n")  
+                self.reportado_trabajando = True             
                 
             if self.btc < self.btc_comprado:
                 if self.sin_evento_counter >= 10:
