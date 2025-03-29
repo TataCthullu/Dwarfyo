@@ -30,8 +30,8 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 0.007
-        self.porc_por_venta = 0.007
+        self.porc_por_compra = 0.15
+        self.porc_por_venta = 0.15
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
