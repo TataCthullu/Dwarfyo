@@ -1,9 +1,12 @@
 import time
+
+
 import ccxt
 import pygame
 pygame.mixer.init()
 #import datetime
 #import json
+
 
 def reproducir_sonido(ruta):
     pygame.mixer.music.load(ruta)

@@ -1,4 +1,6 @@
 import threading
+from tkinter import *
+
 import pygame
 pygame.mixer.init()
 
@@ -6,7 +8,7 @@ def reproducir_sonido(ruta):
     pygame.mixer.music.load(ruta)
     pygame.mixer.music.play()
 
-from tkinter import *
+
 from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
 
@@ -196,5 +198,6 @@ boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod"
 consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)    
 
-actualizar_ui()
-ventana_principal.mainloop()
+def pcarga():
+    actualizar_ui()
+    ventana_principal.mainloop()

@@ -1,4 +1,11 @@
 import threading
+import pygame
+pygame.mixer.init()
+
+def reproducir_sonido(ruta):
+    pygame.mixer.music.load(ruta)
+    pygame.mixer.music.play()
+
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
@@ -8,7 +15,7 @@ bot = TradingBot()
 
 # Interfaz Tkinter
 ventana_principal = Tk()
-ventana_principal.title("Dwarf") 
+ventana_principal.title("Khazâd") 
 ventana_principal.geometry("1200x700")
 ventana_principal.configure(bg="DarkGoldenrod")
 ventana_principal.iconbitmap("imagenes/miner.ico")
@@ -28,6 +35,7 @@ precio_de_ingreso_str = StringVar()
 inv_por_compra_str = StringVar()
 var_inicio_str = StringVar()
 fixed_buyer_str = StringVar()
+ganancia_total_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -38,6 +46,9 @@ Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=13
 
 Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod").place(x=10, y=250)
 Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
+
+Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod").place(x=10, y=290)
+Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
 
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
@@ -73,21 +84,22 @@ Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y
 def actualizar_ui():
     if bot.running:
         bot.precio_actual = bot.get_precio_actual()
-        precio_act_var.set(f"$ {bot.precio_actual:.4f}")
+        precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
         cant_btc_str.set(f"₿ {bot.btc:.6f}")
         cant_usdt_str.set(f"$ {bot.usdt:.4f}")
-        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}")
-        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}")
-        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}")
+        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
+        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
+        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
         inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
-
-        varpor_set_compra_str.set(f"% {bot.varpor_compra(bot.precio_ult_comp, bot.precio_actual):.6f}")
-        varpor_set_venta_str.set(f"% {bot.varpor_venta(bot.precio_ult_venta, bot.precio_actual):.6f}")
+        varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
+        varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
         porc_desde_compra_str.set(f"% {bot.porc_por_compra:.4f}")   
         porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
-        var_inicio_str.set(f"% {bot.var_inicio:.6f}")
+        var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-             
+        ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
+
+
     if not bot.running and not boton_limpiar.winfo_ismapped():
         boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
     actualizar_historial_consola()     
@@ -121,10 +133,10 @@ def actualizar_historial_consola():
         ejecutado = trans.get('ejecutado', False)
         venta_txt = f"$ {venta_obj:.6f}" if ejecutado else "(no vendida)"
         ganancia = trans.get('ganancia', None)
-        ganancia_txt = f" | Ganancia: $ {ganancia:.2f}" if ganancia is not None else ""
+        ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
         historial_box.insert(END, f"Compra: $ {compra:.6f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.4f}\n")
+        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.6f}\n")
 
 
 # === LÓGICA DE BOTONES ===
@@ -132,17 +144,19 @@ def actualizar_historial_consola():
 def alternar_bot():
     if bot.running:
         bot.detener()
+        reproducir_sonido("Sounds/detner.wav")
         boton_estado.config(text="Iniciar Bot")
     else:
         threading.Thread(target=bot.iniciar, daemon=True).start()
+        reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()
         boton_estado.config(text="Detener Bot")
 
 def limpiar_bot():
     global bot
     if not bot.running:
-        consola.delete('1.0', END)
-        
+        reproducir_sonido("Sounds/soundlimpiara.wav")
+        consola.delete('1.0', END)        
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
         boton_limpiar.place_forget()
@@ -161,6 +175,7 @@ def limpiar_bot():
         porc_desde_venta_str.set("")
         var_inicio_str.set("")
         fixed_buyer_str.set("")
+        ganancia_total_str.set("")
     
 
 # Botones
