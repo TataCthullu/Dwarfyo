@@ -146,7 +146,7 @@ def actualizar_historial_consola():
 def alternar_bot():
     if bot.running:
         bot.detener()
-        reproducir_sonido("Sounds/soundetenerb.wav")
+        reproducir_sonido("Sounds/detner.wav")
         boton_estado.config(text="Iniciar Bot")
     else:
         threading.Thread(target=bot.iniciar, daemon=True).start()
@@ -198,6 +198,6 @@ boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod"
 consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)    
 
-def pcarga():
-    actualizar_ui()
-    ventana_principal.mainloop()
+
+actualizar_ui()
+ventana_principal.mainloop()
