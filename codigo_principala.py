@@ -1,8 +1,13 @@
 import time
 import ccxt
+import pygame
+pygame.mixer.init()
 #import datetime
-
 #import json
+
+def reproducir_sonido(ruta):
+    pygame.mixer.music.load(ruta)
+    pygame.mixer.music.play()
 
 """Azul (\033[94m) para información general.
 Amarillo (\033[93m) para valores clave como precios de ingreso.
@@ -22,8 +27,8 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 1
-        self.porc_por_venta = 1
+        self.porc_por_compra = 0.007
+        self.porc_por_venta = 0.007
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
@@ -114,7 +119,7 @@ class TradingBot:
             self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("\n- - - - - - - - - -\n")           
-            
+            reproducir_sonido("Sounds/soundcompra.wav")
             self.reportado_trabajando = False
     
          
@@ -155,7 +160,7 @@ class TradingBot:
                 self.log(f"\n💹 Ganancia de esta operación: $ {self.ganancia_neta:.8f}")
                 self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.8f}")
                 self.log("\n- - - - - - - - - -\n")
-                
+                reproducir_sonido("Sounds/soundventa.wav")
                 self.reportado_trabajando = False
 
         # Eliminar las vendidas después del bucle
@@ -230,7 +235,7 @@ class TradingBot:
         self.running = True
         self.log("\n🟡 Bot iniciado.")
         self.realizar_primera_compra()
-        self.log(f"\n✅ Precio de ingreso registrado: {self.precio_ingreso:.6f} USDT")
+        self.log(f"\n✅ Precio de ingreso registrado: {self.precio_ingreso:.4f} USDT")
         self.log("\n🔄 Iniciando bucle...\n")
         
              
