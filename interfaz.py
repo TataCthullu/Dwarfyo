@@ -38,6 +38,7 @@ inv_por_compra_str = StringVar()
 var_inicio_str = StringVar()
 fixed_buyer_str = StringVar()
 ganancia_total_str = StringVar()
+contador_compras_fantasma_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -51,6 +52,9 @@ Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250
 
 Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod").place(x=10, y=290)
 Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
+
+Label(ventana_principal, text="Contador de compras fantasma:", bg="DarkGoldenrod").place(x=10, y=290)
+Label(ventana_principal, textvariable=contador_compras_fantasma_str, bg="Gold").place(x=200, y=290)
 
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
@@ -100,6 +104,7 @@ def actualizar_ui():
         var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
         ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
+        contador_compras_fantasma_str.set(bot.contador_compras_fantasma)
 
 
     if not bot.running and not boton_limpiar.winfo_ismapped():

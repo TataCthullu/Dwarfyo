@@ -30,8 +30,8 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 0.1
-        self.porc_por_venta = 0.1
+        self.porc_por_compra = 0.007
+        self.porc_por_venta = 0.007
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
@@ -52,7 +52,7 @@ class TradingBot:
         self.var_inicio = 0
         self.log_fn = None
         self.usdt_obtenido = 0
-        
+        self.contador_compras_fantasma = 0
         #self.parametro_compra_fantasma = 0
         self.total_ganancia = 0
         self.ganancia_neta = 0
@@ -196,6 +196,7 @@ class TradingBot:
 
     def parametro_compra_C(self):
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_por_venta:
+            reproducir_sonido("Sounds/ghostventab.wav")
             self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append(self.precio_actual)
             self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
@@ -205,9 +206,12 @@ class TradingBot:
     
     def parametro_compra_D(self):
         if self.usdt < self.fixed_buyer and self.varCompra <= self.porc_por_compra:
+            reproducir_sonido("Sounds/ghostcomprad.wav")
             #self.precio_ult_comp = self.precio_actual
             self.compras_fantasma.append(self.precio_actual)
-            self.log("\n📌 Parámetro D: Sin Usdt para comprar, nueva compra fantasma registrada.\nPrecio ultima compra actualizado")
+            self.contador_compras_fantasma += 1
+            self.log("\n📌 Parámetro D: Sin Usdt para comprar, nueva compra fantasma registrada.")
+            
             self.reportado_trabajando = False
             
 
@@ -272,7 +276,7 @@ class TradingBot:
                 
             if self.btc < self.btc_comprado:
                 
-                    self.log("\nℹ️ Sin Btc\n")
+                    self.log("\nℹ️ Sin Btc para vender\n")
                     self.reportado_trabajando = False
             else:               
                 self.vender()
