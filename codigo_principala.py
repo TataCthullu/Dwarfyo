@@ -173,8 +173,9 @@ class TradingBot:
         if self.varCompra <= -self.porc_por_compra:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()              
-            else:
-                self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes\n") 
+            else:               
+                self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes\n")
+                reproducir_sonido("Sounds/soundsinusdt.wav") 
                 self.reportado_trabajando = False
                 return 
               
@@ -184,8 +185,9 @@ class TradingBot:
         if self.varVenta <= -self.porc_por_compra:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
-            else:
-                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n") 
+            else:               
+                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")
+                reproducir_sonido("Sounds/soundsinusdt.wav") 
                 self.reportado_trabajando = False 
                 return      
         

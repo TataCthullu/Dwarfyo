@@ -1,4 +1,11 @@
 import threading
+import pygame
+pygame.mixer.init()
+
+def reproducir_sonido(ruta):
+    pygame.mixer.music.load(ruta)
+    pygame.mixer.music.play()
+
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
@@ -8,7 +15,7 @@ bot = TradingBot()
 
 # Interfaz Tkinter
 ventana_principal = Tk()
-ventana_principal.title("Dwarf") 
+ventana_principal.title("Khazâd") 
 ventana_principal.geometry("1200x700")
 ventana_principal.configure(bg="DarkGoldenrod")
 ventana_principal.iconbitmap("imagenes/miner.ico")
@@ -137,17 +144,19 @@ def actualizar_historial_consola():
 def alternar_bot():
     if bot.running:
         bot.detener()
+        reproducir_sonido("Sounds/soundetenerb.wav")
         boton_estado.config(text="Iniciar Bot")
     else:
         threading.Thread(target=bot.iniciar, daemon=True).start()
+        reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()
         boton_estado.config(text="Detener Bot")
 
 def limpiar_bot():
     global bot
     if not bot.running:
-        consola.delete('1.0', END)
-        
+        reproducir_sonido("Sounds/soundlimpiara.wav")
+        consola.delete('1.0', END)        
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
         boton_limpiar.place_forget()
