@@ -30,9 +30,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.1
-        self.porc_desde_venta = 0.1
-        self.porc_inv_por_compra = 5
+        self.porc_desde_compra = 0.007
+        self.porc_desde_venta = 0.007
+        self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -41,7 +41,6 @@ class TradingBot:
         self.precios_ventas = []
         self.ventas_fantasma = []
         self.compras_fantasma = []
-        #self.compras_fantasma_E = []
         self.transacciones = []
         self.kant_usdt_vendido = 0       
         self.varCompra = 0
@@ -54,11 +53,11 @@ class TradingBot:
         self.usdt_obtenido = 0
         self.contador_compras_fantasma = 0
         self.contador_ventas_fantasma = 0
-        #self.parametro_compra_fantasma = 0
+        self.parametro_compra_fantasma = None
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.15
+        self.porc_profit_x_venta = 0.007
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -137,8 +136,12 @@ class TradingBot:
         for transaccion in self.transacciones:
             if self.btc < transaccion["btc"]:
                 continue  # Evita vender más BTC del disponible
+
+            if self.btc < self.btc_comprado:               
+                    self.log("\nℹ️ Sin Btc para vender\n")
+                    self.reportado_trabajando = False              
             
-            if self.precio_actual >= transaccion["venta_obj"]:
+            elif self.precio_actual >= transaccion["venta_obj"]:
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual               
                 #timestamp = transaccion["timestamp"]               
@@ -249,24 +252,21 @@ class TradingBot:
             self.parametro_venta_fantasma = self.parametro_compra_C()
             self.parametro_compra_fantasma = self.parametro_compra_D()
             self.var_inicio = self.varpor_ingreso()
+            self.vender()
             
             if self.reportado_trabajando == False:    
                 self.log("\n- - - - - - - - - -")
                 self.log("\n🟡 Bot Trabajando...")
                 self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
                 self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.4f}")
-                self.log(f"\n🎯 Precio Actual: $ {self.precio_actual:.4f}")
                 self.log("\n- - - - - - - - - -\n")  
                 self.reportado_trabajando = True   
-                          
+
             if self.btc < -1:
                 self.log("\n🔴Error: btc negativo")
 
-            if self.btc < self.btc_comprado:               
-                    self.log("\nℹ️ Sin Btc para vender\n")
-                    self.reportado_trabajando = False
-            else:               
-                self.vender()
+                           
+                
 
             time.sleep(3)
 

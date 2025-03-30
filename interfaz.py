@@ -44,55 +44,55 @@ contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
 
 # Etiquetas UI
-Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
+Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=10)
 Label(ventana_principal, textvariable=precio_act_var, bg="Gold").place(x=200, y=10)
 
-Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod").place(x=10, y=130)
+Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=130)
 Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=130)
 
-Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod").place(x=10, y=250)
+Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=250)
 Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
 
-Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod").place(x=10, y=290)
+Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=290)
 Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
 
-Label(ventana_principal, text="Contador de compras fantasma:", bg="DarkGoldenrod").place(x=10, y=330)
+Label(ventana_principal, text="Contador de compras fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=330)
 Label(ventana_principal, textvariable=contador_compras_fantasma_str, bg="Gold").place(x=200, y=330)
 
-Label(ventana_principal, text="Contador de ventas fantasma:", bg="DarkGoldenrod").place(x=10, y=370)
+Label(ventana_principal, text="Contador de ventas fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=370)
 Label(ventana_principal, textvariable=contador_ventas_fantasma_str, bg="Gold").place(x=200, y=370)
 
-Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
+Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
 
-Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod").place(x=10, y=50)
+Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=50)
 Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=50)
 
-Label(ventana_principal, text="Variación desde ultima compra:", bg="DarkGoldenrod").place(x=10, y=170)
+Label(ventana_principal, text="Variación desde ultima compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=170)
 Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=200, y=170)
 
-Label(ventana_principal, text="Variación desde ultima venta:", bg="DarkGoldenrod").place(x=10, y=210)
+Label(ventana_principal, text="Variación desde ultima venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=210)
 Label(ventana_principal, textvariable=varpor_set_venta_str, bg="Gold").place(x=200, y=210)
 
-Label(ventana_principal, text="% " "Desde ult compra, para compra:", bg="DarkGoldenrod").place(x=400, y=10)
+Label(ventana_principal, text="% " "Desde ult compra, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=10)
 Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=600, y=10)
 
-Label(ventana_principal, text="% " "Desde ult venta, para compra:", bg="DarkGoldenrod").place(x=400, y=40)
+Label(ventana_principal, text="% " "Desde ult venta, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=40)
 Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=600, y=40)
 
-Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod").place(x=400, y=70)
+Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=70)
 Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=600, y=70)
 
-Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod").place(x=400, y=100)
+Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=100)
 Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=600, y=100)
 
-Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod").place(x=400, y=130)
+Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=130)
 Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=600, y=130)
 
-Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod").place(x=400, y=160)
+Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=160)
 Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=600, y=160)
 
-Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod").place(x=400, y=200)
+Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=200)
 Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(x=600, y=200)
 
 # Función para actualizar UI
@@ -140,8 +140,8 @@ def crear_nuevo_bot():
 bot = crear_nuevo_bot()
 
 # === Consola Historial a la derecha ===
-historial_box = ScrolledText(ventana_principal, width=55, height=30, bg="Goldenrod", fg="Black", font=("Courier", 10))
-historial_box.place(x=725, y=10)
+historial_box = ScrolledText(ventana_principal, width=35, height=25, bg="Goldenrod", fg="Black", font=("carolingia", 15))
+historial_box.place(x=720, y=10)
 
 def actualizar_historial_consola():
     global ganancia_txt
@@ -165,13 +165,13 @@ def alternar_bot():
     if bot.running:
         bot.detener()
         reproducir_sonido("Sounds/detner.wav")
-        boton_estado.config(text="Iniciar Bot")
+        boton_estado.config(text="Iniciar")
     else:
         threading.Thread(target=bot.iniciar, daemon=True).start()
         bot_iniciado = True
         reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()
-        boton_estado.config(text="Detener Bot")
+        boton_estado.config(text="Detener")
 
 def limpiar_bot():
     global bot_iniciado
@@ -182,7 +182,7 @@ def limpiar_bot():
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
         boton_limpiar.place_forget()
-        boton_estado.config(text="Iniciar Bot")
+        boton_estado.config(text="Iniciar")
         bot_iniciado = False
         # Resetear valores UI
         precio_act_var.set("")
@@ -204,7 +204,7 @@ def limpiar_bot():
         porc_objetivo_venta_str.set("")
 
 # Botones
-boton_estado = Button(ventana_principal, text="Iniciar Bot", background="Goldenrod", command=alternar_bot)
+boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot)
 boton_estado.place(x=500, y=300)
 
 boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot)
@@ -218,7 +218,7 @@ boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod"
     Label(sbv_conf, text="Configurar operativa").pack()"""
 
 # Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
+consola = ScrolledText(ventana_principal, width=35, height=15, bg="Goldenrod", fg="Black", font=("carolingia", 15))
 consola.place(x=10, y=450)    
 
 
