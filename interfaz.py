@@ -14,6 +14,7 @@ from codigo_principala import TradingBot
 
 # Instancia del bot
 bot = TradingBot()
+bot_iniciado = False
 
 # Interfaz Tkinter
 ventana_principal = Tk()
@@ -73,26 +74,26 @@ Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=
 Label(ventana_principal, text="Variación desde ultima venta:", bg="DarkGoldenrod").place(x=10, y=210)
 Label(ventana_principal, textvariable=varpor_set_venta_str, bg="Gold").place(x=200, y=210)
 
-Label(ventana_principal, text="% " "Desde ult compra, para compra:", bg="DarkGoldenrod").place(x=500, y=10)
-Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=640, y=10)
+Label(ventana_principal, text="% " "Desde ult compra, para compra:", bg="DarkGoldenrod").place(x=400, y=10)
+Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=600, y=10)
 
-Label(ventana_principal, text="% " "Desde ult venta, para compra:", bg="DarkGoldenrod").place(x=500, y=40)
-Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=640, y=40)
+Label(ventana_principal, text="% " "Desde ult venta, para compra:", bg="DarkGoldenrod").place(x=400, y=40)
+Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=600, y=40)
 
-Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod").place(x=500, y=70)
-Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=640, y=70)
+Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod").place(x=400, y=70)
+Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=600, y=70)
 
-Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod").place(x=500, y=100)
-Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=640, y=100)
+Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod").place(x=400, y=100)
+Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=600, y=100)
 
-Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod").place(x=500, y=130)
-Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=640, y=130)
+Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod").place(x=400, y=130)
+Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=600, y=130)
 
-Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod").place(x=500, y=160)
-Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y=160)
+Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod").place(x=400, y=160)
+Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=600, y=160)
 
-Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod").place(x=500, y=200)
-Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(x=640, y=200)
+Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod").place(x=400, y=200)
+Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(x=600, y=200)
 
 # Función para actualizar UI
 def actualizar_ui():
@@ -117,8 +118,8 @@ def actualizar_ui():
         porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
 
 
-    if not bot.running and not boton_limpiar.winfo_ismapped():
-        boton_limpiar.place(x=600, y=300)  # Solo muestra si el bot está detenido
+    if not bot.running and not boton_limpiar.winfo_ismapped() and bot_iniciado:
+        boton_limpiar.place(x=600, y=300)  
     actualizar_historial_consola()     
         # Reprogramar la actualización cada 3 segundos
     ventana_principal.after(3000, actualizar_ui)
@@ -143,6 +144,7 @@ historial_box = ScrolledText(ventana_principal, width=55, height=30, bg="Goldenr
 historial_box.place(x=725, y=10)
 
 def actualizar_historial_consola():
+    global ganancia_txt
     historial_box.delete('1.0', END)
     for trans in bot.transacciones:
         compra = trans.get('compra', 'N/A')
@@ -159,17 +161,20 @@ def actualizar_historial_consola():
 # === LÓGICA DE BOTONES ===
 
 def alternar_bot():
+    global bot_iniciado
     if bot.running:
         bot.detener()
         reproducir_sonido("Sounds/detner.wav")
         boton_estado.config(text="Iniciar Bot")
     else:
         threading.Thread(target=bot.iniciar, daemon=True).start()
+        bot_iniciado = True
         reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()
         boton_estado.config(text="Detener Bot")
 
 def limpiar_bot():
+    global bot_iniciado
     global bot
     if not bot.running:
         reproducir_sonido("Sounds/soundlimpiara.wav")
@@ -178,6 +183,7 @@ def limpiar_bot():
         log_en_consola("🔄 Bot reiniciado")
         boton_limpiar.place_forget()
         boton_estado.config(text="Iniciar Bot")
+        bot_iniciado = False
         # Resetear valores UI
         precio_act_var.set("")
         cant_btc_str.set("")
@@ -195,7 +201,7 @@ def limpiar_bot():
         ganancia_total_str.set("")
         contador_compras_fantasma_str.set("")
         contador_ventas_fantasma_str.set("")
-    
+        porc_objetivo_venta_str.set("")
 
 # Botones
 boton_estado = Button(ventana_principal, text="Iniciar Bot", background="Goldenrod", command=alternar_bot)
