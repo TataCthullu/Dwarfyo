@@ -39,6 +39,8 @@ var_inicio_str = StringVar()
 fixed_buyer_str = StringVar()
 ganancia_total_str = StringVar()
 contador_compras_fantasma_str = StringVar()
+contador_ventas_fantasma_str = StringVar()
+porc_objetivo_venta_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -56,6 +58,9 @@ Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200
 Label(ventana_principal, text="Contador de compras fantasma:", bg="DarkGoldenrod").place(x=10, y=330)
 Label(ventana_principal, textvariable=contador_compras_fantasma_str, bg="Gold").place(x=200, y=330)
 
+Label(ventana_principal, text="Contador de ventas fantasma:", bg="DarkGoldenrod").place(x=10, y=370)
+Label(ventana_principal, textvariable=contador_ventas_fantasma_str, bg="Gold").place(x=200, y=370)
+
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
 
@@ -68,10 +73,10 @@ Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=
 Label(ventana_principal, text="Variación desde ultima venta:", bg="DarkGoldenrod").place(x=10, y=210)
 Label(ventana_principal, textvariable=varpor_set_venta_str, bg="Gold").place(x=200, y=210)
 
-Label(ventana_principal, text="Porcentaje para compra:", bg="DarkGoldenrod").place(x=500, y=10)
+Label(ventana_principal, text="% " "Desde ult compra, para compra:", bg="DarkGoldenrod").place(x=500, y=10)
 Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=640, y=10)
 
-Label(ventana_principal, text="Porcentaje para venta:", bg="DarkGoldenrod").place(x=500, y=40)
+Label(ventana_principal, text="% " "Desde ult venta, para compra:", bg="DarkGoldenrod").place(x=500, y=40)
 Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=640, y=40)
 
 Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod").place(x=500, y=70)
@@ -86,6 +91,9 @@ Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=640, y=
 Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod").place(x=500, y=160)
 Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=640, y=160)
 
+Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod").place(x=500, y=200)
+Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(x=640, y=200)
+
 # Función para actualizar UI
 def actualizar_ui():
     if bot.running:
@@ -99,12 +107,14 @@ def actualizar_ui():
         inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
         varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
         varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
-        porc_desde_compra_str.set(f"% {bot.porc_por_compra:.4f}")   
-        porc_desde_venta_str.set(f"% {bot.porc_por_venta:.4f}")
+        porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")   
+        porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
         ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
         contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
+        contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
+        porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
 
 
     if not bot.running and not boton_limpiar.winfo_ismapped():
@@ -183,6 +193,8 @@ def limpiar_bot():
         var_inicio_str.set("")
         fixed_buyer_str.set("")
         ganancia_total_str.set("")
+        contador_compras_fantasma_str.set("")
+        contador_ventas_fantasma_str.set("")
     
 
 # Botones
@@ -201,7 +213,7 @@ boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod"
 
 # Consola para mostrar estado
 consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
-consola.place(x=10, y=400)    
+consola.place(x=10, y=450)    
 
 
 actualizar_ui()

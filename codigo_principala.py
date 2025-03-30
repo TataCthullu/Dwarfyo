@@ -30,9 +30,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_por_compra = 0.15
-        self.porc_por_venta = 0.15
-        self.porc_inv_por_compra = 10
+        self.porc_desde_compra = 0.5
+        self.porc_desde_venta = 0.5
+        self.porc_inv_por_compra = 5
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -53,10 +53,12 @@ class TradingBot:
         self.log_fn = None
         self.usdt_obtenido = 0
         self.contador_compras_fantasma = 0
+        self.contador_ventas_fantasma = 0
         #self.parametro_compra_fantasma = 0
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
+        self.porc_profit_x_venta = 0.6
 
     def log(self, mensaje):
         if self.log_fn:
@@ -104,7 +106,7 @@ class TradingBot:
             self.precio_ult_comp = self.precio_actual
             self.precios_compras.append(self.precio_ult_comp)
             self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
-            self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
+            self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_profit_x_venta / 100)
             self.btc += self.btc_comprado 
             
             self.transacciones.append({
@@ -174,7 +176,7 @@ class TradingBot:
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
-        if self.varCompra <= -self.porc_por_compra:
+        if self.varCompra <= -self.porc_desde_compra:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()              
             else:               
@@ -185,7 +187,7 @@ class TradingBot:
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
-        if self.varVenta <= -self.porc_por_compra:
+        if self.varVenta <= -self.porc_desde_compra:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
             else:               
@@ -195,17 +197,18 @@ class TradingBot:
         
 
     def parametro_compra_C(self):
-        if self.btc < self.btc_comprado and self.varVenta >= self.porc_por_venta:
+        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             reproducir_sonido("Sounds/ghostventab.wav")
             self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append(self.precio_actual)
+            self.contador_ventas_fantasma += 1
             self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
             self.reportado_trabajando = False
             
           
     
     def parametro_compra_D(self):
-        if self.usdt < self.fixed_buyer and self.varCompra <= self.porc_por_compra:
+        if self.usdt < self.fixed_buyer and self.varCompra <= self.porc_desde_compra:
             reproducir_sonido("Sounds/ghostcomprad.wav")
             #self.precio_ult_comp = self.precio_actual
             self.compras_fantasma.append(self.precio_actual)
@@ -231,7 +234,7 @@ class TradingBot:
         self.precio_ult_comp = self.precio_actual
         self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
         self.btc = self.btc_comprado
-        self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_por_venta / 100)
+        self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_desde_venta / 100)
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
         self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}\n")
         

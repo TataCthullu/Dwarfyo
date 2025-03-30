@@ -1,4 +1,6 @@
 import threading
+from tkinter import *
+
 import pygame
 pygame.mixer.init()
 
@@ -6,7 +8,7 @@ def reproducir_sonido(ruta):
     pygame.mixer.music.load(ruta)
     pygame.mixer.music.play()
 
-from tkinter import *
+
 from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
 
@@ -36,6 +38,8 @@ inv_por_compra_str = StringVar()
 var_inicio_str = StringVar()
 fixed_buyer_str = StringVar()
 ganancia_total_str = StringVar()
+contador_compras_fantasma_str = StringVar()
+contador_ventas_fantasma_str = StringVar()
 
 # Etiquetas UI
 Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod").place(x=10, y=10)
@@ -49,6 +53,12 @@ Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250
 
 Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod").place(x=10, y=290)
 Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
+
+Label(ventana_principal, text="Contador de compras fantasma:", bg="DarkGoldenrod").place(x=10, y=330)
+Label(ventana_principal, textvariable=contador_compras_fantasma_str, bg="Gold").place(x=200, y=330)
+
+Label(ventana_principal, text="Contador de ventas fantasma:", bg="DarkGoldenrod").place(x=10, y=370)
+Label(ventana_principal, textvariable=contador_ventas_fantasma_str, bg="Gold").place(x=200, y=370)
 
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod").place(x=10, y=90)
 Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
@@ -98,6 +108,8 @@ def actualizar_ui():
         var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
         ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
+        contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
+        contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
 
 
     if not bot.running and not boton_limpiar.winfo_ismapped():
@@ -195,6 +207,7 @@ boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod"
 # Consola para mostrar estado
 consola = ScrolledText(ventana_principal, width=50, height=15, bg="Goldenrod", fg="Black", font=("Courier", 10))
 consola.place(x=10, y=400)    
+
 
 actualizar_ui()
 ventana_principal.mainloop()
