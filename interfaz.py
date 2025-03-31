@@ -56,10 +56,10 @@ Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250
 Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=290)
 Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
 
-Label(ventana_principal, text="Contador de compras fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=330)
+Label(ventana_principal, text="Compras fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=330)
 Label(ventana_principal, textvariable=contador_compras_fantasma_str, bg="Gold").place(x=200, y=330)
 
-Label(ventana_principal, text="Contador de ventas fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=370)
+Label(ventana_principal, text="Ventas fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=370)
 Label(ventana_principal, textvariable=contador_ventas_fantasma_str, bg="Gold").place(x=200, y=370)
 
 Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=90)
@@ -98,7 +98,7 @@ Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(
 # Función para actualizar UI
 def actualizar_ui():
     if bot.running:
-        bot.precio_actual = bot.get_precio_actual()
+        #bot.precio_actual = bot.get_precio_actual()
         precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
         cant_btc_str.set(f"₿ {bot.btc:.6f}")
         cant_usdt_str.set(f"$ {bot.usdt:.4f}")
