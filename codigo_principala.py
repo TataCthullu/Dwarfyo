@@ -201,7 +201,7 @@ class TradingBot:
         
 
     def parametro_venta_B(self):
-        if self.btc < self.btc_comprado and self.varVenta >= self.varVenta*2:
+        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             reproducir_sonido("Sounds/ghostventab.wav")
             self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append(self.precio_actual)
