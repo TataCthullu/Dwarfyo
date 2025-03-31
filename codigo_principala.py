@@ -30,9 +30,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.5
-        self.porc_desde_venta = 0.5
-        self.porc_inv_por_compra = 5
+        self.porc_desde_compra = 0.05
+        self.porc_desde_venta = 0.05
+        self.porc_inv_por_compra = 0.5
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -57,7 +57,7 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.5
+        self.porc_profit_x_venta = 0.05
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -191,7 +191,7 @@ class TradingBot:
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
-        if self.varVenta <= -self.porc_desde_compra:
+        if self.varVenta <= -self.porc_desde_venta:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
             else:               
@@ -200,8 +200,8 @@ class TradingBot:
                 return      
         
 
-    def parametro_compra_C(self):
-        if self.btc < self.btc_comprado and self.varVenta >= self.precio_objetivo_venta:
+    def parametro_venta_B(self):
+        if self.btc < self.btc_comprado and self.varVenta >= self.varVenta*2:
             reproducir_sonido("Sounds/ghostventab.wav")
             self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append(self.precio_actual)
@@ -249,7 +249,7 @@ class TradingBot:
             self.actualizar_balance()
             self.parametro_compra_desde_compra = self.parametro_compra_A()
             self.parametro_compra_desde_venta = self.parametro_compra_B()
-            self.parametro_venta_fantasma = self.parametro_compra_C()
+            self.parametro_venta_fantasma = self.parametro_venta_B()
             self.parametro_compra_fantasma = self.parametro_compra_D()
             self.var_inicio = self.varpor_ingreso()
             self.vender()
