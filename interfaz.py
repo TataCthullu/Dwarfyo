@@ -1,4 +1,4 @@
-import threading
+
 from tkinter import *
 
 import pygame
@@ -121,9 +121,7 @@ def actualizar_ui():
     if not bot.running and not boton_limpiar.winfo_ismapped() and bot_iniciado:
         boton_limpiar.place(x=600, y=300)  
     actualizar_historial_consola()     
-        # Reprogramar la actualización cada 3 segundos
-    ventana_principal.after(3000, actualizar_ui)
-
+  
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
     consola.see(END)
@@ -167,7 +165,9 @@ def alternar_bot():
         reproducir_sonido("Sounds/detner.wav")
         boton_estado.config(text="Iniciar")
     else:
-        threading.Thread(target=bot.iniciar, daemon=True).start()
+        bot.iniciar()
+        bot.loop(actualizar_ui)
+
         bot_iniciado = True
         reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()

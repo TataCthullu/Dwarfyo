@@ -4,6 +4,7 @@
 import ccxt
 import pygame
 pygame.mixer.init()
+from interfaz import ventana_principal
 #import datetime
 #import json
 
@@ -236,33 +237,39 @@ class TradingBot:
         self.log("\n🟡 Bot iniciado.")
         self.realizar_primera_compra()
                                      
-        while self.running:
+    def loop(self, ui_callback=None):
+            if not self.running:
+                return
+        
             self.precio_actual = self.get_precio_actual()
             if not self.precio_actual:
                 self.log("\n⚠️ No se puede operar sin datos de precios.\n")                
-                continue            
-            self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
-            self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 
-            self.actualizar_balance()
-            self.parametro_compra_desde_compra = self.parametro_compra_A()
-            self.parametro_compra_desde_venta = self.parametro_compra_B()
-            self.parametro_venta_fantasma = self.parametro_venta_B()
-            self.parametro_compra_fantasma = self.parametro_compra_D()
-            self.var_inicio = self.varpor_ingreso()
-            self.vender()
+            else:            
+                self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
+                self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 
+                self.actualizar_balance()
+                self.parametro_compra_desde_compra = self.parametro_compra_A()
+                self.parametro_compra_desde_venta = self.parametro_compra_B()
+                self.parametro_venta_fantasma = self.parametro_venta_B()
+                self.parametro_compra_fantasma = self.parametro_compra_D()
+                self.var_inicio = self.varpor_ingreso()
+                self.vender()
             
-            if self.reportado_trabajando == False:    
-                self.log("\n- - - - - - - - - -")
-                self.log("\n🟡 Bot Trabajando...")
-                self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
-                self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.4f}")
-                self.log("\n- - - - - - - - - -\n")  
-                self.reportado_trabajando = True   
+                if self.reportado_trabajando == False:    
+                    self.log("\n- - - - - - - - - -")
+                    self.log("\n🟡 Bot Trabajando...")
+                    self.log(f"\n💰 Última compra a: $ {self.precio_ult_comp:.4f}")
+                    self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.4f}")
+                    self.log("\n- - - - - - - - - -\n")  
+                    self.reportado_trabajando = True   
 
             if self.btc < -1:
                 self.log("\n🔴Error: btc negativo")
                                            
-            #time.sleep(3)
+            if ui_callback:
+                ui_callback()
+            
+            ventana_principal.after(3000, lambda: self.loop(ui_callback))
 
     def detener(self):
         self.running = False
