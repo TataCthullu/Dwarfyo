@@ -68,16 +68,16 @@ Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=9
 Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=50)
 Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=50)
 
-Label(ventana_principal, text="Variación desde ultima compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=170)
+Label(ventana_principal, text="% " "Desde ultima compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=170)
 Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=200, y=170)
 
-Label(ventana_principal, text="Variación desde ultima venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=210)
+Label(ventana_principal, text="% " "Desde ultima venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=210)
 Label(ventana_principal, textvariable=varpor_set_venta_str, bg="Gold").place(x=200, y=210)
 
-Label(ventana_principal, text="% " "Desde ult compra, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=10)
+Label(ventana_principal, text="% " "Desde ultima compra, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=10)
 Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=600, y=10)
 
-Label(ventana_principal, text="% " "Desde ult venta, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=40)
+Label(ventana_principal, text="% " "Desde ultima venta, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=40)
 Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=600, y=40)
 
 Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=70)
@@ -89,10 +89,10 @@ Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=600
 Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=130)
 Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=600, y=130)
 
-Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=160)
+Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=160)
 Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=600, y=160)
 
-Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=200)
+Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=200)
 Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(x=600, y=200)
 
 # Función para actualizar UI
