@@ -166,7 +166,7 @@ def alternar_bot():
         boton_estado.config(text="Iniciar")
     else:
         bot.iniciar()
-        bot.loop(actualizar_ui)
+        bot.loop(actualizar_ui, ventana_principal.after)
 
         bot_iniciado = True
         reproducir_sonido("Sounds/soundinicio.wav")

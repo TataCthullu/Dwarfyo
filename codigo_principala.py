@@ -4,7 +4,7 @@
 import ccxt
 import pygame
 pygame.mixer.init()
-from interfaz import ventana_principal
+
 #import datetime
 #import json
 
@@ -237,7 +237,7 @@ class TradingBot:
         self.log("\n🟡 Bot iniciado.")
         self.realizar_primera_compra()
                                      
-    def loop(self, ui_callback=None):
+    def loop(self, ui_callback=None, after_fn=None):
             if not self.running:
                 return
         
@@ -269,7 +269,8 @@ class TradingBot:
             if ui_callback:
                 ui_callback()
             
-            ventana_principal.after(3000, lambda: self.loop(ui_callback))
+            if after_fn:
+                after_fn(3000, lambda: self.loop(ui_callback, after_fn))
 
     def detener(self):
         self.running = False
