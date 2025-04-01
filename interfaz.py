@@ -44,8 +44,12 @@ contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
 
 # Etiquetas UI
-Label(ventana_principal, text="Precio actual BTC/USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=10)
-Label(ventana_principal, textvariable=precio_act_var, bg="Gold").place(x=200, y=10)
+frame_precio = Frame(ventana_principal, bg="DarkGoldenrod")
+frame_precio.place(x=10, y=10)
+
+Label(frame_precio, text="Precio actual BTC/USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).pack(side=LEFT)
+Label(frame_precio, textvariable=precio_act_var, bg="Gold", font=("CrushYourEnemies", 7)).pack(side=LEFT)
+
 
 Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=130)
 Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=130)
@@ -116,12 +120,12 @@ def actualizar_ui():
         contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
         contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
         porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
+        actualizar_historial_consola()
 
-
-    if not bot.running and not boton_limpiar.winfo_ismapped():
+    else:       
         boton_limpiar.place(x=600, y=300)
 
-    actualizar_historial_consola()     
+         
   
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
@@ -177,12 +181,11 @@ def limpiar_bot():
     if not bot.running:
         reproducir_sonido("Sounds/soundlimpiara.wav")
         consola.delete('1.0', END)   
-        historial_box.delete('1.0', END)      
+        historial_box.delete('1.0', END) 
+            
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
-        #boton_limpiar.place_forget()
-        
-        
+                
         # Resetear valores UI
         precio_act_var.set("")
         cant_btc_str.set("")
@@ -202,14 +205,16 @@ def limpiar_bot():
         contador_ventas_fantasma_str.set("")
         porc_objetivo_venta_str.set("")
         boton_estado.config(text="Iniciar")
+    else:
+        boton_limpiar.place_forget()     
         
 
 # Botones
-boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot, font=("CrushYourEnemies", 7))
+boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot, font=("CrushYourEnemies", 5))
 boton_estado.place(x=500, y=300)
 
-boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot, font=("CrushYourEnemies", 7))
-boton_limpiar.place_forget()
+boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot, font=("CrushYourEnemies", 5))
+
 
 
 # Subventanas
