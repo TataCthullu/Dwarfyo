@@ -31,9 +31,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.05
-        self.porc_desde_venta = 0.05
-        self.porc_inv_por_compra = 0.5
+        self.porc_desde_compra = 0.5
+        self.porc_desde_venta = 0.5
+        self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -48,7 +48,7 @@ class TradingBot:
         self.varVenta = 0       
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
-        self.precio_ingreso = self.get_precio_actual()
+        self.precio_ingreso = self.precio_actual
         self.var_inicio = 0
         self.log_fn = None
         self.usdt_obtenido = 0
@@ -58,7 +58,7 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.05
+        self.porc_profit_x_venta = 0.5
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -91,7 +91,7 @@ class TradingBot:
         return ((precio_act_btc - precio_ult_venta) / precio_ult_venta) * 100
     
     def varpor_ingreso(self):
-        if self.precio_ingreso == 0 or self.precio_actual is None:
+        if self.precio_actual is None:
             return 0
         return ((self.precio_actual - self.precio_ingreso) / self.precio_ingreso) * 100
 
@@ -119,13 +119,13 @@ class TradingBot:
                 })
                 
             self.actualizar_balance()
-            self.log("\n- - - - - - - - - -")
+            #self.log("\n- - - - - - - - - -")
             self.log("\n✅ Compra realizada.")
             self.log(f"\n📉 Precio de compra: $ {self.precio_actual:.6f}")
             #self.log(f"🕒 Hora: {self.transacciones['timestamp']}")
             self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
-            self.log("\n- - - - - - - - - -\n")           
+            #self.log("\n- - - - - - - - - -\n")           
             reproducir_sonido("Sounds/soundcompra.wav")
             self.reportado_trabajando = False
     
@@ -160,7 +160,7 @@ class TradingBot:
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
                 transacciones_vendidas.append(transaccion)
-                self.log("\n- - - - - - - - - -")
+                #self.log("\n- - - - - - - - - -")
                 self.log(f"\n✅ Venta realizada.")
                 #self.log(f"🕒 Compra original: {timestamp}")
                 self.log(f"\n📈 Precio de venta: $ {self.precio_actual:.2f}")
@@ -168,7 +168,7 @@ class TradingBot:
                 self.log(f"\n📤 Btc vendido: ₿ {btc_vender:.6f}")
                 self.log(f"\n💹 Ganancia de esta operación: $ {self.ganancia_neta:.8f}")
                 self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.8f}")
-                self.log("\n- - - - - - - - - -\n")
+                #self.log("\n- - - - - - - - - -\n")
                 reproducir_sonido("Sounds/soundventa.wav")
                 self.reportado_trabajando = False
 

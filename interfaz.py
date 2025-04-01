@@ -13,8 +13,8 @@ from tkinter.scrolledtext import ScrolledText
 from codigo_principala import TradingBot
 
 # Instancia del bot
+
 bot = TradingBot()
-bot_iniciado = False
 
 # Interfaz Tkinter
 ventana_principal = Tk()
@@ -86,7 +86,7 @@ Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=
 Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=100)
 Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=600, y=100)
 
-Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=130)
+Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=130)
 Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=600, y=130)
 
 Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=160)
@@ -112,14 +112,15 @@ def actualizar_ui():
         porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
         var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
         fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-        ganancia_total_str.set(f"$ {bot.total_ganancia:.8f}")
+        ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
         contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
         contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
         porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
 
 
-    if not bot.running and not boton_limpiar.winfo_ismapped() and bot_iniciado:
-        boton_limpiar.place(x=600, y=300)  
+    if not bot.running and not boton_limpiar.winfo_ismapped():
+        boton_limpiar.place(x=600, y=300)
+
     actualizar_historial_consola()     
   
 def log_en_consola(mensaje):
@@ -153,13 +154,13 @@ def actualizar_historial_consola():
         ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
         historial_box.insert(END, f"Compra: $ {compra:.6f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.4f} | Ganancia: $ {venta['ganancia']:.6f}\n")
+        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.6f} | Ganancia: $ {venta['ganancia']:.6f}\n")
 
 
 # === LÓGICA DE BOTONES ===
 
 def alternar_bot():
-    global bot_iniciado
+    
     if bot.running:
         bot.detener()
         reproducir_sonido("Sounds/detner.wav")
@@ -167,23 +168,20 @@ def alternar_bot():
     else:
         bot.iniciar()
         bot.loop(actualizar_ui, ventana_principal.after)
-
-        bot_iniciado = True
         reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()
         boton_estado.config(text="Detener")
 
 def limpiar_bot():
-    global bot_iniciado
     global bot
     if not bot.running:
         reproducir_sonido("Sounds/soundlimpiara.wav")
         consola.delete('1.0', END)        
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
-        boton_limpiar.place_forget()
-        boton_estado.config(text="Iniciar")
-        bot_iniciado = False
+        #boton_limpiar.place_forget()
+        
+        
         # Resetear valores UI
         precio_act_var.set("")
         cant_btc_str.set("")
@@ -202,12 +200,15 @@ def limpiar_bot():
         contador_compras_fantasma_str.set("")
         contador_ventas_fantasma_str.set("")
         porc_objetivo_venta_str.set("")
+        boton_estado.config(text="Iniciar")
+        
 
 # Botones
 boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot)
 boton_estado.place(x=500, y=300)
 
 boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot)
+boton_limpiar.place_forget()
 
 
 # Subventanas
