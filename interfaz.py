@@ -21,7 +21,7 @@ ventana_principal = Tk()
 ventana_principal.title("Khazâd") 
 ventana_principal.geometry("1200x700")
 ventana_principal.configure(bg="DarkGoldenrod")
-ventana_principal.iconbitmap("imagenes/miner.ico")
+ventana_principal.iconbitmap("imagenes/dm.ico")
 ventana_principal.attributes("-alpha",0.95)
 
 # Variables UI
@@ -139,7 +139,7 @@ def crear_nuevo_bot():
 bot = crear_nuevo_bot()
 
 # === Consola Historial a la derecha ===
-historial_box = ScrolledText(ventana_principal, width=35, height=25, bg="Goldenrod", fg="Black", font=("carolingia", 15))
+historial_box = ScrolledText(ventana_principal, width=35, height=25, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 7))
 historial_box.place(x=720, y=10)
 
 def actualizar_historial_consola():
@@ -149,12 +149,12 @@ def actualizar_historial_consola():
         compra = trans.get('compra', 'N/A')
         venta_obj = trans.get('venta_obj', 'N/A')
         ejecutado = trans.get('ejecutado', False)
-        venta_txt = f"$ {venta_obj:.6f}" if ejecutado else "(no vendida)"
+        venta_txt = f"$ {venta_obj:.4f}" if ejecutado else "(no vendida)"
         ganancia = trans.get('ganancia', None)
         ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
-        historial_box.insert(END, f"Compra: $ {compra:.6f} -> Venta: {venta_txt}\n")
+        historial_box.insert(END, f"Compra: $ {compra:.2f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.6f} | Ganancia: $ {venta['ganancia']:.6f}\n")
+        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.6f}\n")
 
 
 # === LÓGICA DE BOTONES ===
@@ -176,7 +176,8 @@ def limpiar_bot():
     global bot
     if not bot.running:
         reproducir_sonido("Sounds/soundlimpiara.wav")
-        consola.delete('1.0', END)        
+        consola.delete('1.0', END)   
+        historial_box.delete('1.0', END)      
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
         #boton_limpiar.place_forget()
@@ -204,10 +205,10 @@ def limpiar_bot():
         
 
 # Botones
-boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot)
+boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot, font=("CrushYourEnemies", 7))
 boton_estado.place(x=500, y=300)
 
-boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot)
+boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot, font=("CrushYourEnemies", 7))
 boton_limpiar.place_forget()
 
 
@@ -219,7 +220,7 @@ boton_limpiar.place_forget()
     Label(sbv_conf, text="Configurar operativa").pack()"""
 
 # Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=35, height=15, bg="Goldenrod", fg="Black", font=("carolingia", 15))
+consola = ScrolledText(ventana_principal, width=35, height=15, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 7))
 consola.place(x=10, y=450)    
 
 
