@@ -15,8 +15,8 @@ bot = TradingBot()
 # Interfaz Tkinter
 ventana_principal = Tk()
 ventana_principal.title("Khazâd")
-# Puedes ajustar el tamaño según prefieras o comentarlo para usar tamaño dinámico
-#ventana_principal.geometry("1200x700")
+# Puedes ajustar el tamaño o dejar que se ajuste dinámicamente
+# ventana_principal.geometry("1200x700")
 ventana_principal.configure(bg="DarkGoldenrod")
 ventana_principal.iconbitmap("imagenes/dm.ico")
 ventana_principal.attributes("-alpha", 0.95)
@@ -41,48 +41,49 @@ contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
 
 # --- Estructura general de la ventana ---
-# Usaremos un frame principal que se divide en dos columnas:
-#  - Columna 0: info_frame (textos y números, pegados al borde izquierdo)
-#  - Columna 1: right_frame (área para consolas)
-# Y en la parte inferior (fila 1) los botones.
-
+# main_frame se divide en dos columnas:
+#   Columna 0: info_frame (área fija para información, pegada a la izquierda)
+#   Columna 1: right_frame (área para consolas, anclada a la derecha y expandible)
+# Y en la fila 1 se colocan los botones.
 main_frame = Frame(ventana_principal, bg="DarkGoldenrod")
 main_frame.grid(row=0, column=0, sticky="nsew")
-# Configuramos para que main_frame se expanda con la ventana
+# Definimos ancho fijo para info y mínimo para consolas:
+main_frame.grid_columnconfigure(0, minsize=300, weight=0)  # área de info: ancho fijo
+main_frame.grid_columnconfigure(1, minsize=500, weight=1)  # área de consolas: se expande
 ventana_principal.grid_rowconfigure(0, weight=1)
 ventana_principal.grid_columnconfigure(0, weight=1)
 
 # Frame para la información (izquierda)
 info_frame = Frame(main_frame, bg="DarkGoldenrod")
-info_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-# Queremos que info_frame se expanda verticalmente si hay espacio
-main_frame.grid_columnconfigure(0, weight=1)
+info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 info_frame.grid_columnconfigure(0, weight=1)
 info_frame.grid_columnconfigure(1, weight=1)
+info_frame.config(width=300)
 
 # Frame para el área de consolas (derecha)
+# Se ancla a la derecha mediante sticky="e"
 right_frame = Frame(main_frame, bg="DarkGoldenrod")
-right_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-# Configuramos la columna 1 para que también se expanda
-main_frame.grid_columnconfigure(1, weight=1)
-# Dividimos right_frame en dos filas: fila 0 para historial y fila 1 para consola
-right_frame.grid_rowconfigure(0, weight=1)
-right_frame.grid_rowconfigure(1, weight=1)
-right_frame.grid_columnconfigure(0, weight=1)
+right_frame.grid(row=0, column=1, sticky="e", padx=5, pady=5)
+# En right_frame usaremos pack para que sus widgets se expandan.
+# No asignamos weight a esta columna para mantener su ancho mínimo fijo.
 
-# Frame para botones (abajo, en fila 1 de main_frame)
+# Frame para botones (abajo, fila 1 de main_frame)
 button_frame = Frame(main_frame, bg="DarkGoldenrod")
 button_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
 main_frame.grid_rowconfigure(1, weight=0)  # No se expande verticalmente
 
-# --- Área de información (izquierda) ---
-row_index = 0
+# Dentro del info_frame, usamos un row_frame para cada línea para mantener etiqueta y valor pegados.
 def add_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
-    global row_index
-    Label(info_frame, text=label_text, bg="DarkGoldenrod", font=font).grid(row=row_index, column=0, sticky="w", padx=2, pady=2)
-    Label(info_frame, textvariable=variable, bg="Gold", font=font).grid(row=row_index, column=1, sticky="e", padx=2, pady=2)
-    row_index += 1
+    row_frame = Frame(info_frame, bg="DarkGoldenrod")
+    row_frame.grid(row=add_info_row.row_index, column=0, sticky="w", padx=0, pady=2)
+    add_info_row.row_index += 1
+    lbl = Label(row_frame, text=label_text, bg="DarkGoldenrod", font=font)
+    lbl.pack(side=LEFT, anchor="w", padx=(0,2))
+    val = Label(row_frame, textvariable=variable, bg="Gold", font=font)
+    val.pack(side=LEFT, anchor="w", padx=(0,2))
+add_info_row.row_index = 0
 
+# Agregar cada línea de información
 add_info_row("Precio actual BTC/USDT:", precio_act_var)
 add_info_row("Usdt + Btc:", balance_var)
 add_info_row("Usdt Disponible:", cant_usdt_str)
@@ -102,15 +103,13 @@ add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
 
 # --- Área de consolas (derecha) ---
-# Historial de transacciones (parte superior de right_frame)
+# Usamos pack para que los widgets se mantengan anclados a la derecha y se expandan.
 historial_box = ScrolledText(right_frame, width=45, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
-historial_box.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
-
-# Consola para mostrar mensajes (parte inferior de right_frame)
+historial_box.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
 consola = ScrolledText(right_frame, width=50, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
-consola.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
+consola.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
 
-# --- Botones (en button_frame) ---
+# --- Botones en button_frame ---
 boton_estado = Button(button_frame, text="Iniciar", background="Goldenrod", command=lambda: alternar_bot(), font=("CrushYourEnemies", 7))
 boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
 boton_limpiar = Button(button_frame, text="Limpiar", background="Goldenrod", command=lambda: limpiar_bot(), font=("CrushYourEnemies", 7))
@@ -120,27 +119,34 @@ button_frame.grid_columnconfigure(1, weight=1)
 
 # --- Funciones de actualización y control ---
 def actualizar_ui():
-    if bot.running:
-        precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
-        cant_btc_str.set(f"₿ {bot.btc:.6f}")
-        cant_usdt_str.set(f"$ {bot.usdt:.4f}")
-        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
-        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
-        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
-        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
-        varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
-        varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
-        porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")
-        porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
-        var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
-        fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-        ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
-        contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
-        contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
-        porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
-        actualizar_historial_consola()
-    else:
-        boton_limpiar.grid()  # Asegura que se muestre cuando el bot está detenido
+    # Evita actualizar si la ventana ya se destruyó
+    if not ventana_principal.winfo_exists():
+        return
+    try:
+        if bot.running:
+            precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
+            cant_btc_str.set(f"₿ {bot.btc:.6f}")
+            cant_usdt_str.set(f"$ {bot.usdt:.4f}")
+            balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
+            btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
+            precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
+            inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
+            varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
+            varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
+            porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")
+            porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
+            var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
+            fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
+            ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
+            contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
+            contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
+            porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
+            actualizar_historial_consola()
+        else:
+            # Si el bot no está corriendo, se muestra el botón de limpiar
+            boton_limpiar.grid()
+    except Exception as e:
+        print("Error al actualizar la interfaz:", e)
 
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
@@ -164,7 +170,6 @@ def actualizar_historial_consola():
         ejecutado = trans.get('ejecutado', False)
         venta_txt = f"$ {venta_obj:.4f}" if ejecutado else "(no vendida)"
         ganancia = trans.get('ganancia', None)
-        ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
         historial_box.insert(END, f"Compra: $ {compra:.2f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
         historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.6f}\n")
