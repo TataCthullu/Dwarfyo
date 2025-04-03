@@ -95,7 +95,7 @@ add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
 
 # Historial de transacciones en un ScrolledText
-historial_box = ScrolledText(hist_frame, width=35, height=25, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 7))
+historial_box = ScrolledText(hist_frame, width=55, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 7))
 historial_box.grid(row=7, column=0, sticky="nsew")
 
 # Consola para mostrar mensajes

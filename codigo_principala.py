@@ -183,7 +183,10 @@ class TradingBot:
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()              
             else:               
-                self.log("\n⚠️ Intento de compra: parámetro (A). Fondos insuficientes\n")                 
+                reproducir_sonido("Sounds/ghostcomprad.wav")
+                self.compras_fantasma.append(self.precio_actual)
+                self.contador_compras_fantasma += 1
+                self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.") 
                 self.reportado_trabajando = False
                 return 
               
@@ -206,18 +209,7 @@ class TradingBot:
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1
             self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
-            #self.reportado_trabajando = False
-            
-          
-    
-    def parametro_compra_D(self):
-        if self.usdt < self.fixed_buyer and self.varCompra <= -self.porc_desde_compra:
-            reproducir_sonido("Sounds/ghostcomprad.wav")
-            #self.precio_ult_comp = self.precio_actual
-            self.compras_fantasma.append(self.precio_actual)
-            self.contador_compras_fantasma += 1
-            self.log("\n📌 Parámetro D: Sin Usdt para comprar, nueva compra fantasma registrada.")         
-            #self.reportado_trabajando = False     
+       
                           
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
@@ -251,7 +243,6 @@ class TradingBot:
                 self.parametro_compra_desde_compra = self.parametro_compra_A()
                 self.parametro_compra_desde_venta = self.parametro_compra_B()
                 self.parametro_venta_fantasma = self.parametro_venta_B()
-                self.parametro_compra_fantasma = self.parametro_compra_D()
                 self.var_inicio = self.varpor_ingreso()
                 self.vender()
             
