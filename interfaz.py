@@ -16,7 +16,7 @@ bot = TradingBot()
 ventana_principal = Tk()
 ventana_principal.title("Khazâd")
 # Puedes ajustar el tamaño o dejar que se ajuste dinámicamente
-# ventana_principal.geometry("1200x700")
+#ventana_principal.geometry("1200x700")
 ventana_principal.configure(bg="DarkGoldenrod")
 ventana_principal.iconbitmap("imagenes/dm.ico")
 ventana_principal.attributes("-alpha", 0.95)
@@ -168,7 +168,7 @@ def actualizar_historial_consola():
         compra = trans.get('compra', 'N/A')
         venta_obj = trans.get('venta_obj', 'N/A')
         ejecutado = trans.get('ejecutado', False)
-        venta_txt = f"$ {venta_obj:.4f}" if ejecutado else "(no vendida)"
+        venta_txt = f"$ {venta_obj:.4f} (No ejecutada)" 
         ganancia = trans.get('ganancia', None)
         historial_box.insert(END, f"Compra: $ {compra:.2f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
