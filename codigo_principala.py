@@ -31,9 +31,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.1
-        self.porc_desde_venta = 0.1
-        self.porc_inv_por_compra = 1
+        self.porc_desde_compra = 0.01
+        self.porc_desde_venta = 0.01
+        self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -58,7 +58,7 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.1
+        self.porc_profit_x_venta = 0.01
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -154,6 +154,7 @@ class TradingBot:
                 self.actualizar_balance()
                 transaccion["ejecutado"] = True
                 self.precios_ventas.append({
+                    "compra": transaccion["compra"],
                     "venta": self.precio_actual,
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
@@ -188,6 +189,7 @@ class TradingBot:
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
                 self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.") 
+                self.precio_ult_comp = self.precio_actual
                 self.reportado_trabajando = False
                 return 
               

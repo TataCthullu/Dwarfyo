@@ -172,7 +172,7 @@ def actualizar_historial_consola():
         ganancia = trans.get('ganancia', None)
         historial_box.insert(END, f"Compra: $ {compra:.2f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.6f}\n")
+        historial_box.insert(END, f"Venta ejecutada de {venta['compra']:.2f}  a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
 
 def alternar_bot():
     if bot.running:
