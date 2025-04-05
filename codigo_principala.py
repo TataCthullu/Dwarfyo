@@ -31,9 +31,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.01
-        self.porc_desde_venta = 0.01
-        self.porc_inv_por_compra = 10
+        self.porc_desde_compra = 0.75
+        self.porc_desde_venta = 0.75
+        self.porc_inv_por_compra = 9
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -58,7 +58,9 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.01
+        self.porc_profit_x_venta = 0.75
+        self.contador_compras_reales = 0
+        self.contador_ventas_reales = 0
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -129,6 +131,7 @@ class TradingBot:
             #self.log("\n- - - - - - - - - -\n")           
             reproducir_sonido("Sounds/soundcompra.wav")
             self.reportado_trabajando = False
+            self.contador_compras_reales += 1
     
          
 
@@ -178,6 +181,9 @@ class TradingBot:
         for trans in transacciones_vendidas:
             self.transacciones.remove(trans)
 
+        if transacciones_vendidas:
+            self.contador_ventas_reales += len(transacciones_vendidas)    
+
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
@@ -214,7 +220,13 @@ class TradingBot:
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1
             self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
-       
+
+    def calcular_ghost_ratio(self):
+        total_signals = (self.contador_compras_fantasma + self.contador_ventas_fantasma +
+                         self.contador_compras_reales + self.contador_ventas_reales)
+        if total_signals == 0:
+            return 0
+        return (self.contador_compras_fantasma + self.contador_ventas_fantasma) / total_signals
                           
     def realizar_primera_compra(self):
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")

@@ -39,6 +39,8 @@ ganancia_total_str = StringVar()
 contador_compras_fantasma_str = StringVar()
 contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
+ghost_ratio_var = StringVar()
+
 
 # --- Estructura general de la ventana ---
 # main_frame se divide en dos columnas:
@@ -101,6 +103,8 @@ add_info_row("% Para objetivo de venta:", porc_objetivo_venta_str)
 add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
 add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
+add_info_row("Ghost Ratio:", ghost_ratio_var)
+
 
 # --- Área de consolas (derecha) ---
 # Usamos pack para que los widgets se mantengan anclados a la derecha y se expandan.
@@ -141,6 +145,8 @@ def actualizar_ui():
             contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
             contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
             porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
+            ghost_ratio = bot.calcular_ghost_ratio()
+            ghost_ratio_var.set(f"{ghost_ratio:.2f}")
             actualizar_historial_consola()
         else:
             # Si el bot no está corriendo, se muestra el botón de limpiar
