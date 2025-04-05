@@ -31,9 +31,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.5
-        self.porc_desde_venta = 0.5
-        self.porc_inv_por_compra = 10
+        self.porc_desde_compra = 0.1
+        self.porc_desde_venta = 0.1
+        self.porc_inv_por_compra = 1
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -58,7 +58,7 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.5
+        self.porc_profit_x_venta = 0.1
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -114,6 +114,7 @@ class TradingBot:
                     "compra": self.precio_actual,                  
                     "venta_obj": self.precio_objetivo_venta,
                     "btc": self.btc_comprado,
+                    "invertido_usdt": self.fixed_buyer,
                     "ejecutado": False
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
@@ -194,8 +195,10 @@ class TradingBot:
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
         if self.varVenta <= -self.porc_desde_venta:
+            
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
+                self.precio_ult_venta = self.precio_actual
             else:               
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                 
                 self.reportado_trabajando = False 
@@ -215,9 +218,9 @@ class TradingBot:
         self.log(f"\n🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")
         self.log(f"\n✅ Precio de ingreso registrado: {self.precio_ingreso:.4f} USDT")
         self.usdt -= self.fixed_buyer 
-        self.actualizar_balance()
-        self.precios_compras.append(self.precio_ult_comp)
+        self.actualizar_balance()        
         self.precio_ult_comp = self.precio_actual
+        self.precios_compras.append(self.precio_ult_comp)
         self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
         self.btc = self.btc_comprado
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_profit_x_venta / 100)
@@ -256,6 +259,7 @@ class TradingBot:
 
             if self.btc < -1:
                 self.log("\n🔴Error: btc negativo")
+                self.detener()
                                            
             if ui_callback:
                 ui_callback()
