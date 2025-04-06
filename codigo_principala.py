@@ -31,9 +31,9 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.75
-        self.porc_desde_venta = 0.75
-        self.porc_inv_por_compra = 9
+        self.porc_desde_compra = 0.1
+        self.porc_desde_venta = 0.1
+        self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.precio_ult_comp = self.precio_actual
@@ -58,7 +58,7 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.75
+        self.porc_profit_x_venta = 0.1
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         #self.bot_iniciado = False
@@ -141,8 +141,6 @@ class TradingBot:
         for transaccion in self.transacciones:
             if self.btc < transaccion["btc"]:
                 continue  # Evita vender más BTC del disponible
-
-                         
             
             elif self.precio_actual >= transaccion["venta_obj"]:
                 btc_vender = transaccion["btc"]
@@ -202,11 +200,12 @@ class TradingBot:
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
-        if self.varVenta <= -self.porc_desde_venta:
+        if not self.compra_ejecutada and self.varVenta <= -self.porc_desde_venta:
             
             if self.usdt >= self.fixed_buyer:      
                 self.comprar()
                 self.precio_ult_venta = self.precio_actual
+                self.compra_ejecutada = True
             else:               
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                 
                 self.reportado_trabajando = False 
@@ -249,7 +248,9 @@ class TradingBot:
     def loop(self, ui_callback=None, after_fn=None):
             if not self.running:
                 return
-        
+
+            self.compra_ejecutada = False
+
             self.precio_actual = self.get_precio_actual()
             if not self.precio_actual:
                 self.log("\n⚠️ No se puede operar sin datos de precios.\n")                
