@@ -132,6 +132,46 @@ class TradingBot:
             reproducir_sonido("Sounds/soundcompra.wav")
             self.reportado_trabajando = False
             self.contador_compras_reales += 1
+
+    def parametro_compra_A(self):
+        #Compra con referencia a la ultima compra
+        if self.varCompra <= -self.porc_desde_compra:
+            if self.usdt >= self.fixed_buyer:     
+                self.log("\n🔵 [Parametro A].") 
+                self.comprar()                
+                self.precio_ult_venta = self.precio_ult_venta              
+            else:               
+                reproducir_sonido("Sounds/ghostcomprad.wav")
+                self.compras_fantasma.append(self.precio_actual)
+                self.contador_compras_fantasma += 1
+                self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.") 
+                self.precio_ult_comp = self.precio_actual
+                self.reportado_trabajando = False
+                return 
+              
+              
+    def parametro_compra_B(self):
+        #Compra con referencia a la ultima venta
+        if not self.compra_ejecutada and self.varVenta <= -self.porc_desde_venta:
+            
+            if self.usdt >= self.fixed_buyer: 
+                self.log("\n🔵 [Parametro A].")     
+                self.comprar()
+                self.precio_ult_venta = self.precio_actual
+                self.compra_ejecutada = True
+            else:               
+                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                 
+                self.reportado_trabajando = False 
+                return      
+        
+
+    def parametro_venta_B(self):
+        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
+            reproducir_sonido("Sounds/ghostventab.wav")
+            self.precio_ult_venta = self.precio_actual
+            self.ventas_fantasma.append(self.precio_actual)
+            self.contador_ventas_fantasma += 1
+            self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")    
     
          
 
@@ -183,42 +223,7 @@ class TradingBot:
             self.contador_ventas_reales += len(transacciones_vendidas)    
 
 
-    def parametro_compra_A(self):
-        #Compra con referencia a la ultima compra
-        if self.varCompra <= -self.porc_desde_compra:
-            if self.usdt >= self.fixed_buyer:      
-                self.comprar()              
-            else:               
-                reproducir_sonido("Sounds/ghostcomprad.wav")
-                self.compras_fantasma.append(self.precio_actual)
-                self.contador_compras_fantasma += 1
-                self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.") 
-                self.precio_ult_comp = self.precio_actual
-                self.reportado_trabajando = False
-                return 
-              
-              
-    def parametro_compra_B(self):
-        #Compra con referencia a la ultima venta
-        if not self.compra_ejecutada and self.varVenta <= -self.porc_desde_venta:
-            
-            if self.usdt >= self.fixed_buyer:      
-                self.comprar()
-                self.precio_ult_venta = self.precio_actual
-                self.compra_ejecutada = True
-            else:               
-                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                 
-                self.reportado_trabajando = False 
-                return      
-        
-
-    def parametro_venta_B(self):
-        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
-            reproducir_sonido("Sounds/ghostventab.wav")
-            self.precio_ult_venta = self.precio_actual
-            self.ventas_fantasma.append(self.precio_actual)
-            self.contador_ventas_fantasma += 1
-            self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")
+    
 
     def calcular_ghost_ratio(self):
         total_signals = (self.contador_compras_fantasma + self.contador_ventas_fantasma +
