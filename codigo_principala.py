@@ -122,13 +122,13 @@ class TradingBot:
                 })
                 
             self.actualizar_balance()
-            #self.log("\n- - - - - - - - - -")
+            self.log("\n- - - - - - - - - -")
             self.log("\n✅ Compra realizada.")
             self.log(f"\n📉 Precio de compra: $ {self.precio_actual:.6f}")
             #self.log(f"🕒 Hora: {self.transacciones['timestamp']}")
             self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
-            #self.log("\n- - - - - - - - - -\n")           
+            self.log("\n- - - - - - - - - -\n")           
             reproducir_sonido("Sounds/soundcompra.wav")
             self.reportado_trabajando = False
             self.contador_compras_reales += 1
@@ -138,13 +138,14 @@ class TradingBot:
         if self.varCompra <= -self.porc_desde_compra:
             if self.usdt >= self.fixed_buyer:     
                 self.log("\n🔵 [Parametro A].") 
-                self.comprar()                
-                                  
+                self.comprar()
+                self.precio_ult_comp = self.precio_actual
+                                
             else:               
                 reproducir_sonido("Sounds/ghostcomprad.wav")
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
-                self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.") 
+                self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.\n") 
                 self.precio_ult_comp = self.precio_actual
                 
                 return 
@@ -152,20 +153,21 @@ class TradingBot:
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
-        if not self.compra_ejecutada and self.varVenta <= -self.porc_desde_venta:
+        if self.varVenta <= -self.porc_desde_venta:
             
             if self.usdt >= self.fixed_buyer: 
-                self.log("\n🔵 [Parametro A].")     
+                self.log("\n🔵 [Parametro B].")     
                 self.comprar()
                 self.precio_ult_venta = self.precio_actual
-                self.compra_ejecutada = True
+                
             else:               
-                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                 
-                 
+                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes, compra fantasma agregada\n") 
+                self.compras_fantasma += 1                                 
                 return      
         
 
     def parametro_venta_B(self):
+        #Venta fantasma
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             reproducir_sonido("Sounds/ghostventab.wav")
             self.ventas_fantasma.append(self.precio_actual)
@@ -203,7 +205,7 @@ class TradingBot:
                     #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
                 transacciones_vendidas.append(transaccion)
-                #self.log("\n- - - - - - - - - -")
+                self.log("\n- - - - - - - - - -")
                 self.log(f"\n✅ Venta realizada.")
                 #self.log(f"🕒 Compra original: {timestamp}")
                 self.log(f"\n📈 Precio de venta: $ {self.precio_actual:.2f}")
@@ -211,7 +213,7 @@ class TradingBot:
                 self.log(f"\n📤 Btc vendido: ₿ {btc_vender:.6f}")
                 self.log(f"\n💹 Ganancia de esta operación: $ {self.ganancia_neta:.8f}")
                 self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.8f}")
-                #self.log("\n- - - - - - - - - -\n")
+                self.log("\n- - - - - - - - - -\n")
                 reproducir_sonido("Sounds/soundventa.wav")
                 self.reportado_trabajando = False
 
@@ -253,8 +255,6 @@ class TradingBot:
     def loop(self, ui_callback=None, after_fn=None):
             if not self.running:
                 return
-
-            self.compra_ejecutada = False
 
             self.precio_actual = self.get_precio_actual()
             if not self.precio_actual:
