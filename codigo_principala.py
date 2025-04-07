@@ -31,8 +31,8 @@ class TradingBot:
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
         self.precio_ult_venta = 0
-        self.porc_desde_compra = 0.1
-        self.porc_desde_venta = 0.1
+        self.porc_desde_compra = 0.04
+        self.porc_desde_venta = 0.04
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
@@ -58,7 +58,7 @@ class TradingBot:
         self.total_ganancia = 0
         self.ganancia_neta = 0
         self.reportado_trabajando = False 
-        self.porc_profit_x_venta = 0.1
+        self.porc_profit_x_venta = 0.04
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         #self.bot_iniciado = False
@@ -139,14 +139,14 @@ class TradingBot:
             if self.usdt >= self.fixed_buyer:     
                 self.log("\n🔵 [Parametro A].") 
                 self.comprar()                
-                self.precio_ult_venta = self.precio_ult_venta              
+                                  
             else:               
                 reproducir_sonido("Sounds/ghostcomprad.wav")
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
                 self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.") 
                 self.precio_ult_comp = self.precio_actual
-                self.reportado_trabajando = False
+                
                 return 
               
               
@@ -161,16 +161,16 @@ class TradingBot:
                 self.compra_ejecutada = True
             else:               
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                 
-                self.reportado_trabajando = False 
+                 
                 return      
         
 
     def parametro_venta_B(self):
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             reproducir_sonido("Sounds/ghostventab.wav")
-            self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1
+            self.precio_ult_venta = self.precio_actual
             self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")    
     
          
