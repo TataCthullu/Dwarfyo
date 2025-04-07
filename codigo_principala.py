@@ -61,6 +61,7 @@ class TradingBot:
         self.porc_profit_x_venta = 0.04
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
+        self.param_b_enabled = True  # Flag para habilitar/deshabilitar parámetro B
         #self.bot_iniciado = False
 
     def log(self, mensaje):
@@ -139,7 +140,7 @@ class TradingBot:
             if self.usdt >= self.fixed_buyer:     
                 self.log("\n🔵 [Parametro A].") 
                 self.comprar()
-                self.precio_ult_comp = self.precio_actual
+                #self.precio_ult_comp = self.precio_actual
                                 
             else:               
                 reproducir_sonido("Sounds/ghostcomprad.wav")
@@ -153,12 +154,15 @@ class TradingBot:
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
+        if not self.param_b_enabled:
+            return
         if self.varVenta <= -self.porc_desde_venta:
             
             if self.usdt >= self.fixed_buyer: 
                 self.log("\n🔵 [Parametro B].")     
                 self.comprar()
                 self.precio_ult_venta = self.precio_actual
+                self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta
                 
             else:               
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes, compra fantasma agregada\n") 
@@ -179,6 +183,7 @@ class TradingBot:
 
     def vender(self):
         transacciones_vendidas = []
+        sale_executed = False
 
         for transaccion in self.transacciones:
             if self.btc < transaccion["btc"]:
@@ -195,6 +200,7 @@ class TradingBot:
                 self.ganancia_neta = usdt_obtenido - invertido_usdt
                 self.total_ganancia += self.ganancia_neta              
                 self.actualizar_balance()
+                sale_executed = True
                 transaccion["ejecutado"] = True
                 self.precios_ventas.append({
                     "compra": transaccion["compra"],
@@ -222,7 +228,13 @@ class TradingBot:
             self.transacciones.remove(trans)
 
         if transacciones_vendidas:
-            self.contador_ventas_reales += len(transacciones_vendidas)    
+            self.contador_ventas_reales += len(transacciones_vendidas)   
+
+        if sale_executed:
+            # Tras una venta, reactivamos el parámetro B
+            self.param_b_enabled = True 
+            """self.precio_ult_comp = self.precio_actual
+            self.precio_ult_venta = self.precio_actual"""    
 
 
     
@@ -263,11 +275,12 @@ class TradingBot:
                 self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
                 self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 
                 self.actualizar_balance()
+                self.vender()
                 self.parametro_compra_desde_compra = self.parametro_compra_A()
                 self.parametro_compra_desde_venta = self.parametro_compra_B()
                 self.parametro_venta_fantasma = self.parametro_venta_B()
                 self.var_inicio = self.varpor_ingreso()
-                self.vender()
+                
             
                 if self.reportado_trabajando == False:    
                     self.log("\n- - - - - - - - - -")
