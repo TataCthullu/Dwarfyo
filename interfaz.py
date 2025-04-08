@@ -47,34 +47,37 @@ ghost_ratio_var = StringVar()
 #   Columna 0: info_frame (área fija para información, pegada a la izquierda)
 #   Columna 1: right_frame (área para consolas, anclada a la derecha y expandible)
 # Y en la fila 1 se colocan los botones.
+# --- Reorganizar el layout en tres columnas ---
 main_frame = Frame(ventana_principal, bg="DarkGoldenrod")
 main_frame.grid(row=0, column=0, sticky="nsew")
-# Definimos ancho fijo para info y mínimo para consolas:
-main_frame.grid_columnconfigure(0, minsize=300, weight=0)  # área de info: ancho fijo
-main_frame.grid_columnconfigure(1, minsize=500, weight=1)  # área de consolas: se expande
+# Configuramos tres columnas: izquierda (info), central (ghost) y derecha (consolas)
+main_frame.grid_columnconfigure(0, minsize=300, weight=0)   # Columna 0: información fija
+main_frame.grid_columnconfigure(1, weight=1)                # Columna 1: contenedor central expandible
+main_frame.grid_columnconfigure(2, minsize=300, weight=0)   # Columna 2: área de consolas
 ventana_principal.grid_rowconfigure(0, weight=1)
-ventana_principal.grid_columnconfigure(0, weight=1)
 
-# Frame para la información (izquierda)
+# Frame para la información (columna 0)
 info_frame = Frame(main_frame, bg="DarkGoldenrod")
 info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 info_frame.grid_columnconfigure(0, weight=1)
-info_frame.grid_columnconfigure(1, weight=1)
 info_frame.config(width=300)
 
-# Frame para el área de consolas (derecha)
-# Se ancla a la derecha mediante sticky="e"
+# Frame para el contenedor central (columna 1)
+center_frame = Frame(main_frame, bg="DarkGoldenrod", width=300)
+center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+# Permitir que center_frame se expanda (sin grid_propagate para que no se ajuste solo al contenido)
+center_frame.grid_propagate(False)
+
+# Frame para el área de consolas (columna 2)
 right_frame = Frame(main_frame, bg="DarkGoldenrod")
-right_frame.grid(row=0, column=1, sticky="e", padx=5, pady=5)
-# En right_frame usaremos pack para que sus widgets se expandan.
-# No asignamos weight a esta columna para mantener su ancho mínimo fijo.
+right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
 
 # Frame para botones (abajo, fila 1 de main_frame)
 button_frame = Frame(main_frame, bg="DarkGoldenrod")
-button_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+button_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
 main_frame.grid_rowconfigure(1, weight=0)  # No se expande verticalmente
 
-# Dentro del info_frame, usamos un row_frame para cada línea para mantener etiqueta y valor pegados.
+# --- Dentro de info_frame, usamos un row_frame para cada línea ---
 def add_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
     row_frame = Frame(info_frame, bg="DarkGoldenrod")
     row_frame.grid(row=add_info_row.row_index, column=0, sticky="w", padx=0, pady=2)
@@ -103,11 +106,28 @@ add_info_row("% Para objetivo de venta:", porc_objetivo_venta_str)
 add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
 add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
-add_info_row("Ghost Ratio:", ghost_ratio_var)
+
+ghost_center_frame = Frame(center_frame, bg="DarkGoldenrod")
+ghost_center_frame.place(relx=0.5, rely=0.5, anchor=CENTER)
+
+def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
+    row_frame = Frame(ghost_center_frame, bg="DarkGoldenrod")
+    row_frame.pack(fill=X, pady=2)
+    lbl = Label(row_frame, text=label_text, bg="DarkGoldenrod", font=font)
+    lbl.pack(side=LEFT, anchor="center", padx=(0,2))
+    val = Label(row_frame, textvariable=variable, bg="Gold", font=font)
+    val.pack(side=LEFT, anchor="center", padx=(0,2))
 
 
-# --- Área de consolas (derecha) ---
-# Usamos pack para que los widgets se mantengan anclados a la derecha y se expandan.
+# Agregar la información que desees en el contenedor central
+add_center_info_row("Ghost Ratio:", ghost_ratio_var)
+# Aquí podrías agregar más filas en el centro, por ejemplo:
+# add_center_info_row("Otro Dato:", otra_variable)
+
+
+
+
+# --- Área de consolas en right_frame, usando pack ---
 historial_box = ScrolledText(right_frame, width=45, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
 historial_box.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
 consola = ScrolledText(right_frame, width=50, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
