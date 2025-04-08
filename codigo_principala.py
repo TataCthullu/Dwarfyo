@@ -166,7 +166,7 @@ class TradingBot:
                 
             else:               
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes, compra fantasma agregada\n") 
-                self.compras_fantasma += 1                                 
+                self.contador_compras_fantasma += 1                                 
                 return      
         
 
