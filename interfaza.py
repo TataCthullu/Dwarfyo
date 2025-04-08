@@ -1,30 +1,27 @@
-
 from tkinter import *
-
 import pygame
+from tkinter.scrolledtext import ScrolledText
+from codigo_principala import TradingBot
+
 pygame.mixer.init()
 
 def reproducir_sonido(ruta):
     pygame.mixer.music.load(ruta)
     pygame.mixer.music.play()
 
-
-from tkinter.scrolledtext import ScrolledText
-from codigo_principala import TradingBot
-
 # Instancia del bot
-
 bot = TradingBot()
 
 # Interfaz Tkinter
 ventana_principal = Tk()
-ventana_principal.title("Khazâd") 
-ventana_principal.geometry("1200x700")
+ventana_principal.title("Khazâd")
+# Puedes ajustar el tamaño o dejar que se ajuste dinámicamente
+#ventana_principal.geometry("1200x700")
 ventana_principal.configure(bg="DarkGoldenrod")
 ventana_principal.iconbitmap("imagenes/dm.ico")
-ventana_principal.attributes("-alpha",0.95)
+ventana_principal.attributes("-alpha", 0.95)
 
-# Variables UI
+# Variables UI (para la sección de información)
 precio_act_var = StringVar()
 cant_btc_str = StringVar()
 cant_usdt_str = StringVar()
@@ -42,129 +39,148 @@ ganancia_total_str = StringVar()
 contador_compras_fantasma_str = StringVar()
 contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
-
-# Etiquetas UI
-frame_precio = Frame(ventana_principal, bg="DarkGoldenrod")
-frame_precio.place(x=10, y=10)
-
-Label(frame_precio, text="Precio actual BTC/USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).pack(side=LEFT)
-Label(frame_precio, textvariable=precio_act_var, bg="Gold", font=("CrushYourEnemies", 7)).pack(side=LEFT)
+ghost_ratio_var = StringVar()
 
 
-Label(ventana_principal, text="Btc Disponible:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=130)
-Label(ventana_principal, textvariable=cant_btc_str, bg="Gold").place(x=200, y=130)
+# --- Estructura general de la ventana ---
+# main_frame se divide en dos columnas:
+#   Columna 0: info_frame (área fija para información, pegada a la izquierda)
+#   Columna 1: right_frame (área para consolas, anclada a la derecha y expandible)
+# Y en la fila 1 se colocan los botones.
+main_frame = Frame(ventana_principal, bg="DarkGoldenrod")
+main_frame.grid(row=0, column=0, sticky="nsew")
+# Definimos ancho fijo para info y mínimo para consolas:
+main_frame.grid_columnconfigure(0, minsize=300, weight=0)  # área de info: ancho fijo
+main_frame.grid_columnconfigure(1, minsize=500, weight=1)  # área de consolas: se expande
+ventana_principal.grid_rowconfigure(0, weight=1)
+ventana_principal.grid_columnconfigure(0, weight=1)
 
-Label(ventana_principal, text="Btc en Usdt:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=250)
-Label(ventana_principal, textvariable=btc_en_usdt, bg="Gold").place(x=200, y=250)
+# Frame para la información (izquierda)
+info_frame = Frame(main_frame, bg="DarkGoldenrod")
+info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
+info_frame.grid_columnconfigure(0, weight=1)
+info_frame.grid_columnconfigure(1, weight=1)
+info_frame.config(width=300)
 
-Label(ventana_principal, text="Ganancia neta en Usdt:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=290)
-Label(ventana_principal, textvariable=ganancia_total_str, bg="Gold").place(x=200, y=290)
+# Frame para el área de consolas (derecha)
+# Se ancla a la derecha mediante sticky="e"
+right_frame = Frame(main_frame, bg="DarkGoldenrod")
+right_frame.grid(row=0, column=1, sticky="e", padx=5, pady=5)
+# En right_frame usaremos pack para que sus widgets se expandan.
+# No asignamos weight a esta columna para mantener su ancho mínimo fijo.
 
-Label(ventana_principal, text="Compras fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=330)
-Label(ventana_principal, textvariable=contador_compras_fantasma_str, bg="Gold").place(x=200, y=330)
+# Frame para botones (abajo, fila 1 de main_frame)
+button_frame = Frame(main_frame, bg="DarkGoldenrod")
+button_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+main_frame.grid_rowconfigure(1, weight=0)  # No se expande verticalmente
 
-Label(ventana_principal, text="Ventas fantasma:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=370)
-Label(ventana_principal, textvariable=contador_ventas_fantasma_str, bg="Gold").place(x=200, y=370)
+# Dentro del info_frame, usamos un row_frame para cada línea para mantener etiqueta y valor pegados.
+def add_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
+    row_frame = Frame(info_frame, bg="DarkGoldenrod")
+    row_frame.grid(row=add_info_row.row_index, column=0, sticky="w", padx=0, pady=2)
+    add_info_row.row_index += 1
+    lbl = Label(row_frame, text=label_text, bg="DarkGoldenrod", font=font)
+    lbl.pack(side=LEFT, anchor="w", padx=(0,2))
+    val = Label(row_frame, textvariable=variable, bg="Gold", font=font)
+    val.pack(side=LEFT, anchor="w", padx=(0,2))
+add_info_row.row_index = 0
 
-Label(ventana_principal, text="Usdt Disponible:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=90)
-Label(ventana_principal, textvariable=cant_usdt_str, bg="Gold").place(x=200, y=90)
+# Agregar cada línea de información
+add_info_row("Precio actual BTC/USDT:", precio_act_var)
+add_info_row("Usdt + Btc:", balance_var)
+add_info_row("Usdt Disponible:", cant_usdt_str)
+add_info_row("Btc Disponible:", cant_btc_str)
+add_info_row("Btc en Usdt:", btc_en_usdt)
+add_info_row("% Desde ultima compra:", varpor_set_compra_str)
+add_info_row("% Desde ultima venta:", varpor_set_venta_str)
+add_info_row("% Desde ultima compra, para compra:", porc_desde_venta_str)
+add_info_row("% Desde ultima venta, para compra:", porc_desde_compra_str)
+add_info_row("Precio de ingreso:", precio_de_ingreso_str)
+add_info_row("Inversión por compra:", inv_por_compra_str)
+add_info_row("Variación desde inicio:", var_inicio_str)
+add_info_row("Monto fijo por inversión:", fixed_buyer_str)
+add_info_row("% Para objetivo de venta:", porc_objetivo_venta_str)
+add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
+add_info_row("Compras fantasma:", contador_compras_fantasma_str)
+add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
+add_info_row("Ghost Ratio:", ghost_ratio_var)
 
-Label(ventana_principal, text="Usdt + Btc:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=50)
-Label(ventana_principal, textvariable=balance_var, bg="Gold").place(x=200, y=50)
 
-Label(ventana_principal, text="% " "Desde ultima compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=170)
-Label(ventana_principal, textvariable=varpor_set_compra_str, bg="Gold").place(x=200, y=170)
+# --- Área de consolas (derecha) ---
+# Usamos pack para que los widgets se mantengan anclados a la derecha y se expandan.
+historial_box = ScrolledText(right_frame, width=45, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
+historial_box.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
+consola = ScrolledText(right_frame, width=50, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
+consola.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
 
-Label(ventana_principal, text="% " "Desde ultima venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=10, y=210)
-Label(ventana_principal, textvariable=varpor_set_venta_str, bg="Gold").place(x=200, y=210)
+# --- Botones en button_frame ---
+boton_estado = Button(button_frame, text="Iniciar", background="Goldenrod", command=lambda: alternar_bot(), font=("CrushYourEnemies", 7))
+boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+boton_limpiar = Button(button_frame, text="Limpiar", background="Goldenrod", command=lambda: limpiar_bot(), font=("CrushYourEnemies", 7))
+boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
+button_frame.grid_columnconfigure(0, weight=1)
+button_frame.grid_columnconfigure(1, weight=1)
 
-Label(ventana_principal, text="% " "Desde ultima compra, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=10)
-Label(ventana_principal, textvariable=porc_desde_venta_str, bg="Gold").place(x=600, y=10)
-
-Label(ventana_principal, text="% " "Desde ultima venta, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=40)
-Label(ventana_principal, textvariable=porc_desde_compra_str, bg="Gold").place(x=600, y=40)
-
-Label(ventana_principal, text="Precio de ingreso:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=70)
-Label(ventana_principal, textvariable=precio_de_ingreso_str, bg="Gold").place(x=600, y=70)
-
-Label(ventana_principal, text="Inversión por compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=400, y=100)
-Label(ventana_principal, textvariable=inv_por_compra_str, bg="Gold").place(x=600, y=100)
-
-Label(ventana_principal, text="Variación desde inicio:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=130)
-Label(ventana_principal, textvariable=var_inicio_str, bg="Gold").place(x=600, y=130)
-
-Label(ventana_principal, text="Monto fijo por inversión:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=160)
-Label(ventana_principal, textvariable=fixed_buyer_str, bg="Gold").place(x=600, y=160)
-
-Label(ventana_principal, text="% " "Para objetivo de venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 7)).place(x=350, y=200)
-Label(ventana_principal, textvariable=porc_objetivo_venta_str, bg="Gold").place(x=600, y=200)
-
-# Función para actualizar UI
+# --- Funciones de actualización y control ---
 def actualizar_ui():
-    if bot.running:
-        #bot.precio_actual = bot.get_precio_actual()
-        precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
-        cant_btc_str.set(f"₿ {bot.btc:.6f}")
-        cant_usdt_str.set(f"$ {bot.usdt:.4f}")
-        balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
-        btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
-        precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
-        inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
-        varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
-        varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
-        porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")   
-        porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
-        var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
-        fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
-        ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
-        contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
-        contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
-        porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
-        actualizar_historial_consola()
+    # Evita actualizar si la ventana ya se destruyó
+    if not ventana_principal.winfo_exists():
+        return
+    try:
+        if bot.running:
+            precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
+            cant_btc_str.set(f"₿ {bot.btc:.6f}")
+            cant_usdt_str.set(f"$ {bot.usdt:.4f}")
+            balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
+            btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
+            precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
+            inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
+            varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
+            varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
+            porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")
+            porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
+            var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
+            fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
+            ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
+            contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
+            contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
+            porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
+            ghost_ratio = bot.calcular_ghost_ratio()
+            ghost_ratio_var.set(f"{ghost_ratio:.2f}")
+            actualizar_historial_consola()
+        else:
+            # Si el bot no está corriendo, se muestra el botón de limpiar
+            boton_limpiar.grid()
+    except Exception as e:
+        print("Error al actualizar la interfaz:", e)
 
-    else:       
-        boton_limpiar.place(x=600, y=300)
-
-         
-  
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
     consola.see(END)
 
-bot.log_fn = log_en_consola  # Función que imprime en la consola de Tkinter
+bot.log_fn = log_en_consola
 
-# Función para crear una nueva instancia limpia del bot
 def crear_nuevo_bot():
     nuevo_bot = TradingBot()
     nuevo_bot.log_fn = log_en_consola
     return nuevo_bot
 
-# Instancia global del bot
+# Reasigna la instancia global del bot
 bot = crear_nuevo_bot()
 
-# === Consola Historial a la derecha ===
-historial_box = ScrolledText(ventana_principal, width=35, height=25, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 7))
-historial_box.place(x=720, y=10)
-
 def actualizar_historial_consola():
-    global ganancia_txt
     historial_box.delete('1.0', END)
     for trans in bot.transacciones:
         compra = trans.get('compra', 'N/A')
         venta_obj = trans.get('venta_obj', 'N/A')
         ejecutado = trans.get('ejecutado', False)
-        venta_txt = f"$ {venta_obj:.4f}" if ejecutado else "(no vendida)"
+        venta_txt = f"$ {venta_obj:.4f} (No ejecutada)" 
         ganancia = trans.get('ganancia', None)
-        ganancia_txt = f" | Ganancia: $ {ganancia:.6f}" if ganancia is not None else ""
         historial_box.insert(END, f"Compra: $ {compra:.2f} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.6f}\n")
-
-
-# === LÓGICA DE BOTONES ===
+        historial_box.insert(END, f"Venta ejecutada de {venta['compra']:.2f}  a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
 
 def alternar_bot():
-    
     if bot.running:
         bot.detener()
         reproducir_sonido("Sounds/detner.wav")
@@ -180,13 +196,11 @@ def limpiar_bot():
     global bot
     if not bot.running:
         reproducir_sonido("Sounds/soundlimpiara.wav")
-        consola.delete('1.0', END)   
-        historial_box.delete('1.0', END) 
-            
+        consola.delete('1.0', END)
+        historial_box.delete('1.0', END)
         bot = crear_nuevo_bot()
         log_en_consola("🔄 Bot reiniciado")
-                
-        # Resetear valores UI
+        # Resetear variables UI
         precio_act_var.set("")
         cant_btc_str.set("")
         cant_usdt_str.set("")
@@ -206,28 +220,8 @@ def limpiar_bot():
         porc_objetivo_venta_str.set("")
         boton_estado.config(text="Iniciar")
     else:
-        boton_limpiar.place_forget()     
-        
+        boton_limpiar.grid_remove()
 
-# Botones
-boton_estado = Button(ventana_principal, text="Iniciar", background="Goldenrod", command=alternar_bot, font=("CrushYourEnemies", 5))
-boton_estado.place(x=500, y=300)
-
-boton_limpiar = Button(ventana_principal, text="Limpiar", background="Goldenrod", command=limpiar_bot, font=("CrushYourEnemies", 5))
-
-
-
-# Subventanas
-"""def abrir_sbv_config():
-    sbv_conf = Toplevel(ventana_principal)
-    sbv_conf.title("Configuración de operativa")
-    sbv_conf.geometry("400x300")
-    Label(sbv_conf, text="Configurar operativa").pack()"""
-
-# Consola para mostrar estado
-consola = ScrolledText(ventana_principal, width=35, height=15, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 7))
-consola.place(x=10, y=450)    
-
-
+# Inicializa la actualización de la interfaz y arranca el mainloop
 actualizar_ui()
 ventana_principal.mainloop()
