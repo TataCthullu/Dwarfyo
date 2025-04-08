@@ -40,6 +40,7 @@ contador_compras_fantasma_str = StringVar()
 contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
 ghost_ratio_var = StringVar()
+compras_realizadas_str = StringVar()
 
 
 # --- Estructura general de la ventana ---
@@ -107,12 +108,12 @@ add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
 add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
 
-ghost_center_frame = Frame(center_frame, bg="DarkGoldenrod")
-ghost_center_frame.place(relx=0.5, rely=0.5, anchor=CENTER)
+center_frame = Frame(center_frame, bg="DarkGoldenrod")
+center_frame.place(relx=0.65, rely=0.04, anchor=CENTER)
 
 def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
-    row_frame = Frame(ghost_center_frame, bg="DarkGoldenrod")
-    row_frame.pack(fill=X, pady=2)
+    row_frame = Frame(center_frame, bg="DarkGoldenrod")
+    row_frame.pack(pady=0)
     lbl = Label(row_frame, text=label_text, bg="DarkGoldenrod", font=font)
     lbl.pack(side=LEFT, anchor="center", padx=(0,2))
     val = Label(row_frame, textvariable=variable, bg="Gold", font=font)
@@ -122,7 +123,7 @@ def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
 # Agregar la información que desees en el contenedor central
 add_center_info_row("Ghost Ratio:", ghost_ratio_var)
 # Aquí podrías agregar más filas en el centro, por ejemplo:
-# add_center_info_row("Otro Dato:", otra_variable)
+add_center_info_row("Compras Realizadas:", compras_realizadas_str)
 
 
 
@@ -167,6 +168,7 @@ def actualizar_ui():
             porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
             ghost_ratio = bot.calcular_ghost_ratio()
             ghost_ratio_var.set(f"{ghost_ratio:.2f}")
+            compras_realizadas_str.set(f"{bot.contador_compras_reales}")
             actualizar_historial_consola()
         else:
             # Si el bot no está corriendo, se muestra el botón de limpiar

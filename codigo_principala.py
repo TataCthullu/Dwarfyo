@@ -140,7 +140,7 @@ class TradingBot:
             if self.usdt >= self.fixed_buyer:     
                 self.log("\n🔵 [Parametro A].") 
                 self.comprar()
-                #self.precio_ult_comp = self.precio_actual
+                self.precio_ult_comp = self.precio_actual
                                 
             else:               
                 reproducir_sonido("Sounds/ghostcomprad.wav")
@@ -233,7 +233,7 @@ class TradingBot:
         if sale_executed:
             # Tras una venta, reactivamos el parámetro B
             self.param_b_enabled = True 
-            self.precio_ult_comp = self.precio_actual
+            
             self.precio_ult_venta = self.precio_actual   
 
     def calcular_ghost_ratio(self):
