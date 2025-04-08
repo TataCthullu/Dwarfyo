@@ -53,15 +53,17 @@ main_frame = Frame(ventana_principal, bg="DarkGoldenrod")
 main_frame.grid(row=0, column=0, sticky="nsew")
 # Configuramos tres columnas: izquierda (info), central (ghost) y derecha (consolas)
 main_frame.grid_columnconfigure(0, minsize=300, weight=0)   # Columna 0: información fija
-main_frame.grid_columnconfigure(1, weight=1)                # Columna 1: contenedor central expandible
-main_frame.grid_columnconfigure(2, minsize=300, weight=0)   # Columna 2: área de consolas
+main_frame.grid_columnconfigure(1, minsize=300, weight=0)   # Columna 1: contenedor central expandible
+main_frame.grid_columnconfigure(2, minsize=300, weight=2)   # Columna 2: área de consolas
 ventana_principal.grid_rowconfigure(0, weight=1)
+ventana_principal.grid_columnconfigure(0, weight=1)
 
 # Frame para la información (columna 0)
 info_frame = Frame(main_frame, bg="DarkGoldenrod")
 info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 info_frame.grid_columnconfigure(0, weight=1)
-info_frame.config(width=300)
+
+
 
 # Frame para el contenedor central (columna 1)
 center_frame = Frame(main_frame, bg="DarkGoldenrod", width=300)
@@ -69,9 +71,12 @@ center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 # Permitir que center_frame se expanda (sin grid_propagate para que no se ajuste solo al contenido)
 center_frame.grid_propagate(False)
 
-# Frame para el área de consolas (columna 2)
+# --- Frame para el área de consolas (columna 2) ---
 right_frame = Frame(main_frame, bg="DarkGoldenrod")
 right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
+# Configuramos que right_frame se expanda:
+right_frame.grid_rowconfigure(0, weight=1)
+right_frame.grid_columnconfigure(0, weight=1)
 
 # Frame para botones (abajo, fila 1 de main_frame)
 button_frame = Frame(main_frame, bg="DarkGoldenrod")
@@ -125,13 +130,18 @@ add_center_info_row("Ghost Ratio:", ghost_ratio_var)
 # Aquí podrías agregar más filas en el centro, por ejemplo:
 add_center_info_row("Compras Realizadas:", compras_realizadas_str)
 
-
+# --- Frame para el área de consolas (columna 2) ---
+right_frame = Frame(main_frame, bg="DarkGoldenrod")
+right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
+# Configuramos que right_frame se expanda en ambas direcciones
+right_frame.grid_rowconfigure(0, weight=1)
+right_frame.grid_columnconfigure(0, weight=1)
 
 
 # --- Área de consolas en right_frame, usando pack ---
-historial_box = ScrolledText(right_frame, width=45, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
+historial_box = ScrolledText(right_frame, width=1, height=1, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
 historial_box.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
-consola = ScrolledText(right_frame, width=50, height=10, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
+consola = ScrolledText(right_frame, width=1, height=1, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
 consola.pack(side=TOP, fill=BOTH, expand=True, padx=2, pady=2)
 
 # --- Botones en button_frame ---

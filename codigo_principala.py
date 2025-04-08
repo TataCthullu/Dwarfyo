@@ -123,7 +123,7 @@ class TradingBot:
                 })
                 
             self.actualizar_balance()
-            self.log("\n- - - - - - - - - -")
+            
             self.log("\n✅ Compra realizada.")
             self.log(f"\n📉 Precio de compra: $ {self.precio_actual:.6f}")
             #self.log(f"🕒 Hora: {self.transacciones['timestamp']}")
@@ -131,24 +131,25 @@ class TradingBot:
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("\n- - - - - - - - - -\n")           
             reproducir_sonido("Sounds/soundcompra.wav")
-            self.reportado_trabajando = False
+            
             self.contador_compras_reales += 1
 
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_desde_compra:
-            if self.usdt >= self.fixed_buyer:     
+            if self.usdt >= self.fixed_buyer:  
+                self.log("\n- - - - - - - - - -")   
                 self.log("\n🔵 [Parametro A].") 
                 self.comprar()
                 self.precio_ult_comp = self.precio_actual
                                 
             else:               
-                reproducir_sonido("Sounds/ghostcomprad.wav")
+                reproducir_sonido("Sounds/fantomva.wav")
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
                 self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.\n") 
-                self.precio_ult_comp = self.precio_actual
-                
+                self.precio_ult_comp = self.precio_actual    
+                           
                 return 
               
               
@@ -159,14 +160,15 @@ class TradingBot:
         if self.varVenta <= -self.porc_desde_venta:
             
             if self.usdt >= self.fixed_buyer: 
+                self.log("\n- - - - - - - - - -")
                 self.log("\n🔵 [Parametro B].")     
                 self.comprar()
                 self.precio_ult_venta = self.precio_actual
-                self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta
-                
+                self.precio_ult_comp = self.precio_actual
+                self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta   
+                             
             else:               
-                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes, compra fantasma agregada\n") 
-                self.contador_compras_fantasma += 1                                 
+                self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                                                 
                 return      
         
 
@@ -221,7 +223,7 @@ class TradingBot:
                 self.log(f"\n💹 Ganancia total acumulada: $ {self.total_ganancia:.8f}")
                 self.log("\n- - - - - - - - - -\n")
                 reproducir_sonido("Sounds/soundventa.wav")
-                self.reportado_trabajando = False
+                
 
         # Eliminar las vendidas después del bucle
         for trans in transacciones_vendidas:
