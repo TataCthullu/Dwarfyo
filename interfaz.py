@@ -112,7 +112,7 @@ def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
 
 # Agregar datos centrales
 add_center_info_row("Ghost Ratio:", ghost_ratio_var)
-add_center_info_row("Compras Realizadas:", compras_realizadas_str)
+add_center_info_row("Compras:", compras_realizadas_str)
 
 # --- Frame derecho: right_frame (Columna 2) ---
 right_frame = Frame(main_frame, bg="DarkGoldenrod")
@@ -164,7 +164,7 @@ def actualizar_ui():
             contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
             porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
             ghost_ratio = bot.calcular_ghost_ratio()
-            ghost_ratio_var.set(f"{ghost_ratio:.2f}")
+            ghost_ratio_var.set(f"{ghost_ratio}")
             compras_realizadas_str.set(f"{bot.contador_compras_reales}")
             actualizar_historial_consola()
         else:

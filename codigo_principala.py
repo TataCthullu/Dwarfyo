@@ -129,7 +129,7 @@ class TradingBot:
             #self.log(f"🕒 Hora: {self.transacciones['timestamp']}")
             self.log(f"\n🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"\n🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
-            self.log("\n- - - - - - - - - -\n")           
+            self.log("\n- - - - - - - - - -")           
             reproducir_sonido("Sounds/soundcompra.wav")
             
             self.contador_compras_reales += 1
@@ -144,9 +144,10 @@ class TradingBot:
                 self.precio_ult_comp = self.precio_actual
                                 
             else:               
-                reproducir_sonido("Sounds/fantomva.wav")
+                reproducir_sonido("Sounds\ghostpurchb.wav")
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
+                self.log("\n- - - - - - - - - -")
                 self.log("\n📌 Sin Usdt para comprar, nueva compra fantasma registrada.\n") 
                 self.precio_ult_comp = self.precio_actual    
                            
@@ -167,7 +168,8 @@ class TradingBot:
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta   
                              
-            else:               
+            else:  
+                self.log("\n- - - - - - - - - -")             
                 self.log("\n⚠️ Intento de compra: parámetro (B). Fondos insuficientes\n")                                                 
                 return      
         
@@ -175,10 +177,11 @@ class TradingBot:
     def parametro_venta_B(self):
         #Venta fantasma
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
-            reproducir_sonido("Sounds/ghostventab.wav")
+            reproducir_sonido("Sounds/ghostsellb.wav")
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1
             self.precio_ult_venta = self.precio_actual
+            self.log("\n- - - - - - - - - -")
             self.log("\n📌 Parámetro C: Sin BTC para vender, nueva venta fantasma registrada.")    
     
          
@@ -256,7 +259,8 @@ class TradingBot:
         self.btc = self.btc_comprado
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_profit_x_venta / 100)
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado})
-        self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}\n")        
+        self.log(f"\n🪙 Btc comprado: ₿ {self.btc_comprado:.6f}\n")
+        self.log("\n- - - - - - - - - -")        
                 
     def iniciar(self):
         self.running = True
