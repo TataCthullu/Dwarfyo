@@ -40,6 +40,7 @@ contador_ventas_fantasma_str = StringVar()
 porc_objetivo_venta_str = StringVar()
 ghost_ratio_var = StringVar()
 compras_realizadas_str = StringVar()
+ventas_realizadas_str = StringVar()
 
 # --- main_frame: contenedor principal ---
 main_frame = Frame(ventana_principal, bg="DarkGoldenrod")
@@ -113,6 +114,7 @@ def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 13)):
 # Agregar filas al área central:
 add_center_info_row("Ghost Ratio:", ghost_ratio_var)
 add_center_info_row("Compras Realizadas:", compras_realizadas_str)
+add_center_info_row("Ventas Realizadas:", ventas_realizadas_str)
 
 
 # --- Frame derecho: right_frame (Columna 2) ---
@@ -167,6 +169,7 @@ def actualizar_ui():
             ghost_ratio = bot.calcular_ghost_ratio()
             ghost_ratio_var.set(f"{ghost_ratio}")
             compras_realizadas_str.set(f"{bot.contador_compras_reales}")
+            ventas_realizadas_str.set(f"{bot.contador_ventas_reales}")
             actualizar_historial_consola()
         else:
             boton_limpiar.grid()
@@ -192,9 +195,10 @@ def actualizar_historial_consola():
         compra = trans.get('compra', 'N/A')
         venta_obj = trans.get('venta_obj', 'N/A')
         venta_txt = f"$ {venta_obj:.4f} (No ejecutada)"
-        historial_box.insert(END, f"Compra: $ {compra:.2f} -> Venta: {venta_txt}\n")
+        compra_numero_txt = trans.get('numcompra', 'N/A')
+        historial_box.insert(END, f"Compra: $ {compra:.2f}, numero: {compra_numero_txt} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada de {venta['compra']:.2f}  a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
+        historial_box.insert(END, f"Venta ejecutada de: $ {venta['compra']:.2f}, venta numero: {venta['venta_numero']} , a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
 
 def alternar_bot():
     if bot.running:
