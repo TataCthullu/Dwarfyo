@@ -154,10 +154,11 @@ class TradingBot:
                 self.contador_compras_fantasma += 1
                 self.log("\n- - - - - - - - - -")
                 self.log(f"\n📌 Sin Usdt para comprar, nueva compra fantasma registrada a {self.precio_actual:.2f}.\n")
-                reproducir_sonido("Sounds\ghostpurchb.wav") 
-                self.precio_ult_comp = self.precio_actual                    
+                 
+                self.precio_ult_comp = self.precio_actual 
+                reproducir_sonido("Sounds\ghostpurchb.wav")                   
                 self.reportado_trabajando = False
-                           
+                                           
                 return 
               
               
@@ -185,15 +186,19 @@ class TradingBot:
 
     def parametro_venta_B(self):
         #Venta fantasma
-        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
-            
+        if self.varVenta >= self.porc_desde_venta and self.btc < self.btc_comprado:           
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1
-            reproducir_sonido("Sounds/ghostsellb.wav")
+            
             self.precio_ult_venta = self.precio_actual
+            
             self.log("\n- - - - - - - - - -")
-            self.log(f"\n📌 Sin BTC para vender, nueva venta fantasma registrada a $ {self.precio_actual:.2f}.\n")              
+            self.log(f"\n📌 Sin BTC para vender, nueva venta fantasma registrada a: $ {self.precio_actual:.2f}.\n")
+            reproducir_sonido("Sounds/ghostsellb.wav")
+                          
             self.reportado_trabajando = False  
+            
+            return
     
          
 
@@ -255,9 +260,10 @@ class TradingBot:
 
         if sale_executed:
             # Tras una venta, reactivamos el parámetro B
+             
             self.param_b_enabled = True 
             
-            self.precio_ult_venta = self.precio_actual   
+              
 
     def calcular_ghost_ratio(self):
         total_signals = (self.contador_compras_fantasma + self.contador_ventas_fantasma +
@@ -315,7 +321,7 @@ class TradingBot:
                     self.log("\n- - - - - - - - - -\n")  
                     self.reportado_trabajando = True   
 
-            if self.btc < -1:
+            if self.btc < 0:
                 self.log("\n🔴Error: btc negativo")
                 reproducir_sonido("Sounds/error.wav")
                 self.detener()
