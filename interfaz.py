@@ -51,9 +51,9 @@ ventana_principal.grid_columnconfigure(0, weight=1)
 # Columna 0: info_frame, fija: minsize=300, weight=0
 # Columna 1: center_frame, fija: minsize=300, weight=0
 # Columna 2: right_frame, expandible: minsize=300, weight=2
-main_frame.grid_columnconfigure(0, weight=0, minsize=300)
-main_frame.grid_columnconfigure(1, weight=0, minsize=300)
-main_frame.grid_columnconfigure(2, weight=2, minsize=300)
+main_frame.grid_columnconfigure(0, weight=0, minsize=350)
+main_frame.grid_columnconfigure(1, weight=0, minsize=350)
+main_frame.grid_columnconfigure(2, weight=2, minsize=350)
 
 # Configuramos la fila 0 (área de contenido) para expandirse y la fila 1 (botones) con peso 0:
 main_frame.grid_rowconfigure(0, weight=1)
@@ -64,7 +64,7 @@ info_frame = Frame(main_frame, bg="DarkGoldenrod")
 info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 
 # Función para agregar filas a info_frame usando grid (alineados a la izquierda)
-def add_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
+def add_info_row(label_text, variable, font=("CrushYourEnemies", 13)):
     r_frame = Frame(info_frame, bg="DarkGoldenrod")
     r_frame.grid(sticky="w", padx=5, pady=2)
     lbl = Label(r_frame, text=label_text, bg="DarkGoldenrod", font=font)
@@ -91,28 +91,29 @@ add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
 add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
 
-# --- Frame central: center_frame (Columna 1) ---
+# --- Frame para el contenedor central (columna 1) ---
 center_frame = Frame(main_frame, bg="DarkGoldenrod")
 center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-# Permitimos que center_frame se ajuste a su contenido (sin forzar dimensiones)
-# Dentro de center_frame, creamos center_info_frame para datos centrales y lo centramos:
+# En lugar de usar place para centrar, empacamos center_info_frame en la parte superior:
 center_info_frame = Frame(center_frame, bg="DarkGoldenrod")
-center_info_frame.place(relx=0.5, rely=0.5, anchor=CENTER)
+center_info_frame.pack(side=TOP, fill=X, padx=5, pady=5)
+# Si lo deseas, puedes forzar un tamaño mínimo usando center_info_frame.config(width=250)
 
-# Función para agregar filas al center_info_frame (alineadas mediante grid)
-def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 14)):
+# --- Función para agregar filas al contenedor central (center_info_frame) ---
+def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 13)):
     row = Frame(center_info_frame, bg="DarkGoldenrod")
     row.grid(sticky="ew", padx=5, pady=2)
-    lbl = Label(row, text=label_text, bg="DarkGoldenrod", font=font, anchor="e", width=15)
+    lbl = Label(row, text=label_text, bg="DarkGoldenrod", font=font, anchor="e")
     lbl.grid(row=0, column=0, sticky="e", padx=5)
-    val = Label(row, textvariable=variable, bg="Gold", font=font, anchor="w", width=10)
+    val = Label(row, textvariable=variable, bg="Gold", font=font, anchor="w")
     val.grid(row=0, column=1, sticky="w", padx=5)
     row.grid_columnconfigure(0, weight=1)
     row.grid_columnconfigure(1, weight=1)
 
-# Agregar datos centrales
+# Agregar filas al área central:
 add_center_info_row("Ghost Ratio:", ghost_ratio_var)
-add_center_info_row("Compras:", compras_realizadas_str)
+add_center_info_row("Compras Realizadas:", compras_realizadas_str)
+
 
 # --- Frame derecho: right_frame (Columna 2) ---
 right_frame = Frame(main_frame, bg="DarkGoldenrod")
@@ -123,9 +124,9 @@ right_frame.grid_rowconfigure(1, weight=1)
 right_frame.grid_columnconfigure(0, weight=1)
 
 # Usamos grid para colocar los ScrolledText en right_frame
-historial_box = ScrolledText(right_frame, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
+historial_box = ScrolledText(right_frame, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 10))
 historial_box.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
-consola = ScrolledText(right_frame, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 14))
+consola = ScrolledText(right_frame, bg="Goldenrod", fg="Black", font=("CrushYourEnemies", 10))
 consola.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
 
 # --- Botones: button_frame (Fila 1) ---
@@ -148,7 +149,7 @@ def actualizar_ui():
         if bot.running:
             precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
             cant_btc_str.set(f"₿ {bot.btc:.6f}")
-            cant_usdt_str.set(f"$ {bot.usdt:.4f}")
+            cant_usdt_str.set(f"$ {bot.usdt:.6f}")
             balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
             btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
             precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
@@ -158,7 +159,7 @@ def actualizar_ui():
             porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")
             porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
             var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
-            fixed_buyer_str.set(f"$ {bot.fixed_buyer:.4f}")
+            fixed_buyer_str.set(f"$ {bot.fixed_buyer:.2f}")
             ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
             contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
             contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
