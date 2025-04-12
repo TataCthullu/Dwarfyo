@@ -167,7 +167,7 @@ def actualizar_ui():
             contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
             porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
             ghost_ratio = bot.calcular_ghost_ratio()
-            ghost_ratio_var.set(f"{ghost_ratio}")
+            ghost_ratio_var.set(f"{ghost_ratio:.2f}")
             compras_realizadas_str.set(f"{bot.contador_compras_reales}")
             ventas_realizadas_str.set(f"{bot.contador_ventas_reales}")
             actualizar_historial_consola()
@@ -198,7 +198,7 @@ def actualizar_historial_consola():
         compra_numero_txt = trans.get('numcompra', 'N/A')
         historial_box.insert(END, f"Compra: $ {compra:.2f}, numero: {compra_numero_txt} -> Venta: {venta_txt}\n")
     for venta in bot.precios_ventas:
-        historial_box.insert(END, f"Venta ejecutada de: $ {venta['compra']:.2f}, venta numero: {venta['venta_numero']} , a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
+        historial_box.insert(END, f"Venta ejecutada de: $ {venta['compra']:.2f}, numero: {venta['venta_numero']}, a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
 
 def alternar_bot():
     if bot.running:
