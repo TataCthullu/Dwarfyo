@@ -65,7 +65,7 @@ info_frame = Frame(main_frame, bg="DarkGoldenrod")
 info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 
 # Función para agregar filas a info_frame usando grid (alineados a la izquierda)
-def add_info_row(label_text, variable, font=("CrushYourEnemies", 13)):
+def add_info_row(label_text, variable, font=("CrushYourEnemies", 12)):
     r_frame = Frame(info_frame, bg="DarkGoldenrod")
     r_frame.grid(sticky="w", padx=5, pady=2)
     lbl = Label(r_frame, text=label_text, bg="DarkGoldenrod", font=font)
@@ -101,7 +101,7 @@ center_info_frame.pack(side=TOP, fill=X, padx=5, pady=5)
 # Si lo deseas, puedes forzar un tamaño mínimo usando center_info_frame.config(width=250)
 
 # --- Función para agregar filas al contenedor central (center_info_frame) ---
-def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 13)):
+def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 12)):
     row = Frame(center_info_frame, bg="DarkGoldenrod")
     row.grid(sticky="ew", padx=5, pady=2)
     lbl = Label(row, text=label_text, bg="DarkGoldenrod", font=font, anchor="e")
