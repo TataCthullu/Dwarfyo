@@ -142,6 +142,8 @@ boton_estado = Button(button_frame, text="Iniciar", bg="Goldenrod", command=lamb
 boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
 boton_limpiar = Button(button_frame, text="Limpiar", bg="Goldenrod", command=lambda: limpiar_bot(), font=("CrushYourEnemies", 7))
 boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
+boton_limpiar.grid_remove()
+limpiar_visible = False
 
 # --- Funciones de actualización y control se mantienen iguales ---
 def actualizar_ui():
@@ -171,8 +173,9 @@ def actualizar_ui():
             compras_realizadas_str.set(f"{bot.contador_compras_reales}")
             ventas_realizadas_str.set(f"{bot.contador_ventas_reales}")
             actualizar_historial_consola()
-        else:
-            boton_limpiar.grid()
+        # Si el bot está detenido, mostramos "Limpiar" solo si el flag lo permite
+        if limpiar_visible:
+            boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
     except Exception as e:
         print("Error al actualizar la interfaz:", e)
 
@@ -201,19 +204,23 @@ def actualizar_historial_consola():
         historial_box.insert(END, f"Venta ejecutada de: $ {venta['compra']:.2f}, numero: {venta['venta_numero']}, a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
 
 def alternar_bot():
-    if bot.running:
-        bot.detener()
-        reproducir_sonido("Sounds/detner.wav")
-        boton_estado.config(text="Iniciar")
-    else:
+    global limpiar_visible
+    if not bot.running:
         bot.iniciar()
         bot.loop(actualizar_ui, ventana_principal.after)
         reproducir_sonido("Sounds/soundinicio.wav")
         actualizar_ui()
-        boton_estado.config(text="Detener")
+        boton_estado.config(text="Detener") 
+        boton_limpiar.grid_remove()       
+    else:
+        bot.detener()
+        reproducir_sonido("Sounds/detner.wav")
+        boton_estado.grid_remove()
+        limpiar_visible = True
+        boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
 
 def limpiar_bot():
-    global bot
+    global bot, limpiar_visible
     if not bot.running:
         reproducir_sonido("Sounds/soundlimpiara.wav")
         consola.delete('1.0', END)
@@ -240,6 +247,10 @@ def limpiar_bot():
         ghost_ratio_var.set("")
         compras_realizadas_str.set("")
         ventas_realizadas_str.set("")
+        # Luego de limpiar, ocultamos Limpiar y volvemos a mostrar el botón de Iniciar
+        limpiar_visible = False
+        boton_limpiar.grid_remove()
+        boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
         boton_estado.config(text="Iniciar")
     else:
         boton_limpiar.grid_remove()
