@@ -237,6 +237,9 @@ def limpiar_bot():
         contador_compras_fantasma_str.set("")
         contador_ventas_fantasma_str.set("")
         porc_objetivo_venta_str.set("")
+        ghost_ratio_var.set("")
+        compras_realizadas_str.set("")
+        ventas_realizadas_str.set("")
         boton_estado.config(text="Iniciar")
     else:
         boton_limpiar.grid_remove()
