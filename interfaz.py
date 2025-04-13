@@ -79,6 +79,12 @@ def abrir_configuracion_subventana():
     config_ventana.title("Configuración de operativa")
     config_ventana.configure(bg="DarkGoldenrod")
     reproducir_sonido("Sounds/antorcha.wav")
+
+    def detener_sonido_y_cerrar():
+        pygame.mixer.music.stop()
+        config_ventana.destroy()
+
+    config_ventana.protocol("WM_DELETE_WINDOW", detener_sonido_y_cerrar)    
     
     # Creamos un contenedor principal para empacar los elementos
     container = Frame(config_ventana, bg="DarkGoldenrod")
@@ -149,6 +155,8 @@ def abrir_configuracion_subventana():
             log_en_consola("- - - - - - - - - -")
             log_en_consola("Error: ingresa números válidos.")
             log_en_consola("- - - - - - - - - -")
+        
+        detener_sonido_y_cerrar()
         config_ventana.destroy()
 
     
@@ -331,7 +339,7 @@ def limpiar_bot():
         consola.delete('1.0', END)
         historial_box.delete('1.0', END)
         bot = crear_nuevo_bot()
-        log_en_consola("🔄 Bot reiniciado")
+        log_en_consola("🔄 Khazâd reiniciado")
         precio_act_var.set("")
         cant_btc_str.set("")
         cant_usdt_str.set("")
