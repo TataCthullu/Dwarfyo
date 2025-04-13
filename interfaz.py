@@ -68,42 +68,84 @@ def abrir_configuracion_subventana():
     config_ventana = Toplevel(ventana_principal)
     config_ventana.title("Configuración de operativa")
     config_ventana.configure(bg="DarkGoldenrod")
-
-    Label(config_ventana, text="Porcentaje desde compra: ", bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).grid(row=0, column=0, sticky="w", padx=5, pady=5)
-    entry_porcentaje_compra = Entry(config_ventana, font=("CrushYourEnemies", 12))
-    entry_porcentaje_compra.grid(row=0, column=1, padx=5, pady=5)
+    
+    # Creamos un contenedor principal para empacar los elementos
+    container = Frame(config_ventana, bg="DarkGoldenrod")
+    container.pack(padx=10, pady=10, fill=X)
+    
+    # Fila 1: Porcentaje desde compra
+    frame_compra = Frame(container, bg="DarkGoldenrod")
+    frame_compra.pack(fill=X, pady=5)
+    label_compra = Label(frame_compra, text="Porcentaje desde compra, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_compra.pack(side=LEFT)
+    label_pct1 = Label(frame_compra, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_pct1.pack(side=LEFT)
+    entry_porcentaje_compra = Entry(frame_compra, font=("CrushYourEnemies", 12))
+    entry_porcentaje_compra.pack(side=LEFT, padx=5)
     entry_porcentaje_compra.insert(0, f"{bot.porc_desde_compra}")
-
-    Label(config_ventana, text="Porcentaje desde venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).grid(row=1, column=0, sticky="w", padx=5, pady=5)
-    entry_porcentaje_venta = Entry(config_ventana, font=("CrushYourEnemies", 12))
-    entry_porcentaje_venta.grid(row=1, column=1, padx=5, pady=5)
+    
+    # Fila 2: Porcentaje desde venta
+    frame_venta = Frame(container, bg="DarkGoldenrod")
+    frame_venta.pack(fill=X, pady=5)
+    label_venta = Label(frame_venta, text="Porcentaje desde venta, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_venta.pack(side=LEFT)
+    label_pct2 = Label(frame_venta, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_pct2.pack(side=LEFT)
+    entry_porcentaje_venta = Entry(frame_venta, font=("CrushYourEnemies", 12))
+    entry_porcentaje_venta.pack(side=LEFT, padx=5)
     entry_porcentaje_venta.insert(0, f"{bot.porc_desde_venta}")
-
-    Label(config_ventana, text="Cantidad Total USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).grid(row=2, column=0, sticky="w", padx=5, pady=5)
-    entry_total_usdt = Entry(config_ventana, font=("CrushYourEnemies", 12))
-    entry_total_usdt.grid(row=2, column=1, padx=5, pady=5)
+    
+    # Fila 3: Cantidad Total USDT
+    frame_usdt = Frame(container, bg="DarkGoldenrod")
+    frame_usdt.pack(fill=X, pady=5)
+    label_total = Label(frame_usdt, text="Cantidad Total USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_total.pack(side=LEFT)
+    label_pct3 = Label(frame_usdt, text="$", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_pct3.pack(side=LEFT)
+    entry_total_usdt = Entry(frame_usdt, font=("CrushYourEnemies", 12))
+    entry_total_usdt.pack(side=LEFT, padx=5)
     entry_total_usdt.insert(0, f"{bot.usdt}")
-
-    Label(config_ventana, text="Porcentaje a invertir por operación:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).grid(row=3, column=0, sticky="w", padx=5, pady=5)
-    entry_inversion = Entry(config_ventana, font=("CrushYourEnemies", 12))
-    entry_inversion.grid(row=3, column=1, padx=5, pady=5)
+    
+    # Fila 4: Porcentaje a invertir por operación
+    frame_inversion = Frame(container, bg="DarkGoldenrod")
+    frame_inversion.pack(fill=X, pady=5)
+    label_inversion = Label(frame_inversion, text="Porcentaje fijo a invertir por operación:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_inversion.pack(side=LEFT)
+    label_pct3 = Label(frame_inversion, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_pct3.pack(side=LEFT)
+    entry_inversion = Entry(frame_inversion, font=("CrushYourEnemies", 12))
+    entry_inversion.pack(side=LEFT, padx=5)
     entry_inversion.insert(0, f"{bot.porc_inv_por_compra}")
-
+    
+    # Fila 5: Profit por operación
+    frame_profit = Frame(container, bg="DarkGoldenrod")
+    frame_profit.pack(fill=X, pady=5)
+    label_profit = Label(frame_profit, text="Profit por operación:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_profit.pack(side=LEFT)
+    label_pct4 = Label(frame_profit, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_pct4.pack(side=LEFT)
+    entry_prof = Entry(frame_profit, font=("CrushYourEnemies", 12))
+    entry_prof.pack(side=LEFT, padx=5)
+    entry_prof.insert(0, f"{bot.porc_profit_x_venta}")
+    
+    # Botón Guardar, empacado al final
     def guardar_config():
         try:
-            # Convertir los valores a float y actualizar los atributos correspondientes del bot
             bot.porc_desde_compra = float(entry_porcentaje_compra.get())
             bot.porc_desde_venta = float(entry_porcentaje_venta.get())
             bot.usdt = float(entry_total_usdt.get())
-            bot.porc_inv_por_compra = float(entry_inversion.get())
-            # También puedes recalcular el valor de fixed_buyer a partir de la nueva configuración:
-            bot.fixed_buyer = bot.cant_inv()
+            bot.porc_profit_x_venta = float(entry_prof.get())
+            bot.porc_inv_por_compra = float(entry_inversion.get())            
             log_en_consola("Configuración actualizada.")
+            log_en_consola("- - - - - - - - - -")
+
         except ValueError:
             log_en_consola("Error: ingresa números válidos.")
         config_ventana.destroy()
+    
+    btn_guardar = Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies", 8))
+    btn_guardar.pack(pady=10)
 
-    Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies", 12)).grid(row=4, column=0, columnspan=2, pady=10)
 
 # Función para agregar filas a info_frame usando grid (alineados a la izquierda)
 def add_info_row(label_text, variable, font=("CrushYourEnemies", 12)):
@@ -159,7 +201,7 @@ add_center_info_row("Ghost Ratio:", ghost_ratio_var)
 add_center_info_row("Compras Realizadas:", compras_realizadas_str)
 add_center_info_row("Ventas Realizadas:", ventas_realizadas_str)
 
-btn_config = Button(center_frame, text="Configurar Operativa", bg="Goldenrod", command=abrir_configuracion_subventana, font=("CrushYourEnemies", 12))
+btn_config = Button(center_frame, text="Configurar Operativa", bg="Goldenrod", command=abrir_configuracion_subventana, font=("CrushYourEnemies", 8))
 btn_config.pack(side=TOP, pady=10)
 
 
