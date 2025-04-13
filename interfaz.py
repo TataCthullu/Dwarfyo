@@ -120,7 +120,7 @@ def abrir_configuracion_subventana():
     # Fila 5: Profit por operación
     frame_profit = Frame(container, bg="DarkGoldenrod")
     frame_profit.pack(fill=X, pady=5)
-    label_profit = Label(frame_profit, text="Profit por operación:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
+    label_profit = Label(frame_profit, text="Objetivo para venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_profit.pack(side=LEFT)
     label_pct4 = Label(frame_profit, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_pct4.pack(side=LEFT)
@@ -140,7 +140,9 @@ def abrir_configuracion_subventana():
             log_en_consola("- - - - - - - - - -")
 
         except ValueError:
+            log_en_consola("- - - - - - - - - -")
             log_en_consola("Error: ingresa números válidos.")
+            log_en_consola("- - - - - - - - - -")
         config_ventana.destroy()
     
     btn_guardar = Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies", 8))
@@ -159,21 +161,22 @@ def add_info_row(label_text, variable, font=("CrushYourEnemies", 12)):
 # Agregar información al info_frame
 add_info_row("Precio actual BTC/USDT:", precio_act_var)
 add_info_row("Usdt + Btc:", balance_var)
-add_info_row("Usdt Disponible:", cant_usdt_str)
+
 add_info_row("Btc Disponible:", cant_btc_str)
 add_info_row("Btc en Usdt:", btc_en_usdt)
 add_info_row("% Desde ultima compra:", varpor_set_compra_str)
 add_info_row("% Desde ultima venta:", varpor_set_venta_str)
-add_info_row("% Desde ultima compra, para compra:", porc_desde_venta_str)
-add_info_row("% Desde ultima venta, para compra:", porc_desde_compra_str)
+
 add_info_row("Precio de ingreso:", precio_de_ingreso_str)
-add_info_row("Inversión por compra:", inv_por_compra_str)
+
 add_info_row("Variación desde inicio:", var_inicio_str)
-add_info_row("Monto fijo por inversión:", fixed_buyer_str)
-add_info_row("% Para objetivo de venta:", porc_objetivo_venta_str)
+
 add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
 add_info_row("Compras fantasma:", contador_compras_fantasma_str)
 add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
+add_info_row("Ghost Ratio:", ghost_ratio_var)
+add_info_row("Compras Realizadas:", compras_realizadas_str)
+add_info_row("Ventas Realizadas:", ventas_realizadas_str)
 
 # --- Frame para el contenedor central (columna 1) ---
 center_frame = Frame(main_frame, bg="DarkGoldenrod")
@@ -197,9 +200,16 @@ def add_center_info_row(label_text, variable, font=("CrushYourEnemies", 12)):
 
 
 # Agregar filas al área central:
-add_center_info_row("Ghost Ratio:", ghost_ratio_var)
-add_center_info_row("Compras Realizadas:", compras_realizadas_str)
-add_center_info_row("Ventas Realizadas:", ventas_realizadas_str)
+
+
+
+add_center_info_row("% Para objetivo de venta:", porc_objetivo_venta_str)
+add_center_info_row("% Desde ultima compra, para compra:", porc_desde_venta_str)
+add_center_info_row("% Desde ultima venta, para compra:", porc_desde_compra_str)
+add_center_info_row("Usdt Disponible:", cant_usdt_str)
+add_center_info_row("Monto fijo por inversión:", fixed_buyer_str)
+add_center_info_row("Inversión por compra:", inv_por_compra_str)
+
 
 btn_config = Button(center_frame, text="Configurar Operativa", bg="Goldenrod", command=abrir_configuracion_subventana, font=("CrushYourEnemies", 8))
 btn_config.pack(side=TOP, pady=10)
