@@ -64,6 +64,14 @@ main_frame.grid_rowconfigure(1, weight=0)
 info_frame = Frame(main_frame, bg="DarkGoldenrod")
 info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
 
+# Función para obtener el valor sin el símbolo %
+def obtener_valor_limpio(entry_var):
+    valor = entry_var.get().replace('%', '').strip()
+    try:
+        return float(valor)
+    except ValueError:
+        return 0  # o lo que quieras como fallback
+
 def abrir_configuracion_subventana():
     config_ventana = Toplevel(ventana_principal)
     config_ventana.title("Configuración de operativa")
@@ -78,64 +86,59 @@ def abrir_configuracion_subventana():
     frame_compra.pack(fill=X, pady=5)
     label_compra = Label(frame_compra, text="Porcentaje desde compra, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_compra.pack(side=LEFT)
-    label_pct1 = Label(frame_compra, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
-    label_pct1.pack(side=LEFT)
+   
     entry_porcentaje_compra = Entry(frame_compra, font=("CrushYourEnemies", 12))
     entry_porcentaje_compra.pack(side=LEFT, padx=5)
-    entry_porcentaje_compra.insert(0, f"{bot.porc_desde_compra}")
+    entry_porcentaje_compra.insert(0, f"% {bot.porc_desde_compra}")
     
     # Fila 2: Porcentaje desde venta
     frame_venta = Frame(container, bg="DarkGoldenrod")
     frame_venta.pack(fill=X, pady=5)
     label_venta = Label(frame_venta, text="Porcentaje desde venta, para compra:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_venta.pack(side=LEFT)
-    label_pct2 = Label(frame_venta, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
-    label_pct2.pack(side=LEFT)
+   
     entry_porcentaje_venta = Entry(frame_venta, font=("CrushYourEnemies", 12))
     entry_porcentaje_venta.pack(side=LEFT, padx=5)
-    entry_porcentaje_venta.insert(0, f"{bot.porc_desde_venta}")
+    entry_porcentaje_venta.insert(0, f"% {bot.porc_desde_venta}")
     
     # Fila 3: Cantidad Total USDT
     frame_usdt = Frame(container, bg="DarkGoldenrod")
     frame_usdt.pack(fill=X, pady=5)
     label_total = Label(frame_usdt, text="Cantidad Total USDT:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_total.pack(side=LEFT)
-    label_pct3 = Label(frame_usdt, text="$", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
-    label_pct3.pack(side=LEFT)
+    
     entry_total_usdt = Entry(frame_usdt, font=("CrushYourEnemies", 12))
     entry_total_usdt.pack(side=LEFT, padx=5)
-    entry_total_usdt.insert(0, f"{bot.usdt}")
+    entry_total_usdt.insert(0, f"$ {bot.usdt}")
     
     # Fila 4: Porcentaje a invertir por operación
     frame_inversion = Frame(container, bg="DarkGoldenrod")
     frame_inversion.pack(fill=X, pady=5)
     label_inversion = Label(frame_inversion, text="Porcentaje fijo a invertir por operación:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_inversion.pack(side=LEFT)
-    label_pct3 = Label(frame_inversion, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
-    label_pct3.pack(side=LEFT)
+    
     entry_inversion = Entry(frame_inversion, font=("CrushYourEnemies", 12))
     entry_inversion.pack(side=LEFT, padx=5)
-    entry_inversion.insert(0, f"{bot.porc_inv_por_compra}")
+    entry_inversion.insert(0, f"% {bot.porc_inv_por_compra}")
     
     # Fila 5: Profit por operación
     frame_profit = Frame(container, bg="DarkGoldenrod")
     frame_profit.pack(fill=X, pady=5)
     label_profit = Label(frame_profit, text="Objetivo para venta:", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
     label_profit.pack(side=LEFT)
-    label_pct4 = Label(frame_profit, text="%", bg="DarkGoldenrod", font=("CrushYourEnemies", 12))
-    label_pct4.pack(side=LEFT)
+    
     entry_prof = Entry(frame_profit, font=("CrushYourEnemies", 12))
     entry_prof.pack(side=LEFT, padx=5)
-    entry_prof.insert(0, f"{bot.porc_profit_x_venta}")
+    entry_prof.insert(0, f"% {bot.porc_profit_x_venta}")
     
-    # Botón Guardar, empacado al final
     def guardar_config():
         try:
-            bot.porc_desde_compra = float(entry_porcentaje_compra.get())
-            bot.porc_desde_venta = float(entry_porcentaje_venta.get())
-            bot.usdt = float(entry_total_usdt.get())
-            bot.porc_profit_x_venta = float(entry_prof.get())
-            bot.porc_inv_por_compra = float(entry_inversion.get())            
+            bot.porc_desde_compra = obtener_valor_limpio(entry_porcentaje_compra)
+            bot.porc_desde_venta = obtener_valor_limpio(entry_porcentaje_venta)
+            bot.usdt = obtener_valor_limpio(entry_total_usdt)
+            bot.porc_profit_x_venta = obtener_valor_limpio(entry_prof)
+            bot.porc_inv_por_compra = obtener_valor_limpio(entry_inversion)
+            log_en_consola("- - - - - - - - - -")
             log_en_consola("Configuración actualizada.")
             log_en_consola("- - - - - - - - - -")
 
@@ -144,6 +147,7 @@ def abrir_configuracion_subventana():
             log_en_consola("Error: ingresa números válidos.")
             log_en_consola("- - - - - - - - - -")
         config_ventana.destroy()
+
     
     btn_guardar = Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies", 8))
     btn_guardar.pack(pady=10)
