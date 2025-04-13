@@ -255,7 +255,7 @@ class TradingBot:
                         
     def iniciar(self):
         self.running = True
-        self.log("🟡 Bot iniciado.")
+        self.log("🟡 Khazâd iniciado.")
         self.log("- - - - - - - - - -")
         self.realizar_primera_compra()
                                      
@@ -277,7 +277,7 @@ class TradingBot:
                 self.var_inicio = self.varpor_ingreso()
                             
                 if self.reportado_trabajando == False:                        
-                    self.log("🟡 Bot Trabajando...")                      
+                    self.log("🟡 Trabajando...")                      
                     self.reportado_trabajando = True   
 
             if self.btc < 0:
@@ -294,7 +294,7 @@ class TradingBot:
     def detener(self):
         self.running = False
         self.log("- - - - - - - - - -")
-        self.log("🔴 Bot detenido.")
+        self.log("🔴 Khazâd detenido.")
 
 if __name__ == "__main__":
     bot = TradingBot()
