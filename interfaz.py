@@ -300,6 +300,7 @@ def actualizar_ui():
             ghost_ratio_var.set(f"{ghost_ratio:.2f}")
             compras_realizadas_str.set(f"{bot.contador_compras_reales}")
             ventas_realizadas_str.set(f"{bot.contador_ventas_reales}")
+            
                       
             actualizar_historial_consola()
             actualizar_color("precio_actual", bot.precio_actual)

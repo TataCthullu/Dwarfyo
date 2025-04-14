@@ -1,6 +1,7 @@
 import ccxt
 import pygame
 pygame.mixer.init()
+from interfaz import *
 
 def reproducir_sonido(ruta):
     pygame.mixer.music.load(ruta)
@@ -240,6 +241,9 @@ class TradingBot:
         return (self.contador_compras_fantasma + self.contador_ventas_fantasma) / total_signals
                           
     def realizar_primera_compra(self):
+        if self.precio_actual is None or self.precio_actual == 0:
+            self.log("❌ Precio actual no válido, no se puede realizar la compra.")
+            return
         self.log(f"🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")        
         self.usdt -= self.fixed_buyer 
         self.actualizar_balance()        
@@ -297,8 +301,7 @@ class TradingBot:
         self.log("🔴 Khazâd detenido.")
 
 if __name__ == "__main__":
-    bot = TradingBot()
-    bot.iniciar()
+    ventana_principal.mainloop()
     
 
 
