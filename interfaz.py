@@ -42,6 +42,12 @@ ghost_ratio_var = StringVar()
 compras_realizadas_str = StringVar()
 ventas_realizadas_str = StringVar()
 
+# Diccionario para guardar la referencia a los Label de cada dato
+info_labels = {}
+# Diccionario para almacenar los valores iniciales de referencia
+valores_iniciales = {}
+
+
 # --- main_frame: contenedor principal ---
 main_frame = Frame(ventana_principal, bg="DarkGoldenrod")
 main_frame.grid(row=0, column=0, sticky="nsew")
@@ -165,33 +171,35 @@ def abrir_configuracion_subventana():
 
 
 # Función para agregar filas a info_frame usando grid (alineados a la izquierda)
-def add_info_row(label_text, variable, font=("CrushYourEnemies", 12)):
+def add_info_row(label_text, variable, key, font=("CrushYourEnemies", 12)):
     r_frame = Frame(info_frame, bg="DarkGoldenrod")
     r_frame.grid(sticky="w", padx=5, pady=2)
     lbl = Label(r_frame, text=label_text, bg="DarkGoldenrod", font=font)
     lbl.pack(side=LEFT, anchor="w", padx=(0,5))
     val = Label(r_frame, textvariable=variable, bg="Gold", font=font)
     val.pack(side=LEFT, anchor="w")
+    if key is not None:
+        info_labels[key] = val
     
 # Agregar información al info_frame
-add_info_row("Precio actual BTC/USDT:", precio_act_var)
-add_info_row("Usdt + Btc:", balance_var)
+add_info_row("Precio actual BTC/USDT:", precio_act_var, "precio_actual")
+add_info_row("Usdt + Btc:", balance_var, "balance")
 
-add_info_row("Btc Disponible:", cant_btc_str)
-add_info_row("Btc en Usdt:", btc_en_usdt)
-add_info_row("% Desde ultima compra:", varpor_set_compra_str)
-add_info_row("% Desde ultima venta:", varpor_set_venta_str)
+add_info_row("Btc Disponible:", cant_btc_str, "btc_dispo")
+add_info_row("Btc en Usdt:", btc_en_usdt, "btcnusdt")
+add_info_row("% Desde ultima compra:", varpor_set_compra_str, "desde_ult_comp")
+add_info_row("% Desde ultima venta:", varpor_set_venta_str, "ult_vent")
 
-add_info_row("Precio de ingreso:", precio_de_ingreso_str)
+add_info_row("Precio de ingreso:", precio_de_ingreso_str, "desde_inicio")
 
-add_info_row("Variación desde inicio:", var_inicio_str)
+add_info_row("Variación desde inicio:", var_inicio_str, "variacion_desde_inicio")
 
-add_info_row("Ganancia neta en Usdt:", ganancia_total_str)
-add_info_row("Compras fantasma:", contador_compras_fantasma_str)
-add_info_row("Ventas fantasma:", contador_ventas_fantasma_str)
-add_info_row("Ghost Ratio:", ghost_ratio_var)
-add_info_row("Compras Realizadas:", compras_realizadas_str)
-add_info_row("Ventas Realizadas:", ventas_realizadas_str)
+add_info_row("Ganancia neta en Usdt:", ganancia_total_str, "ganancia_neta")
+add_info_row("Compras fantasma:", contador_compras_fantasma_str, "compras_f")
+add_info_row("Ventas fantasma:", contador_ventas_fantasma_str, "ventas_f")
+add_info_row("Ghost Ratio:", ghost_ratio_var, "gr")
+add_info_row("Compras Realizadas:", compras_realizadas_str, "compras_r")
+add_info_row("Ventas Realizadas:", ventas_realizadas_str, "ventas_r")
 
 # --- Frame para el contenedor central (columna 1) ---
 center_frame = Frame(main_frame, bg="DarkGoldenrod")
@@ -264,7 +272,13 @@ def actualizar_ui():
         return
     try:
         if bot.running:
-            precio_act_var.set(f"$ {bot.precio_actual:.4f}" if bot.precio_actual else "N/D")
+            
+            # Actualizamos el precio, usando comprobación explícita (incluso si es 0)
+            if bot.precio_actual is not None:
+                precio_act_var.set(f"$ {bot.precio_actual:.4f}")
+            else:
+                precio_act_var.set("N/D")
+
             cant_btc_str.set(f"₿ {bot.btc:.6f}")
             cant_usdt_str.set(f"$ {bot.usdt:.6f}")
             balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
@@ -285,12 +299,45 @@ def actualizar_ui():
             ghost_ratio_var.set(f"{ghost_ratio:.2f}")
             compras_realizadas_str.set(f"{bot.contador_compras_reales}")
             ventas_realizadas_str.set(f"{bot.contador_ventas_reales}")
+                      
             actualizar_historial_consola()
+            actualizar_color("precio_actual", bot.precio_actual)
+            actualizar_color("balance", bot.btc_usdt)
+            actualizar_color("desde_ult_comp", bot.varCompra)
+            actualizar_color("ult_vent", bot.varVenta)
+            actualizar_color("variacion_desde_inicio", bot.var_inicio)        
+
         # Si el bot está detenido, mostramos "Limpiar" solo si el flag lo permite
         if limpiar_visible:
             boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
     except Exception as e:
         print("Error al actualizar la interfaz:", e)
+
+    
+def actualizar_color(key, valor_actual):
+    # Si el valor actual es None, no hacemos nada
+    if valor_actual is None:
+        return
+    
+    # Si aun no guardamos el valor inicial, lo guardamos ahora
+    if key not in valores_iniciales:
+        valores_iniciales[key] = valor_actual
+        return  # A la primera actualización no hay comparación
+    
+    valor_inicial = valores_iniciales[key]
+    
+    # Determinar el color: verde si es mayor, rojo si es menor.
+    if valor_actual > valor_inicial:
+        color = "green"  # O "green"
+    elif valor_actual < valor_inicial:
+        color = "red"  # O "red"
+    else:
+        color = "black"  # Color por defecto
+    
+    # Actualizamos el fondo del Label correspondiente (podés actualizar también el foreground si lo prefieres)
+    if key in info_labels:
+        info_labels[key].configure(fg=color)
+
 
 def log_en_consola(mensaje):
     consola.insert(END, mensaje + "\n")
@@ -360,6 +407,7 @@ def limpiar_bot():
         ghost_ratio_var.set("")
         compras_realizadas_str.set("")
         ventas_realizadas_str.set("")
+        valores_iniciales.clear()  
         # Luego de limpiar, ocultamos Limpiar y volvemos a mostrar el botón de Iniciar
         limpiar_visible = False
         boton_limpiar.grid_remove()
