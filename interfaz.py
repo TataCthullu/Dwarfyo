@@ -153,6 +153,7 @@ def abrir_configuracion_subventana():
             bot.usdt = obtener_valor_limpio(entry_total_usdt)
             bot.porc_profit_x_venta = obtener_valor_limpio(entry_prof)
             bot.porc_inv_por_compra = obtener_valor_limpio(entry_inversion)
+            bot.fixed_buyer = bot.usdt * (bot.porc_inv_por_compra / 100)
             log_en_consola("- - - - - - - - - -")
             log_en_consola("Configuración actualizada.")
             log_en_consola("- - - - - - - - - -")
@@ -281,7 +282,7 @@ def actualizar_ui():
 
             cant_btc_str.set(f"₿ {bot.btc:.6f}")
             cant_usdt_str.set(f"$ {bot.usdt:.6f}")
-            balance_var.set(f"$ {bot.usdt + (bot.btc * bot.precio_actual):.6f}" if bot.precio_actual else 0)
+            balance_var.set(f"$ {bot.usdt_mas_btc}" if bot.precio_actual else 0)
             btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
             precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
             inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
@@ -302,7 +303,7 @@ def actualizar_ui():
                       
             actualizar_historial_consola()
             actualizar_color("precio_actual", bot.precio_actual)
-            actualizar_color("balance", bot.btc_usdt)
+            actualizar_color("balance", bot.usdt_mas_btc)
             actualizar_color("desde_ult_comp", bot.varCompra)
             actualizar_color("ult_vent", bot.varVenta)
             actualizar_color("variacion_desde_inicio", bot.var_inicio)        
