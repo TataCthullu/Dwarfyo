@@ -311,24 +311,11 @@ class TradingBot:
         self.precios_ventas.clear()
         self.valores_iniciales.clear()
 
-        self.precio_de_ingreso = 0
-        self.ultima_compra = None
-        self.ultima_venta = None
-        self.ganancia_total = 0
-        self.num_operacion = 0
-
-        # Contadores fantasmas
-        self.compras_fantasma = 0
-        self.ventas_fantasma = 0
-
-        # Contadores reales
-        self.compras_realizadas = 0
-        self.ventas_realizadas = 0
-
+        
         # Si estás usando sonidos o funciones de log
         if self.log_fn:
             self.log("- - - - - - - - - -")
-            self.log("🔄 Bot reiniciado.")
+            self.log("🔄 Khazâd reiniciado")
 
         
 

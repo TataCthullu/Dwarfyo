@@ -359,6 +359,7 @@ def iniciar_interfaz(bot):
             historial_box.insert(END, f"Venta ejecutada de: $ {venta['compra']:.2f}, numero: {venta['venta_numero']}, a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
 
     def alternar_bot():
+        global limpiar_visible
         if not bot.running:
             bot.iniciar()
             bot.loop(actualizar_ui, ventana_principal.after)
@@ -377,44 +378,45 @@ def iniciar_interfaz(bot):
         
 
     def limpiar_bot():
+        global limpiar_visible
         if not bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
             consola.delete('1.0', END)
             historial_box.delete('1.0', END)
             
             log_en_consola("🔄 Khazâd reiniciado")
-            precio_act_var.set("")
-            cant_btc_str.set("")
-            cant_usdt_str.set("")
-            balance_var.set("")
-            btc_en_usdt.set("")
-            precio_de_ingreso_str.set("")
-            inv_por_compra_str.set("")
-            varpor_set_compra_str.set("")
-            varpor_set_venta_str.set("")
-            porc_desde_compra_str.set("")
-            porc_desde_venta_str.set("")
-            var_inicio_str.set("")
-            fixed_buyer_str.set("")
-            ganancia_total_str.set("")
-            contador_compras_fantasma_str.set("")
-            contador_ventas_fantasma_str.set("")
-            porc_objetivo_venta_str.set("")
-            ghost_ratio_var.set("")
-            compras_realizadas_str.set("")
-            ventas_realizadas_str.set("")
-            valores_iniciales.clear()  
+              
             # Luego de limpiar, ocultamos Limpiar y volvemos a mostrar el botón de Iniciar
             limpiar_visible = False
             boton_limpiar.grid_remove()
             boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
             boton_estado.config(text="Iniciar")
+            bot.reiniciar()
         else:
             boton_limpiar.grid_remove()
 
-    bot.set_valores_iniciales(valores_iniciales)
-    bot.reiniciar()  # ✅ mantiene la instancia, limpia los datos        
+    
+       
+
+    # Función para inicializar los valores iniciales
+    def inicializar_valores_iniciales():
+        if bot.precio_actual is not None:
+            valores_iniciales["precio_actual"] = bot.precio_actual
+        if bot.usdt_mas_btc is not None:
+            valores_iniciales["balance"] = bot.usdt_mas_btc
+        if bot.varCompra is not None:
+            valores_iniciales["desde_ult_comp"] = bot.varCompra
+        if bot.varVenta is not None:
+            valores_iniciales["ult_vent"] = bot.varVenta
+        if bot.var_inicio is not None:
+            valores_iniciales["variacion_desde_inicio"] = bot.var_inicio  
+
+    inicializar_valores_iniciales()   
+    #bot.set_valores_iniciales(valores_iniciales)     
+
+              
 
     actualizar_ui()
+    #bot.reiniciar()  # ✅ mantiene la instancia, limpia los datos 
     ventana_principal.mainloop()
 
