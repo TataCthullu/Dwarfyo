@@ -1,7 +1,6 @@
 import ccxt
 import pygame
 pygame.mixer.init()
-from interfaz import *
 
 def reproducir_sonido(ruta):
     pygame.mixer.music.load(ruta)
@@ -60,14 +59,18 @@ class TradingBot:
 
     def log(self, mensaje):
         if self.log_fn:
-            self.log_fn(mensaje)    
-               
+            self.log_fn(mensaje)  
+
+    def set_valores_iniciales(self, valores):
+        self.valores_iniciales = valores  # un dict con los datos iniciales
+                        
     def get_precio_actual(self):
         try:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
             return ticker['last']
         except Exception as e:
             self.log(f"❌ Error obteniendo el precio: {e}")
+            reproducir_sonido("Sounds/error.wav")
             return None
     
     def actualizar_balance(self):
@@ -143,7 +146,7 @@ class TradingBot:
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual                                
                 self.reportado_trabajando = False
-                reproducir_sonido("Sounds\ghostcom.wav")
+                reproducir_sonido("Sounds/ghostcom.wav")
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
@@ -165,7 +168,7 @@ class TradingBot:
                 self.contador_compras_fantasma += 1                 
                 self.param_b_enabled = False       
                 self.reportado_trabajando = False
-                reproducir_sonido("Sounds\ghostcom.wav")                                         
+                reproducir_sonido("Sounds/ghostcom.wav")                                         
                 return      
         
     def vender(self):
@@ -276,7 +279,7 @@ class TradingBot:
                 self.actualizar_balance()
                 self.vender()
                 self.parametro_venta_fantasma = self.parametro_venta_B()
-                self.parametro_compra_desde_compra = self.parametro_compra_A()
+                self.parametro_compra_desde_compra = self.parametro_compra_A()                
                 self.parametro_compra_desde_venta = self.parametro_compra_B()                
                 self.var_inicio = self.varpor_ingreso()
                             
@@ -300,9 +303,35 @@ class TradingBot:
         self.log("- - - - - - - - - -")
         self.log("🔴 Khazâd detenido.")
 
-if __name__ == "__main__":
-    ventana_principal.mainloop()
-    
+    def reiniciar(self):
+        self.running = False
+
+        # Limpiar listas y contadores
+        self.transacciones.clear()
+        self.precios_ventas.clear()
+        self.valores_iniciales.clear()
+
+        self.precio_de_ingreso = 0
+        self.ultima_compra = None
+        self.ultima_venta = None
+        self.ganancia_total = 0
+        self.num_operacion = 0
+
+        # Contadores fantasmas
+        self.compras_fantasma = 0
+        self.ventas_fantasma = 0
+
+        # Contadores reales
+        self.compras_realizadas = 0
+        self.ventas_realizadas = 0
+
+        # Si estás usando sonidos o funciones de log
+        if self.log_fn:
+            self.log("- - - - - - - - - -")
+            self.log("🔄 Bot reiniciado.")
+
+        
+
 
 
 
