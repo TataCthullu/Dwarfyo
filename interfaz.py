@@ -1,14 +1,6 @@
 from tkinter import *
-import pygame
 from tkinter.scrolledtext import ScrolledText
-
-
-pygame.mixer.init()
-
-def reproducir_sonido(ruta):
-    pygame.mixer.music.load(ruta)
-    pygame.mixer.music.play()
-
+from utils import reproducir_sonido, detener_sonido_y_cerrar
 
 def iniciar_interfaz(bot):
     # Ventana principal
@@ -83,13 +75,7 @@ def iniciar_interfaz(bot):
         config_ventana = Toplevel(ventana_principal)
         config_ventana.title("Configuración de operativa")
         config_ventana.configure(bg="DarkGoldenrod")
-        reproducir_sonido("Sounds/antorcha.wav")
-
-        def detener_sonido_y_cerrar():
-            pygame.mixer.music.stop()
-            config_ventana.destroy()
-
-        config_ventana.protocol("WM_DELETE_WINDOW", detener_sonido_y_cerrar)    
+           
         
         # Creamos un contenedor principal para empacar los elementos
         container = Frame(config_ventana, bg="DarkGoldenrod")
@@ -144,6 +130,14 @@ def iniciar_interfaz(bot):
         entry_prof = Entry(frame_profit, font=("CrushYourEnemies", 12), bg="Gold")
         entry_prof.pack(side=LEFT, padx=5)
         entry_prof.insert(0, f"% {bot.porc_profit_x_venta}")
+
+        def cerrar_configuracion():
+            # Llama a la función de util con config_ventana como argumento
+            detener_sonido_y_cerrar(config_ventana)
+
+            config_ventana.protocol("WM_DELETE_WINDOW", cerrar_configuracion)
+            # Resto de la configuración de la ventana...
+
         
         def guardar_config():
             try:
@@ -162,7 +156,7 @@ def iniciar_interfaz(bot):
                 log_en_consola("Error: ingresa números válidos.")
                 log_en_consola("- - - - - - - - - -")
             
-            detener_sonido_y_cerrar()
+            #detener_sonido_y_cerrar(config_ventana)
             config_ventana.destroy()
 
         
@@ -412,11 +406,11 @@ def iniciar_interfaz(bot):
             valores_iniciales["variacion_desde_inicio"] = bot.var_inicio  
 
     inicializar_valores_iniciales()   
-    #bot.set_valores_iniciales(valores_iniciales)     
+         
 
               
 
     actualizar_ui()
-    #bot.reiniciar()  # ✅ mantiene la instancia, limpia los datos 
+     
     ventana_principal.mainloop()
 

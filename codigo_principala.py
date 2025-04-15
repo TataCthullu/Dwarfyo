@@ -1,10 +1,5 @@
 import ccxt
-import pygame
-pygame.mixer.init()
-
-def reproducir_sonido(ruta):
-    pygame.mixer.music.load(ruta)
-    pygame.mixer.music.play()
+from utils import reproducir_sonido
 
 """Azul (\033[94m) para información general.
 Amarillo (\033[93m) para valores clave como precios de ingreso.
@@ -29,6 +24,7 @@ class TradingBot:
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
+        self.valores_iniciales = {}
         self.precio_ult_comp = self.precio_actual
         self.usdt_mas_btc = 0
         self.precios_compras = []
