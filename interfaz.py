@@ -101,11 +101,28 @@ class BotInterface:
 
 
 
-    def _crear_center_panel(self):
+    def _crear_center_panel(self):          
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-        btn = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_config)
-        btn.pack(pady=10)
+            
+        def add_center_info(label, var, key=None):
+            row = Frame(self.center_frame, bg="DarkGoldenrod")
+            row.pack(anchor="w", pady=2)
+            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies", 12))
+            lbl.pack(side=LEFT)
+            if key:
+                self.info_labels[key] = lbl
+
+            # Ejemplo de uso de add_center_info para las métricas principales:
+        add_center_info("% Para objetivo de venta:", self.porc_objetivo_venta_str, "porc_obj_venta")
+        add_center_info("Usdt Disponible:", self.cant_usdt_str, "usdt_disponible")
+        add_center_info("Monto fijo por inversión:", self.fixed_buyer_str, "monto_inversion")
+        add_center_info("Inversión por compra:", self.inv_por_compra_str, "inversion_por_compra")
+
+            # Botón de configuración
+        Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_config).pack(pady=10)
+
 
     def _crear_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
