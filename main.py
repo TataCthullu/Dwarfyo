@@ -1,7 +1,8 @@
 from codigo_principala import TradingBot
-from interfaz import iniciar_interfaz
+from interfaz import BotInterface
 
 if __name__ == "__main__":
     bot = TradingBot()
-    iniciar_interfaz(bot)
+    app = BotInterface(bot)
+    app.run()
 
