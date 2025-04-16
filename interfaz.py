@@ -1,6 +1,9 @@
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
+from codigo_principala import TradingBot
+
+bot = TradingBot()
 
 def iniciar_interfaz(bot):
     # Ventana principal
@@ -156,7 +159,7 @@ def iniciar_interfaz(bot):
                 log_en_consola("Error: ingresa números válidos.")
                 log_en_consola("- - - - - - - - - -")
             
-            #detener_sonido_y_cerrar(config_ventana)
+            detener_sonido_y_cerrar(config_ventana)
             config_ventana.destroy()
 
         
@@ -372,11 +375,16 @@ def iniciar_interfaz(bot):
         
 
     def limpiar_bot():
+       
         global limpiar_visible
+        bot.log_fn = log_en_consola
         if not bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
-            consola.delete('1.0', END)
-            historial_box.delete('1.0', END)
+              
+            bot = TradingBot()
+            bot.log_fn = log_en_consola  # Vincula el callback de log a la nueva instancia
+        
+            inicializar_valores_iniciales()
             
             log_en_consola("🔄 Khazâd reiniciado")
               
@@ -385,12 +393,9 @@ def iniciar_interfaz(bot):
             boton_limpiar.grid_remove()
             boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
             boton_estado.config(text="Iniciar")
-            bot.reiniciar()
+            
         else:
             boton_limpiar.grid_remove()
-
-    
-       
 
     # Función para inicializar los valores iniciales
     def inicializar_valores_iniciales():
@@ -406,10 +411,6 @@ def iniciar_interfaz(bot):
             valores_iniciales["variacion_desde_inicio"] = bot.var_inicio  
 
     inicializar_valores_iniciales()   
-         
-
-              
-
     actualizar_ui()
      
     ventana_principal.mainloop()

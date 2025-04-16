@@ -299,7 +299,7 @@ class TradingBot:
         self.log("- - - - - - - - - -")
         self.log("🔴 Khazâd detenido.")
 
-    def reiniciar(self):
+    """def reiniciar(self):
         self.running = False
 
         # Limpiar listas y contadores
@@ -311,8 +311,8 @@ class TradingBot:
         # Si estás usando sonidos o funciones de log
         if self.log_fn:
             self.log("- - - - - - - - - -")
-            self.log("🔄 Khazâd reiniciado")
-
+            self.log("🔄 Khazâd reiniciadok")
+"""
         
 
 
