@@ -1,9 +1,9 @@
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
-from codigo_principala import TradingBot
 
-bot = TradingBot()
+
+
 
 def iniciar_interfaz(bot):
     # Ventana principal
@@ -371,32 +371,6 @@ def iniciar_interfaz(bot):
             limpiar_visible = True
             boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
 
-    
-        
-
-    def limpiar_bot():
-       
-        global limpiar_visible
-        bot.log_fn = log_en_consola
-        if not bot.running:
-            reproducir_sonido("Sounds/soundlimpiara.wav")
-              
-            bot = TradingBot()
-            bot.log_fn = log_en_consola  # Vincula el callback de log a la nueva instancia
-        
-            inicializar_valores_iniciales()
-            
-            log_en_consola("🔄 Khazâd reiniciado")
-              
-            # Luego de limpiar, ocultamos Limpiar y volvemos a mostrar el botón de Iniciar
-            limpiar_visible = False
-            boton_limpiar.grid_remove()
-            boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
-            boton_estado.config(text="Iniciar")
-            
-        else:
-            boton_limpiar.grid_remove()
-
     # Función para inicializar los valores iniciales
     def inicializar_valores_iniciales():
         if bot.precio_actual is not None:
@@ -409,9 +383,34 @@ def iniciar_interfaz(bot):
             valores_iniciales["ult_vent"] = bot.varVenta
         if bot.var_inicio is not None:
             valores_iniciales["variacion_desde_inicio"] = bot.var_inicio  
+        
+
+    def limpiar_bot():
+        nonlocal bot
+        global limpiar_visible
+        
+        if not bot.running:
+            reproducir_sonido("Sounds/soundlimpiara.wav")
+            from codigo_principala import TradingBot  
+            bot = TradingBot()
+            bot.log_fn = log_en_consola  # Vincula el callback de log a la nueva instancia
+            valores_iniciales.clear()
+            bot.actualizar_balance()
+            actualizar_ui()            
+            log_en_consola("🔄 Khazâd reiniciado")
+              
+            # Luego de limpiar, ocultamos Limpiar y volvemos a mostrar el botón de Iniciar
+            limpiar_visible = False
+            boton_limpiar.grid_remove()
+            boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+            boton_estado.config(text="Iniciar")
+            
+        else:
+            boton_limpiar.grid_remove()
+
+    
 
     inicializar_valores_iniciales()   
-    actualizar_ui()
-     
+    actualizar_ui()     
     ventana_principal.mainloop()
 
