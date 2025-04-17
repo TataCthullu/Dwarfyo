@@ -175,37 +175,51 @@ class BotInterface:
     """def _initialize_baseline(self):
         self.bot.valores_iniciales"""     
 
-    def actualizar_ui(self):
-        if not self.root.winfo_exists(): return
-        
-        
-        self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}") if self.precio_act_var else "N/D"
-        self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}") if self.balance_var else "N/D"
-        self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}") if self.cant_btc_str else "N/D"
-        self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}") if self.cant_usdt_str else "N/D"
-        self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}") if self.btc_en_usdt else "N/D"
-        self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.3f}") if self.varpor_set_compra_str else "N/D"
-        self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.3f}") if self.varpor_set_venta_str else "N/D"
-        
-        self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}") if self.precio_de_ingreso_str else "N/D"
-        self.var_inicio_str.set(f"% {self.bot.var_inicio:.3f}") if self.var_inicio_str else "N/D"
-        
+    def _safe_set(self, var: StringVar, value, fmt: str):
+       
+        var.set(fmt.format(value) if value is not None else "N/D")
 
-        self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}") if self.ganancia_total_str else "N/D"
-        self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma)) if self.cont_compras_fantasma_str else "N/D"
-        self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma)) if self.cont_ventas_fantasma_str else "N/D"
-        self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}") if self.ghost_ratio_var else "N/D"
-        self.compras_realizadas_str.set(str(self.bot.contador_compras_reales)) if self.compras_realizadas_str else "N/D"
-        self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales)) if self.ventas_realizadas_str else "N/D"
-        self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta:.2f}") if self.porc_objetivo_venta_str else "N/D"
-        self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}") if self.inv_por_compra_str else "N/D"
-        self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}") if self.fixed_buyer_str else "N/D"
-        # update history
+    def actualizar_ui(self):
+        if not self.root.winfo_exists():
+            return
+
+        # Precios y balances
+        self._safe_set(self.precio_act_var,     self.bot.precio_actual,     "$ {:.4f}")
+        self._safe_set(self.balance_var,         self.bot.usdt_mas_btc,       "$ {:.6f}")
+        self._safe_set(self.cant_btc_str,        self.bot.btc,               "₿ {:.6f}")
+        self._safe_set(self.cant_usdt_str,       self.bot.usdt,              "$ {:.6f}")
+        self._safe_set(self.btc_en_usdt,         self.bot.btc_usdt,          "$ {:.6f}")
+
+        # Variaciones desde última compra/venta
+        self._safe_set(self.varpor_set_compra_str, self.bot.varCompra, "% {:.3f}")
+        self._safe_set(self.varpor_set_venta_str,  self.bot.varVenta,  "% {:.3f}")
+
+        # Precio de ingreso y variación desde inicio
+        if self.bot.precio_ingreso is not None:
+            self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
+            self.var_inicio_str.set(f"% {self.bot.varpor_ingreso():.3f}")
+        else:
+            self.precio_de_ingreso_str.set("N/D")
+            self.var_inicio_str.set("N/D")
+
+        # Otras métricas
+        self._safe_set(self.ganancia_total_str,      self.bot.total_ganancia,          "$ {:.6f}")
+        self._safe_set(self.cont_compras_fantasma_str, self.bot.contador_compras_fantasma, "{}")
+        self._safe_set(self.cont_ventas_fantasma_str,  self.bot.contador_ventas_fantasma,  "{}")
+        self._safe_set(self.ghost_ratio_var,           self.bot.calcular_ghost_ratio(),    "{:.2f}")
+        self._safe_set(self.compras_realizadas_str,    self.bot.contador_compras_reales,   "{}")
+        self._safe_set(self.ventas_realizadas_str,     self.bot.contador_ventas_reales,    "{}")
+        self._safe_set(self.porc_objetivo_venta_str,   self.bot.porc_profit_x_venta,       "% {:.2f}")
+        self._safe_set(self.inv_por_compra_str,        self.bot.porc_inv_por_compra,        "% {:.2f}")
+        self._safe_set(self.fixed_buyer_str,           self.bot.fixed_buyer,               "$ {:.2f}")
+
+        # Historial de operaciones
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
             self.historial.insert(END, f"Compra: ${t['compra']:.2f} -> Obj venta: ${t['venta_obj']:.2f}\n")
         for v in self.bot.precios_ventas:
             self.historial.insert(END, f"Venta: ${v['venta']:.2f} Ganancia: ${v['ganancia']:.4f}\n")
+
 
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n"); self.consola.see(END)
@@ -214,5 +228,5 @@ class BotInterface:
     
 
     def run(self):
-        self.actualizar_ui()
+        
         self.root.mainloop()
