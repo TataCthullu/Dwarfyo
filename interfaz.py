@@ -3,12 +3,13 @@ from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
 from codigo_principala import TradingBot
 
+
 class BotInterface:
     def __init__(self, bot: TradingBot):
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
-        self.bot.precio_ingreso = None  # will be set on start
+        
         
 
         # Main window setup
@@ -106,7 +107,7 @@ class BotInterface:
         add("Usdt Disponible:", self.cant_usdt_str, "usdt")
         add("% Desde compra:", self.porc_desde_compra_str, "porc_desde_compra")
         add("% Desde venta:", self.porc_desde_venta_str, "porc_desde_venta")
-        add("% inversión/op:", self.inv_por_compra_str, "porc_inv_por_compra")
+        add("% nversión/op:", self.inv_por_compra_str, "porc_inv_por_compra")
         add("Monto fijo inversión:", self.fixed_buyer_str, "fixed_buyer")
         Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_config).pack(pady=10)
 
@@ -128,10 +129,10 @@ class BotInterface:
         cw.protocol("WM_DELETE_WINDOW", lambda: detener_sonido_y_cerrar(cw))
         reproducir_sonido("Sounds/antorcha.wav")
         fields = [
-            ("% Desde compra:", 'porc_desde_compra', self.porc_desde_compra_str),
-            ("% Desde venta:", 'porc_desde_venta', self.porc_desde_venta_str),
-            ("Profit venta (%):", 'porc_profit_x_venta', self.porc_objetivo_venta_str),
-            ("% nversión:", 'porc_inv_por_compra', self.inv_por_compra_str),
+            ("% Desde compra:", 'porc_desde_compra', self.bot.porc_desde_compra),
+            ("% Desde venta:", 'porc_desde_venta', self.bot.porc_desde_venta),
+            ("Profit venta (%):", 'porc_profit_x_venta', self.bot.porc_profit_x_venta),
+            ("% Inversión:", 'porc_inv_por_compra', self.bot.porc_inv_por_compra),
             ("Total USDT:", 'usdt', self.cant_usdt_str)
         ]
         for txt, attr, var in fields:
@@ -155,7 +156,6 @@ class BotInterface:
             self.bot.iniciar()
             #self.bot.precio_ingreso = self.bot.precio_actual
             reproducir_sonido("Sounds/soundinicio.wav")
-            self.bot.loop(self.actualizar_ui, self.root.after)
             self.btn_inicio.config(text="Detener"); self.btn_limpiar.grid_remove()
         else:
             self.bot.detener(); reproducir_sonido("Sounds/detner.wav")
@@ -164,6 +164,7 @@ class BotInterface:
     def clear_bot(self):
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
+            
             self.bot = TradingBot(); self.bot.log_fn = self.log_en_consola
             
             #self._initialize_baseline() 
@@ -176,29 +177,29 @@ class BotInterface:
 
     def actualizar_ui(self):
         if not self.root.winfo_exists(): return
-        # fetch latest price
         
-        self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}" if self.precio_act_var else "N/D")
-        self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}")
-        self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
-        self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
-        self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}")
-        self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.3f}")
-        self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.3f}")
         
-        self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
-        self.var_inicio_str.set(f"% {self.bot.var_inicio:.3f}")
+        self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}") if self.precio_act_var else "N/D"
+        self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}") if self.balance_var else "N/D"
+        self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}") if self.cant_btc_str else "N/D"
+        self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}") if self.cant_usdt_str else "N/D"
+        self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}") if self.btc_en_usdt else "N/D"
+        self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.3f}") if self.varpor_set_compra_str else "N/D"
+        self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.3f}") if self.varpor_set_venta_str else "N/D"
+        
+        self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}") if self.precio_de_ingreso_str else "N/D"
+        self.var_inicio_str.set(f"% {self.bot.var_inicio:.3f}") if self.var_inicio_str else "N/D"
         
 
-        self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
-        self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
-        self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma))
-        self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}")
-        self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
-        self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
-        self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta:.2f}")
-        self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
-        self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
+        self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}") if self.ganancia_total_str else "N/D"
+        self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma)) if self.cont_compras_fantasma_str else "N/D"
+        self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma)) if self.cont_ventas_fantasma_str else "N/D"
+        self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}") if self.ghost_ratio_var else "N/D"
+        self.compras_realizadas_str.set(str(self.bot.contador_compras_reales)) if self.compras_realizadas_str else "N/D"
+        self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales)) if self.ventas_realizadas_str else "N/D"
+        self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta:.2f}") if self.porc_objetivo_venta_str else "N/D"
+        self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}") if self.inv_por_compra_str else "N/D"
+        self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}") if self.fixed_buyer_str else "N/D"
         # update history
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
@@ -210,6 +211,8 @@ class BotInterface:
         self.consola.insert(END, msg+"\n"); self.consola.see(END)
 
     
+    
 
     def run(self):
+        self.actualizar_ui()
         self.root.mainloop()

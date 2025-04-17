@@ -18,14 +18,14 @@ class TradingBot:
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
-        self.precio_ult_venta = 0
+        self.precio_ult_venta = None
         self.porc_desde_compra = 0.5
         self.porc_desde_venta = 0.5
         self.porc_inv_por_compra = 10
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.valores_iniciales = {}
-        self.precio_ult_comp = self.precio_actual
+        self.precio_ult_comp = None
         self.usdt_mas_btc = 0
         self.precios_compras = []
         self.precios_ventas = []
@@ -37,7 +37,7 @@ class TradingBot:
         self.varVenta = 0       
         self.btc_vendido = 0
         self.precio_objetivo_venta = 0
-        self.precio_ingreso = self.precio_actual
+        self.precio_ingreso = None
         self.var_inicio = 0
         self.log_fn = None
         self.usdt_obtenido = 0
@@ -259,7 +259,13 @@ class TradingBot:
         self.log("- - - - - - - - - -")
                         
     def iniciar(self):
+        # Capturamos precio de ingreso justo al arrancar
+        self.precio_actual = self.get_precio_actual()
+        self.precio_ingreso = self.precio_actual
+        self.precio_ult_comp = self.precio_actual
+        self.precio_ult_venta = None
         self.running = True
+
         self.log("🟡 Khazâd iniciado.")
         self.log("- - - - - - - - - -")
         self.realizar_primera_compra()
