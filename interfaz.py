@@ -21,6 +21,7 @@ class BotInterface:
 
         # UI variables and clear initial values
         self._create_stringvars()
+        self.info_labels = {}
         
 
         # Layout
@@ -29,7 +30,7 @@ class BotInterface:
         self._create_center_panel()
         self._create_right_panel()
         self._create_buttons()
-
+        
         self.actualizar_ui()
 
         # Baseline for color comparisons
@@ -58,7 +59,7 @@ class BotInterface:
         self.porc_desde_venta_str = StringVar()
         self.inv_por_compra_str = StringVar()
         self.fixed_buyer_str = StringVar()
-        self.info_labels = {}
+        
 
     
 
@@ -105,11 +106,11 @@ class BotInterface:
             if key: self.info_labels[key] = lbl
         add("% Para objetivo de venta:", self.porc_objetivo_venta_str, "porc_obj_venta")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt")
-        add("% Desde compra:", self.porc_desde_compra_str, "porc_desde_compra")
-        add("% Desde venta:", self.porc_desde_venta_str, "porc_desde_venta")
+        add("% Desde compra:", self.bot.porc_desde_compra, "porc_desde_compra")
+        add("% Desde venta:", self.bot.porc_desde_venta, "porc_desde_venta")
         add("% nversión/op:", self.inv_por_compra_str, "porc_inv_por_compra")
         add("Monto fijo inversión:", self.fixed_buyer_str, "fixed_buyer")
-        Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_config).pack(pady=10)
+        Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana).pack(pady=10)
 
     def _create_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -123,33 +124,61 @@ class BotInterface:
         self.btn_inicio = Button(f, text="Iniciar", command=self.toggle_bot, bg="Goldenrod"); self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
         self.btn_limpiar = Button(f, text="Limpiar", command=self.clear_bot, bg="Goldenrod"); self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2); self.btn_limpiar.grid_remove()
 
-    def abrir_config(self):
+    # Función para obtener el valor sin el símbolo %
+    def obtener_valor_limpio(entry_var):
+        valor = entry_var.get().replace('%', '').replace('$', '').strip()
         
-        cw = Toplevel(self.root); cw.title("Configuración de operativa"); cw.configure(bg="DarkGoldenrod")
-        cw.protocol("WM_DELETE_WINDOW", lambda: detener_sonido_y_cerrar(cw))
+        try:
+            return float(valor)
+            
+        except ValueError:
+            return 0  # o lo que quieras como fallback
+
+    def abrir_configuracion_subventana(self):
+        config_ventana = Toplevel(self.root)
+        config_ventana.title("Configuración de operativa")
+        config_ventana.configure(bg="DarkGoldenrod")
+        # Al cerrar la ventana
+        def cerrar_config():
+            detener_sonido_y_cerrar(config_ventana)
+            config_ventana.destroy()
+        config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
         reproducir_sonido("Sounds/antorcha.wav")
-        fields = [
-            ("% Desde compra:", 'porc_desde_compra', self.porc_desde_compra_str),
-            ("% Desde venta:", 'porc_desde_venta', self.porc_desde_venta_str),
-            ("Profit venta (%):", 'porc_profit_x_venta', self.porc_objetivo_venta_str),
-            ("% Inversión:", 'porc_inv_por_compra', self.inv_por_compra_str),
-            ("Total USDT:", 'usdt', self.cant_usdt_str)
+
+        # Campos configurables: etiqueta y valor actual
+        campos = [
+            ("% Desde compra:",    self.bot.porc_desde_compra),
+            ("% Desde venta:",     self.bot.porc_desde_venta),
+            ("Profit venta (%):",  self.bot.porc_profit_x_venta),
+            ("% Inversión op:",    self.bot.porc_inv_por_compra),
+            ("Total USDT:",        self.bot.usdt),
         ]
-        for txt, attr, var in fields:
-            r = Frame(cw, bg="DarkGoldenrod"); r.pack(fill=X, pady=5)
-            Label(r, text=txt, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
-            Entry(r, textvariable=var, font=("CrushYourEnemies",12), bg="Gold").pack(side=LEFT, padx=5)
-        def save():
+        entries = []
+        for etiqueta, valor in campos:
+            frame = Frame(config_ventana, bg="DarkGoldenrod")
+            frame.pack(fill=X, pady=4, padx=8)
+            Label(frame, text=etiqueta, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
+            var = StringVar(value=str(valor))
+            Entry(frame, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)).pack(side=LEFT, padx=6)
+            entries.append(var)
+
+        def guardar_config():
             try:
-                for _, attr, var in fields:
-                    v = var.get().replace('%','').replace('$','').strip()
-                    setattr(self.bot, attr, float(v))
-                
-                reproducir_sonido("Sounds/soundcompra.wav")
-                cw.destroy()
-            except:
-                print("Valores inválidos")
-        Button(cw, text="Guardar", bg="Goldenrod", command=save).pack(pady=10)
+                # Asignar los nuevos valores al bot
+                self.bot.porc_desde_compra    = float(entries[0].get())
+                self.bot.porc_desde_venta     = float(entries[1].get())
+                self.bot.porc_profit_x_venta  = float(entries[2].get())
+                self.bot.porc_inv_por_compra  = float(entries[3].get())
+                self.bot.usdt                  = float(entries[4].get())
+                # Recalcular fixed_buyer
+                self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
+                self.log_en_consola("Configuración actualizada.")
+                cerrar_config()
+            except ValueError:
+                self.log_en_consola("Error: ingresa valores numéricos válidos.")
+
+        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",12)).pack(pady=8)
+
 
     def toggle_bot(self):
         if not self.bot.running:
@@ -157,9 +186,18 @@ class BotInterface:
             #self.bot.precio_ingreso = self.bot.precio_actual
             reproducir_sonido("Sounds/soundinicio.wav")
             self.btn_inicio.config(text="Detener"); self.btn_limpiar.grid_remove()
+            self.root.after(0, self._periodic)
         else:
             self.bot.detener(); reproducir_sonido("Sounds/detner.wav")
             self.btn_inicio.grid_remove(); self.btn_limpiar.grid()
+
+    def _periodic(self):
+        # Ejecuta una iteración de lógica y UI
+        if self.bot.running:
+            self.bot.loop()
+            self.actualizar_ui()
+            # Reagenda
+            self.root.after(3000, self._periodic)        
 
     def clear_bot(self):
         if not self.bot.running:
@@ -179,54 +217,154 @@ class BotInterface:
        
         var.set(fmt.format(value) if value is not None else "N/D")
 
-    def actualizar_ui(self):
-        if not self.root.winfo_exists():
+    def actualizar_ui():
+        if not root.winfo_exists():
             return
+        try:
+            if self.bot.running:
+                
+                # Actualizamos el precio, usando comprobación explícita (incluso si es 0)
+                if self.bot.precio_actual is not None:
+                    self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}")
+                else:
+                    precio_act_var.set("N/D")
 
-        # Precios y balances
-        self._safe_set(self.precio_act_var,     self.bot.precio_actual,     "$ {:.4f}")
-        self._safe_set(self.balance_var,         self.bot.usdt_mas_btc,       "$ {:.6f}")
-        self._safe_set(self.cant_btc_str,        self.bot.btc,               "₿ {:.6f}")
-        self._safe_set(self.cant_usdt_str,       self.bot.usdt,              "$ {:.6f}")
-        self._safe_set(self.btc_en_usdt,         self.bot.btc_usdt,          "$ {:.6f}")
+                cant_btc_str.set(f"₿ {bot.btc:.6f}")
+                cant_usdt_str.set(f"$ {bot.usdt:.6f}")
+                balance_var.set(f"$ {bot.usdt_mas_btc}" if bot.precio_actual else 0)
+                btc_en_usdt.set(f"$ {bot.btc_usdt:.6f}" if bot.precio_actual else "N/D")
+                precio_de_ingreso_str.set(f"$ {bot.precio_ingreso:.4f}" if bot.precio_ingreso else "N/D")
+                inv_por_compra_str.set(f"% {bot.porc_inv_por_compra:.4f}")
+                varpor_set_compra_str.set(f"% {bot.varCompra:.6f}" if bot.varCompra is not None else "N/D")
+                varpor_set_venta_str.set(f"% {bot.varVenta:.6f}" if bot.varVenta is not None else "N/D")
+                porc_desde_compra_str.set(f"% {bot.porc_desde_compra:.4f}")
+                porc_desde_venta_str.set(f"% {bot.porc_desde_venta:.4f}")
+                var_inicio_str.set(f"% {bot.var_inicio:.6f}" if bot.var_inicio is not None else "N/D")
+                fixed_buyer_str.set(f"$ {bot.fixed_buyer:.2f}")
+                ganancia_total_str.set(f"$ {bot.total_ganancia:.6f}")
+                contador_compras_fantasma_str.set(f"{bot.contador_compras_fantasma}")
+                contador_ventas_fantasma_str.set(f"{bot.contador_ventas_fantasma}")
+                porc_objetivo_venta_str.set(f"% {bot.porc_profit_x_venta}")
+                ghost_ratio = bot.calcular_ghost_ratio()
+                ghost_ratio_var.set(f"{ghost_ratio:.2f}")
+                compras_realizadas_str.set(f"{bot.contador_compras_reales}")
+                ventas_realizadas_str.set(f"{bot.contador_ventas_reales}")
+                
+                        
+                actualizar_historial_consola()
+                actualizar_color("precio_actual", bot.precio_actual)
+                actualizar_color("balance", bot.usdt_mas_btc)
+                actualizar_color("desde_ult_comp", bot.varCompra)
+                actualizar_color("ult_vent", bot.varVenta)
+                actualizar_color("variacion_desde_inicio", bot.var_inicio)        
 
-        # Variaciones desde última compra/venta
-        self._safe_set(self.varpor_set_compra_str, self.bot.varCompra, "% {:.3f}")
-        self._safe_set(self.varpor_set_venta_str,  self.bot.varVenta,  "% {:.3f}")
+            # Si el bot está detenido, mostramos "Limpiar" solo si el flag lo permite
+            if limpiar_visible:
+                boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
+        except Exception as e:
+            print("Error al actualizar la interfaz:", e)
 
-        # Precio de ingreso y variación desde inicio
-        if self.bot.precio_ingreso is not None:
-            self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
-            self.var_inicio_str.set(f"% {self.bot.varpor_ingreso():.3f}")
-        else:
-            self.precio_de_ingreso_str.set("N/D")
-            self.var_inicio_str.set("N/D")
-
-        # Otras métricas
-        self._safe_set(self.ganancia_total_str,      self.bot.total_ganancia,          "$ {:.6f}")
-        self._safe_set(self.cont_compras_fantasma_str, self.bot.contador_compras_fantasma, "{}")
-        self._safe_set(self.cont_ventas_fantasma_str,  self.bot.contador_ventas_fantasma,  "{}")
-        self._safe_set(self.ghost_ratio_var,           self.bot.calcular_ghost_ratio(),    "{:.2f}")
-        self._safe_set(self.compras_realizadas_str,    self.bot.contador_compras_reales,   "{}")
-        self._safe_set(self.ventas_realizadas_str,     self.bot.contador_ventas_reales,    "{}")
-        self._safe_set(self.porc_objetivo_venta_str,   self.bot.porc_profit_x_venta,       "% {:.2f}")
-        self._safe_set(self.inv_por_compra_str,        self.bot.porc_inv_por_compra,        "% {:.2f}")
-        self._safe_set(self.fixed_buyer_str,           self.bot.fixed_buyer,               "$ {:.2f}")
-
-        # Historial de operaciones
-        self.historial.delete('1.0', END)
-        for t in self.bot.transacciones:
-            self.historial.insert(END, f"Compra: ${t['compra']:.2f} -> Obj venta: ${t['venta_obj']:.2f}\n")
-        for v in self.bot.precios_ventas:
-            self.historial.insert(END, f"Venta: ${v['venta']:.2f} Ganancia: ${v['ganancia']:.4f}\n")
-
-
-    def log_en_consola(self, msg):
-        self.consola.insert(END, msg+"\n"); self.consola.see(END)
-
-    
-    
-
-    def run(self):
         
+    def actualizar_color(key, valor_actual):
+        # Si el valor actual es None, no hacemos nada
+        if valor_actual is None:
+            return
+        
+        # Si aun no guardamos el valor inicial, lo guardamos ahora
+        if key not in valores_iniciales:
+            valores_iniciales[key] = valor_actual
+            return  # A la primera actualización no hay comparación
+        
+        valor_inicial = valores_iniciales[key]
+        
+        # Determinar el color: verde si es mayor, rojo si es menor.
+        if valor_actual > valor_inicial:
+            color = "green"  # O "green"
+        elif valor_actual < valor_inicial:
+            color = "red"  # O "red"
+        else:
+            color = "black"  # Color por defecto
+        
+        # Actualizamos el fondo del Label correspondiente (podés actualizar también el foreground si lo prefieres)
+        if key in info_labels:
+            info_labels[key].configure(fg=color)
+
+
+    def log_en_consola(mensaje):
+        consola.insert(END, mensaje + "\n")
+        consola.see(END)
+
+    bot.log_fn = log_en_consola
+
+
+    def actualizar_historial_consola():
+        historial_box.delete('1.0', END)
+        for trans in bot.transacciones:
+            compra = trans.get('compra', 'N/A')
+            venta_obj = trans.get('venta_obj', 'N/A')
+            venta_txt = f"$ {venta_obj:.4f} (No ejecutada)"
+            compra_numero_txt = trans.get('numcompra', 'N/A')
+            historial_box.insert(END, f"Compra: $ {compra:.2f}, numero: {compra_numero_txt} -> Venta: {venta_txt}\n")
+        for venta in bot.precios_ventas:
+            historial_box.insert(END, f"Venta ejecutada de: $ {venta['compra']:.2f}, numero: {venta['venta_numero']}, a: $ {venta['venta']:.2f} | Ganancia: $ {venta['ganancia']:.4f}\n")
+
+    def alternar_bot():
+        global limpiar_visible
+        if not bot.running:
+            bot.iniciar()
+            bot.loop(actualizar_ui, ventana_principal.after)
+            reproducir_sonido("Sounds/soundinicio.wav")
+            actualizar_ui()
+            boton_estado.config(text="Detener") 
+            boton_limpiar.grid_remove()       
+        else:
+            bot.detener()
+            reproducir_sonido("Sounds/detner.wav")
+            boton_estado.grid_remove()
+            limpiar_visible = True
+            boton_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
+
+    # Función para inicializar los valores iniciales
+    def inicializar_valores_iniciales(self):
+        if bot.precio_actual is not None:
+            valores_iniciales["precio_actual"] = bot.precio_actual
+        if bot.usdt_mas_btc is not None:
+            valores_iniciales["balance"] = bot.usdt_mas_btc
+        if bot.varCompra is not None:
+            valores_iniciales["desde_ult_comp"] = bot.varCompra
+        if bot.varVenta is not None:
+            valores_iniciales["ult_vent"] = bot.varVenta
+        if bot.var_inicio is not None:
+            valores_iniciales["variacion_desde_inicio"] = bot.var_inicio  
+        
+
+    def limpiar_bot(self):
+        global limpiar_visible
+        
+        if not bot.running:
+            reproducir_sonido("Sounds/soundlimpiara.wav")
+            from codigo_principala import TradingBot  
+            bot = TradingBot()
+            bot.log_fn = log_en_consola  # Vincula el callback de log a la nueva instancia
+            valores_iniciales.clear()
+            bot.actualizar_balance()
+            actualizar_ui()            
+            log_en_consola("🔄 Khazâd reiniciado")
+              
+            # Luego de limpiar, ocultamos Limpiar y volvemos a mostrar el botón de Iniciar
+            limpiar_visible = False
+            boton_limpiar.grid_remove()
+            boton_estado.grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+            boton_estado.config(text="Iniciar")
+            
+        else:
+            boton_limpiar.grid_remove()
+
+    
+
+    inicializar_valores_iniciales()   
+    actualizar_ui()     
+    ventana_principal.mainloop()
+
+    def run(self):       
         self.root.mainloop()
