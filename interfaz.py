@@ -153,7 +153,7 @@ class BotInterface:
     def toggle_bot(self):
         if not self.bot.running:
             self.bot.iniciar()
-            self.bot.precio_ingreso = self.bot.precio_actual
+            #self.bot.precio_ingreso = self.bot.precio_actual
             reproducir_sonido("Sounds/soundinicio.wav")
             self.bot.loop(self.actualizar_ui, self.root.after)
             self.btn_inicio.config(text="Detener"); self.btn_limpiar.grid_remove()
@@ -165,7 +165,7 @@ class BotInterface:
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
             self.bot = TradingBot(); self.bot.log_fn = self.log_en_consola
-            self.actualizar_ui()
+            
             #self._initialize_baseline() 
             self.historial.delete('1.0', END); self.consola.delete('1.0', END)
             self.consola.insert(END, "🔄 Khazâd reiniciado\n")
@@ -185,12 +185,10 @@ class BotInterface:
         self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}")
         self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.3f}")
         self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.3f}")
-        if self.bot.precio_ingreso is not None:
-            self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
-            self.var_inicio_str.set(f"% {self.bot.var_inicio:.3f}")
-        else:
-            self.precio_de_ingreso_str.set("")
-            self.var_inicio_str.set("")
+        
+        self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
+        self.var_inicio_str.set(f"% {self.bot.var_inicio:.3f}")
+        
 
         self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
         self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))

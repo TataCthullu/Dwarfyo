@@ -81,14 +81,16 @@ class TradingBot:
 
     #Variacion de precio con respecto a ultima venta
     def varpor_venta(self, precio_ult_venta, precio_act_btc):
-        if precio_ult_venta == 0 or precio_act_btc is None:
+        if precio_ult_venta is None or precio_act_btc is None:
             return 0
         return ((precio_act_btc - precio_ult_venta) / precio_ult_venta) * 100
     
     def varpor_ingreso(self):
-        if self.precio_actual is None:
+        if self.precio_ingreso is None or self.precio_actual is None:
             return 0
         return ((self.precio_actual - self.precio_ingreso) / self.precio_ingreso) * 100
+
+        
 
     def cant_inv(self):
         return (self.usdt * self.porc_inv_por_compra) / 100
@@ -262,7 +264,7 @@ class TradingBot:
         self.log("- - - - - - - - - -")
         self.realizar_primera_compra()
                                      
-    def loop(self, ui_callback=None, after_fn=None):
+    def loop(self, after_fn=None):
             if not self.running:
                 return
             self.precio_actual = self.get_precio_actual()
@@ -288,11 +290,10 @@ class TradingBot:
                 reproducir_sonido("Sounds/error.wav")
                 self.detener()
                                            
-            if ui_callback:
-                ui_callback()
+           
             
             if after_fn:
-                after_fn(3000, lambda: self.loop(ui_callback, after_fn))
+                after_fn(3000, lambda: self.loop(after_fn))
 
     def detener(self):
         self.running = False
