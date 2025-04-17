@@ -1,240 +1,247 @@
-
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
+from codigo_principala import TradingBot
 
 class BotInterface:
-    def __init__(self, bot):
+    def __init__(self, bot: TradingBot):
+        # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
-        self.valores_iniciales = {}
-        self.limpiar_visible = False
+        self.bot.precio_ingreso = None  # will be set on start
 
-        # Crear ventana
+        # Main window setup
         self.root = Tk()
         self.root.title("Khazâd")
         self.root.configure(bg="DarkGoldenrod")
         self.root.iconbitmap("imagenes/dm.ico")
         self.root.attributes("-alpha", 0.95)
 
-        # Variables Tkinter
-        self._crear_stringvars()
-        # Layout frames y widgets
-        self._crear_frames()
-        self._crear_info_panel()
-        self._crear_center_panel()
-        self._crear_right_panel()
-        self._crear_botones()
+        # UI variables and clear initial values
+        self._create_stringvars()
+        self._clear_stringvars()
 
-        # Inicializar UI
-        self._inicializar_baseline()
-        self.actualizar_ui()
+        # Layout
+        self._create_frames()
+        self._create_info_panel()
+        self._create_center_panel()
+        self._create_right_panel()
+        self._create_buttons()
 
-    def _crear_stringvars(self):
+        # Baseline for color comparisons
+        self._initialize_baseline()
+        # Start periodic UI updates
+        self._schedule_update()
+
+    def _create_stringvars(self):
+        # Display and config variables
         self.precio_act_var = StringVar()
-        self.cant_btc_str = StringVar()
-        self.cant_usdt_str = StringVar()
         self.balance_var = StringVar()
+        self.cant_btc_str = StringVar()
         self.btc_en_usdt = StringVar()
-        self.varpor_set_venta_str = StringVar()
         self.varpor_set_compra_str = StringVar()
-        self.porc_desde_compra_str = StringVar()
-        self.porc_desde_venta_str = StringVar()
+        self.varpor_set_venta_str = StringVar()
         self.precio_de_ingreso_str = StringVar()
-        self.inv_por_compra_str = StringVar()
         self.var_inicio_str = StringVar()
-        self.fixed_buyer_str = StringVar()
         self.ganancia_total_str = StringVar()
-        self.contador_compras_fantasma_str = StringVar()
-        self.contador_ventas_fantasma_str = StringVar()
-        self.porc_objetivo_venta_str = StringVar()
+        self.cont_compras_fantasma_str = StringVar()
+        self.cont_ventas_fantasma_str = StringVar()
         self.ghost_ratio_var = StringVar()
         self.compras_realizadas_str = StringVar()
         self.ventas_realizadas_str = StringVar()
+        self.porc_objetivo_venta_str = StringVar()
+        self.cant_usdt_str = StringVar()
+        self.porc_desde_compra_str = StringVar()
+        self.porc_desde_venta_str = StringVar()
+        self.inv_por_compra_str = StringVar()
+        self.fixed_buyer_str = StringVar()
         self.info_labels = {}
-        self.valores_iniciales = {}
 
-    def _crear_frames(self):
+    def _clear_stringvars(self):
+        # blank out all fields
+        for var in [
+            self.precio_act_var, self.balance_var, self.cant_btc_str,
+            self.btc_en_usdt, self.varpor_set_compra_str, self.varpor_set_venta_str,
+            self.precio_de_ingreso_str, self.var_inicio_str, self.ganancia_total_str,
+            self.cont_compras_fantasma_str, self.cont_ventas_fantasma_str,
+            self.ghost_ratio_var, self.compras_realizadas_str, self.ventas_realizadas_str,
+            self.porc_objetivo_venta_str, self.cant_usdt_str,
+            self.porc_desde_compra_str, self.porc_desde_venta_str,
+            self.inv_por_compra_str, self.fixed_buyer_str
+        ]:
+            var.set("")
+
+    def _create_frames(self):
         self.main_frame = Frame(self.root, bg="DarkGoldenrod")
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        # columnas
-        self.main_frame.grid_columnconfigure(0, weight=0, minsize=350)
-        self.main_frame.grid_columnconfigure(1, weight=0, minsize=350)
-        self.main_frame.grid_columnconfigure(2, weight=2, minsize=350)
+        for i in range(3):
+            self.main_frame.grid_columnconfigure(i, weight=0 if i<2 else 2, minsize=350)
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(1, weight=0)
 
-    def _crear_info_panel(self):
+    def _create_info_panel(self):
         self.info_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
-
-        def add_info(label, var, key=None):
-            row = Frame(self.info_frame, bg="DarkGoldenrod")
-            row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies", 12))
-            lbl.pack(side=LEFT)
+        def add(label, var, key=None):
+            row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
+            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)); lbl.pack(side=LEFT)
             if key: self.info_labels[key] = lbl
+        add("Precio actual BTC/USDT:", self.precio_act_var, "precio_actual")
+        add("Usdt + Btc:", self.balance_var, "balance")
+        add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
+        add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
+        add("% Desde última compra:", self.varpor_set_compra_str, "desde_ult_comp")
+        add("% Desde última venta:", self.varpor_set_venta_str, "ult_vent")
+        add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
+        add("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
+        add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
+        add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
+        add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
+        add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
+        add("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
+        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")
 
-        add_info("Precio actual BTC/USDT:", self.precio_act_var, "precio_actual")
-        add_info("Usdt + Btc:", self.balance_var, "balance")
-        add_info("Btc Disponible:", self.cant_btc_str, "btc_dispo")
-        add_info("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
-        add_info("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
-        add_info("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
-        add_info("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
-        add_info("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
-        add_info("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
-        add_info("Compras fantasma:", self.contador_compras_fantasma_str, "compras_f")
-        add_info("Ventas fantasma:", self.contador_ventas_fantasma_str, "ventas_f")
-        add_info("Ghost Ratio:", self.ghost_ratio_var, "gr")
-        add_info("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
-        add_info("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")
-        # ... repetir para todas las etiquetas necesarias
-
-    def _crear_center_panel(self):          
+    def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
-            
-        def add_center_info(label, var, key=None):
-            row = Frame(self.center_frame, bg="DarkGoldenrod")
-            row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies", 12)).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies", 12))
-            lbl.pack(side=LEFT)
-            if key:
-                self.info_labels[key] = lbl
-        
-        add_center_info("% Para objetivo de venta:", self.porc_objetivo_venta_str, "porc_obj_venta")
-        add_center_info("Usdt Disponible:", self.cant_usdt_str, "usdt_disponible")
-        add_center_info("Monto fijo por inversión:", self.fixed_buyer_str, "monto_inversion")
-        add_center_info("Inversión por compra:", self.inv_por_compra_str, "inversion_por_compra")
-
-        # Botón de configuración
+        def add(label, var, key=None):
+            row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
+            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)); lbl.pack(side=LEFT)
+            if key: self.info_labels[key] = lbl
+        add("% Para objetivo de venta:", self.porc_objetivo_venta_str, "porc_obj_venta")
+        add("Usdt Disponible:", self.cant_usdt_str, "usdt")
+        add("% Desde compra:", self.porc_desde_compra_str, "porc_desde_compra")
+        add("% Desde venta:", self.porc_desde_venta_str, "porc_desde_venta")
+        add("% inversión/op:", self.inv_por_compra_str, "porc_inv_por_compra")
+        add("Monto fijo inversión:", self.fixed_buyer_str, "fixed_buyer")
         Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_config).pack(pady=10)
 
-    def _crear_right_panel(self):
+    def _create_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("CrushYourEnemies", 10))
-        self.historial.pack(expand=True, fill=BOTH)
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("CrushYourEnemies", 10))
-        self.consola.pack(expand=True, fill=BOTH)
+        self.historial = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10)); self.historial.pack(expand=True, fill=BOTH)
+        self.consola = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10)); self.consola.pack(expand=True, fill=BOTH)
 
-    def _crear_botones(self):
-        frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
-        frame.grid_columnconfigure(0, weight=1)
-        frame.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(frame, text="Iniciar", command=self.alternar_bot, bg="Goldenrod")
-        self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
-        self.btn_limpiar = Button(frame, text="Limpiar", command=self.limpiar_bot, bg="Goldenrod")
-        self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
-        self.btn_limpiar.grid_remove()
+    def _create_buttons(self):
+        f = Frame(self.main_frame, bg="DarkGoldenrod"); f.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
+        f.grid_columnconfigure(0, weight=1); f.grid_columnconfigure(1, weight=1)
+        self.btn_inicio = Button(f, text="Iniciar", command=self.toggle_bot, bg="Goldenrod"); self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
+        self.btn_limpiar = Button(f, text="Limpiar", command=self.clear_bot, bg="Goldenrod"); self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2); self.btn_limpiar.grid_remove()
 
     def abrir_config(self):
-        config_win = Toplevel(self.root)
-        config_win.title("Configuración de operativa")
-        config_win.configure(bg="DarkGoldenrod")
-        config_win.protocol("WM_DELETE_WINDOW", lambda: detener_sonido_y_cerrar(config_win))
+        self.actualizar_ui()  # prefill values
+        cw = Toplevel(self.root); cw.title("Configuración de operativa"); cw.configure(bg="DarkGoldenrod")
+        cw.protocol("WM_DELETE_WINDOW", lambda: detener_sonido_y_cerrar(cw))
         reproducir_sonido("Sounds/antorcha.wav")
         fields = [
-            ("Porcentaje desde compra:", 'porc_desde_compra', self.porc_desde_compra_str),
-            ("Porcentaje desde venta:", 'porc_desde_venta', self.porc_desde_venta_str),
-            ("Profit por venta (%):", 'porc_profit_x_venta', self.porc_objetivo_venta_str),
-            ("Porc. inversión por operación:", 'porc_inv_por_compra', self.inv_por_compra_str),
+            ("% Desde compra:", 'porc_desde_compra', self.porc_desde_compra_str),
+            ("% Desde venta:", 'porc_desde_venta', self.porc_desde_venta_str),
+            ("Profit venta (%):", 'porc_profit_x_venta', self.porc_objetivo_venta_str),
+            ("% inversión/op:", 'porc_inv_por_compra', self.inv_por_compra_str),
+            ("Total USDT:", 'usdt', self.cant_usdt_str)
         ]
-        for text, attr, var in fields:
-            row = Frame(config_win, bg="DarkGoldenrod")
-            row.pack(fill=X, pady=5)
-            Label(row, text=text, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
-            Entry(row, textvariable=var, font=("CrushYourEnemies",12), bg="Gold").pack(side=LEFT, padx=5)
-        def guardar_config():
+        for txt, attr, var in fields:
+            r = Frame(cw, bg="DarkGoldenrod"); r.pack(fill=X, pady=5)
+            Label(r, text=txt, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
+            Entry(r, textvariable=var, font=("CrushYourEnemies",12), bg="Gold").pack(side=LEFT, padx=5)
+        def save():
             try:
                 for _, attr, var in fields:
-                    val = var.get().replace('%','').strip()
-                    setattr(self.bot, attr, float(val))
-                self.bot.fixed_buyer = (self.bot.usdt * self.bot.porc_inv_por_compra) / 100
+                    v = var.get().replace('%','').replace('$','').strip()
+                    setattr(self.bot, attr, float(v))
+                self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
                 reproducir_sonido("Sounds/soundcompra.wav")
-                config_win.destroy()
-            except Exception:
-                print("Error: ingresa valores válidos.")
-        Button(config_win, text="Guardar", bg="Goldenrod", command=guardar_config).pack(pady=10)
+                cw.destroy()
+            except:
+                print("Valores inválidos")
+        Button(cw, text="Guardar", bg="Goldenrod", command=save).pack(pady=10)
 
-
-    def alternar_bot(self):
+    def toggle_bot(self):
         if not self.bot.running:
+            # set starting ingreso price
+            self.bot.precio_ingreso = self.bot.get_precio_actual()
+            reproducir_sonido("Sounds/soundinicio.wav")
             self.bot.iniciar()
             self.bot.loop(self.actualizar_ui, self.root.after)
-            reproducir_sonido("Sounds/soundinicio.wav")
-            self.btn_inicio.config(text="Detener")
+            self.btn_inicio.config(text="Detener"); self.btn_limpiar.grid_remove()
         else:
-            self.bot.detener()
-            reproducir_sonido("Sounds/detner.wav")
-            self.btn_inicio.grid_remove()
-            self.btn_limpiar.grid()
+            self.bot.detener(); reproducir_sonido("Sounds/detner.wav")
+            self.btn_inicio.grid_remove(); self.btn_limpiar.grid()
 
-    def limpiar_bot(self):
+    def clear_bot(self):
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
-            from codigo_principala import TradingBot
-            self.bot = TradingBot()
-            self.bot.log_fn = self.log_en_consola
+            self.bot = TradingBot(); self.bot.log_fn = self.log_en_consola
+            self.bot.precio_ingreso = None
             self.bot.actualizar_balance()
-            self.valores_iniciales.clear()
-            self.actualizar_ui()
+            self._clear_stringvars(); self._initialize_baseline(); self.actualizar_ui()
+            self.historial.delete('1.0', END); self.consola.delete('1.0', END)
             self.consola.insert(END, "🔄 Khazâd reiniciado\n")
-            self.btn_limpiar.grid_remove()
-            self.btn_inicio.grid()
-            self.btn_inicio.config(text="Iniciar")
+            self.btn_limpiar.grid_remove(); self.btn_inicio.grid(); self.btn_inicio.config(text="Iniciar")
+
+    def _schedule_update(self):
+        self.actualizar_ui(); self.root.after(3000, self._schedule_update)
 
     def actualizar_ui(self):
         if not self.root.winfo_exists(): return
-        precio = self.bot.precio_actual
-        self.precio_act_var.set(f"$ {precio:.4f}" if precio else "N/D")
+        # fetch latest price
+        self.bot.precio_actual = self.bot.get_precio_actual()
+        p = self.bot.precio_actual
+        self.precio_act_var.set(f"$ {p:.4f}" if p else "N/D")
+        self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}")
         self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
         self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
-        self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if precio else "N/D")
-        self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if precio else "N/D")
+        self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}")
         self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.3f}")
         self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.3f}")
-        self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra:.2f}")
-        self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta:.2f}")
-        self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
-        self.var_inicio_str.set(f"% {self.bot.varpor_ingreso():.3f}")
+        # ingreso display
+        if self.bot.precio_ingreso is not None:
+            self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
+            self.var_inicio_str.set(f"% {self.bot.varpor_ingreso():.3f}")
+        else:
+            self.precio_de_ingreso_str.set(""); self.var_inicio_str.set("")
+        # other fields
         self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
-        self.contador_compras_fantasma_str.set(f"{self.bot.contador_compras_fantasma}")
-        self.contador_ventas_fantasma_str.set(f"{self.bot.contador_ventas_fantasma}")
+        self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
+        self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma))
         self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}")
-        self.compras_realizadas_str.set(f"{self.bot.contador_compras_reales}")
-        self.ventas_realizadas_str.set(f"{self.bot.contador_ventas_reales}")
+        self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
+        self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
         self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta}")
+        self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra}")
+        self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
+        # update history
+        self.historial.delete('1.0', END)
+        for t in self.bot.transacciones:
+            self.historial.insert(END, f"Compra: ${t['compra']:.2f} -> Obj venta: ${t['venta_obj']:.2f}\n")
+        for v in self.bot.precios_ventas:
+            self.historial.insert(END, f"Venta: ${v['venta']:.2f} Ganancia: ${v['ganancia']:.4f}\n")
+        # color updates
+        for key, lbl in self.info_labels.items():
+            init = self.valores_iniciales.get(key)
+            if init is None: continue
+            if key == 'variacion_desde_inicio':
+                cur = self.bot.varpor_ingreso() if self.bot.precio_ingreso is not None else None
+            else:
+                cur = getattr(self.bot, key, None)
+            if cur is not None and init is not None:
+                lbl.configure(fg='green' if cur>init else 'red' if cur<init else 'black')
 
-    def _inicializar_baseline(self):
-        # Establecer valores iniciales para comparación de colores
+    def _initialize_baseline(self):
         self.valores_iniciales = {
             'precio_actual': self.bot.precio_actual,
             'balance': self.bot.usdt_mas_btc,
             'desde_ult_comp': self.bot.varCompra,
             'ult_vent': self.bot.varVenta,
-            'variacion_desde_inicio': self.bot.varpor_ingreso(),
+            'variacion_desde_inicio': None  # will set after start
         }
 
-    def actualizar_color(self, key, valor_actual):
-        initial = self.valores_iniciales.get(key)
-        if initial is None: return
-        lbl = self.info_labels.get(key)
-        if not lbl: return
-        color = 'green' if valor_actual>initial else 'red' if valor_actual<initial else 'black'
-        lbl.configure(fg=color)
-
     def log_en_consola(self, msg):
-        self.consola.insert(END, msg+"\n")
-        self.consola.see(END)
+        self.consola.insert(END, msg+"\n"); self.consola.see(END)
 
     def run(self):
         self.root.mainloop()
-
-
