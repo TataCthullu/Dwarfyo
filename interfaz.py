@@ -129,10 +129,10 @@ class BotInterface:
         cw.protocol("WM_DELETE_WINDOW", lambda: detener_sonido_y_cerrar(cw))
         reproducir_sonido("Sounds/antorcha.wav")
         fields = [
-            ("% Desde compra:", 'porc_desde_compra', self.bot.porc_desde_compra),
-            ("% Desde venta:", 'porc_desde_venta', self.bot.porc_desde_venta),
-            ("Profit venta (%):", 'porc_profit_x_venta', self.bot.porc_profit_x_venta),
-            ("% Inversión:", 'porc_inv_por_compra', self.bot.porc_inv_por_compra),
+            ("% Desde compra:", 'porc_desde_compra', self.porc_desde_compra_str),
+            ("% Desde venta:", 'porc_desde_venta', self.porc_desde_venta_str),
+            ("Profit venta (%):", 'porc_profit_x_venta', self.porc_objetivo_venta_str),
+            ("% Inversión:", 'porc_inv_por_compra', self.inv_por_compra_str),
             ("Total USDT:", 'usdt', self.cant_usdt_str)
         ]
         for txt, attr, var in fields:
