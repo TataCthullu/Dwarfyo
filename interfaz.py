@@ -9,6 +9,7 @@ class BotInterface:
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         self.bot.precio_ingreso = None  # will be set on start
+        
 
         # Main window setup
         self.root = Tk()
@@ -28,8 +29,10 @@ class BotInterface:
         self._create_right_panel()
         self._create_buttons()
 
+        self.actualizar_ui()
+
         # Baseline for color comparisons
-        self._initialize_baseline()
+        #self._initialize_baseline()
         
 
     def _create_stringvars(self):
@@ -120,7 +123,7 @@ class BotInterface:
         self.btn_limpiar = Button(f, text="Limpiar", command=self.clear_bot, bg="Goldenrod"); self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2); self.btn_limpiar.grid_remove()
 
     def abrir_config(self):
-        self.actualizar_ui()  # prefill values
+        
         cw = Toplevel(self.root); cw.title("Configuración de operativa"); cw.configure(bg="DarkGoldenrod")
         cw.protocol("WM_DELETE_WINDOW", lambda: detener_sonido_y_cerrar(cw))
         reproducir_sonido("Sounds/antorcha.wav")
@@ -140,7 +143,7 @@ class BotInterface:
                 for _, attr, var in fields:
                     v = var.get().replace('%','').replace('$','').strip()
                     setattr(self.bot, attr, float(v))
-                self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
+                
                 reproducir_sonido("Sounds/soundcompra.wav")
                 cw.destroy()
             except:
@@ -150,6 +153,7 @@ class BotInterface:
     def toggle_bot(self):
         if not self.bot.running:
             self.bot.iniciar()
+            self.bot.precio_ingreso = self.bot.precio_actual
             reproducir_sonido("Sounds/soundinicio.wav")
             self.bot.loop(self.actualizar_ui, self.root.after)
             self.btn_inicio.config(text="Detener"); self.btn_limpiar.grid_remove()
@@ -167,33 +171,27 @@ class BotInterface:
             self.consola.insert(END, "🔄 Khazâd reiniciado\n")
             self.btn_limpiar.grid_remove(); self.btn_inicio.grid(); self.btn_inicio.config(text="Iniciar")
 
-    def _initialize_baseline(self):
-        self.valores_iniciales = {
-            'precio_actual': self.bot.precio_actual,
-            'balance': self.bot.usdt_mas_btc,
-            'desde_ult_comp': self.bot.varCompra,
-            'ult_vent': self.bot.varVenta,
-            'variacion_desde_inicio': self.bot.var_inicio  # will set after start
-        }        
+    """def _initialize_baseline(self):
+        self.bot.valores_iniciales"""     
 
     def actualizar_ui(self):
         if not self.root.winfo_exists(): return
         # fetch latest price
-        self.bot.precio_actual = self.bot.get_precio_actual()
-        p = self.bot.precio_actual
-        self.precio_act_var.set(f"$ {p:.4f}" if p else "N/D")
+        
+        self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}" if self.precio_act_var else "N/D")
         self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}")
         self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
         self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
         self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}")
         self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.3f}")
         self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.3f}")
-        # ingreso display
         if self.bot.precio_ingreso is not None:
             self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
-            self.var_inicio_str.set(f"% {self.bot.varpor_ingreso():.3f}")
-        
-        # other fields
+            self.var_inicio_str.set(f"% {self.bot.var_inicio:.3f}")
+        else:
+            self.precio_de_ingreso_str.set("")
+            self.var_inicio_str.set("")
+
         self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
         self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
         self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma))
@@ -209,19 +207,11 @@ class BotInterface:
             self.historial.insert(END, f"Compra: ${t['compra']:.2f} -> Obj venta: ${t['venta_obj']:.2f}\n")
         for v in self.bot.precios_ventas:
             self.historial.insert(END, f"Venta: ${v['venta']:.2f} Ganancia: ${v['ganancia']:.4f}\n")
-        # color updates
-        for key, lbl in self.info_labels.items():
-            init = self.valores_iniciales.get(key)
-            if init is None: continue
-            if key == 'variacion_desde_inicio':
-                cur = self.bot.varpor_ingreso() if self.bot.precio_ingreso is not None else None
-            else:
-                cur = getattr(self.bot, key, None)
-            if cur is not None and init is not None:
-                lbl.configure(fg='green' if cur>init else 'red' if cur<init else 'black')
 
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n"); self.consola.see(END)
+
+    
 
     def run(self):
         self.root.mainloop()
