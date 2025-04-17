@@ -19,7 +19,7 @@ class BotInterface:
 
         # UI variables and clear initial values
         self._create_stringvars()
-        self._clear_stringvars()
+        
 
         # Layout
         self._create_frames()
@@ -30,8 +30,7 @@ class BotInterface:
 
         # Baseline for color comparisons
         self._initialize_baseline()
-        # Start periodic UI updates
-        self._schedule_update()
+        
 
     def _create_stringvars(self):
         # Display and config variables
@@ -57,19 +56,7 @@ class BotInterface:
         self.fixed_buyer_str = StringVar()
         self.info_labels = {}
 
-    def _clear_stringvars(self):
-        # blank out all fields
-        for var in [
-            self.precio_act_var, self.balance_var, self.cant_btc_str,
-            self.btc_en_usdt, self.varpor_set_compra_str, self.varpor_set_venta_str,
-            self.precio_de_ingreso_str, self.var_inicio_str, self.ganancia_total_str,
-            self.cont_compras_fantasma_str, self.cont_ventas_fantasma_str,
-            self.ghost_ratio_var, self.compras_realizadas_str, self.ventas_realizadas_str,
-            self.porc_objetivo_venta_str, self.cant_usdt_str,
-            self.porc_desde_compra_str, self.porc_desde_venta_str,
-            self.inv_por_compra_str, self.fixed_buyer_str
-        ]:
-            var.set("")
+    
 
     def _create_frames(self):
         self.main_frame = Frame(self.root, bg="DarkGoldenrod")
@@ -141,7 +128,7 @@ class BotInterface:
             ("% Desde compra:", 'porc_desde_compra', self.porc_desde_compra_str),
             ("% Desde venta:", 'porc_desde_venta', self.porc_desde_venta_str),
             ("Profit venta (%):", 'porc_profit_x_venta', self.porc_objetivo_venta_str),
-            ("% inversión/op:", 'porc_inv_por_compra', self.inv_por_compra_str),
+            ("% nversión:", 'porc_inv_por_compra', self.inv_por_compra_str),
             ("Total USDT:", 'usdt', self.cant_usdt_str)
         ]
         for txt, attr, var in fields:
@@ -162,10 +149,8 @@ class BotInterface:
 
     def toggle_bot(self):
         if not self.bot.running:
-            # set starting ingreso price
-            self.bot.precio_ingreso = self.bot.get_precio_actual()
-            reproducir_sonido("Sounds/soundinicio.wav")
             self.bot.iniciar()
+            reproducir_sonido("Sounds/soundinicio.wav")
             self.bot.loop(self.actualizar_ui, self.root.after)
             self.btn_inicio.config(text="Detener"); self.btn_limpiar.grid_remove()
         else:
@@ -176,15 +161,20 @@ class BotInterface:
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
             self.bot = TradingBot(); self.bot.log_fn = self.log_en_consola
-            self.bot.precio_ingreso = None
-            self.bot.actualizar_balance()
-            self._clear_stringvars(); self._initialize_baseline(); self.actualizar_ui()
+            self.actualizar_ui()
+            #self._initialize_baseline() 
             self.historial.delete('1.0', END); self.consola.delete('1.0', END)
             self.consola.insert(END, "🔄 Khazâd reiniciado\n")
             self.btn_limpiar.grid_remove(); self.btn_inicio.grid(); self.btn_inicio.config(text="Iniciar")
 
-    def _schedule_update(self):
-        self.actualizar_ui(); self.root.after(3000, self._schedule_update)
+    def _initialize_baseline(self):
+        self.valores_iniciales = {
+            'precio_actual': self.bot.precio_actual,
+            'balance': self.bot.usdt_mas_btc,
+            'desde_ult_comp': self.bot.varCompra,
+            'ult_vent': self.bot.varVenta,
+            'variacion_desde_inicio': self.bot.var_inicio  # will set after start
+        }        
 
     def actualizar_ui(self):
         if not self.root.winfo_exists(): return
@@ -202,8 +192,7 @@ class BotInterface:
         if self.bot.precio_ingreso is not None:
             self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}")
             self.var_inicio_str.set(f"% {self.bot.varpor_ingreso():.3f}")
-        else:
-            self.precio_de_ingreso_str.set(""); self.var_inicio_str.set("")
+        
         # other fields
         self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
         self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
@@ -211,8 +200,8 @@ class BotInterface:
         self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}")
         self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
         self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
-        self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta}")
-        self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra}")
+        self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta:.2f}")
+        self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
         self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
         # update history
         self.historial.delete('1.0', END)
@@ -230,15 +219,6 @@ class BotInterface:
                 cur = getattr(self.bot, key, None)
             if cur is not None and init is not None:
                 lbl.configure(fg='green' if cur>init else 'red' if cur<init else 'black')
-
-    def _initialize_baseline(self):
-        self.valores_iniciales = {
-            'precio_actual': self.bot.precio_actual,
-            'balance': self.bot.usdt_mas_btc,
-            'desde_ult_comp': self.bot.varCompra,
-            'ult_vent': self.bot.varVenta,
-            'variacion_desde_inicio': None  # will set after start
-        }
 
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n"); self.consola.see(END)
