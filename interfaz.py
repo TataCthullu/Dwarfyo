@@ -23,7 +23,7 @@ class BotInterface:
         self._create_stringvars()
         self.info_labels = {}
         self.valores_iniciales = {}
-
+        self.limpiar_visible = False
         # Layout
         self._create_frames()
         self._create_info_panel()
@@ -119,10 +119,17 @@ class BotInterface:
         self.consola = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10)); self.consola.pack(expand=True, fill=BOTH)
 
     def _create_buttons(self):
-        f = Frame(self.main_frame, bg="DarkGoldenrod"); f.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
-        f.grid_columnconfigure(0, weight=1); f.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(f, text="Iniciar", command=self.alternar_bot, bg="Goldenrod"); self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
-        self.btn_limpiar = Button(f, text="Limpiar", command=self.clear_bot, bg="Goldenrod"); self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
+        self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
+        self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
+        self.buttons_frame.grid_columnconfigure(0, weight=1)
+        self.buttons_frame.grid_columnconfigure(1, weight=1)
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod")
+        self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod")
+        
+        self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
+        self.btn_limpiar.grid_remove()
+        
 
     # Función para obtener el valor sin el símbolo %
     def obtener_valor_limpio(entry_var):
@@ -180,14 +187,36 @@ class BotInterface:
             Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",12)).pack(pady=8)
 
 
-    
-           
+    def toggle_bot(self):
+            if self.bot.running:
+                self.bot.detener()
+                reproducir_sonido("Sounds/detner.wav")
+                self.btn_inicio.grid_remove()  # Oculta el botón de estado
+                self.btn_limpiar.grid()        # Muestra el botón limpiar
+            else:
+                self.bot.iniciar()
+                reproducir_sonido("Sounds/soundinicio.wav")
+                self.btn_inicio.config(text="Detener")
+                self.btn_limpiar.grid_remove()
+                self._loop()
 
-      
+    def clear_bot(self):
+        if not self.bot.running:
+            reproducir_sonido("Sounds/soundlimpiara.wav")
+            self.bot = TradingBot()
+            self.bot.log_fn = self.log_en_consola
+            self.historial.delete('1.0', END)
+            self.consola.delete('1.0', END)
+            self.log_en_consola("🔄 Khazâd reiniciado")
+            self.btn_limpiar.grid_remove()
+            self.btn_inicio.grid()
+            self.btn_inicio.config(text="Iniciar")
 
-    """def _safe_set(self, var: StringVar, value, fmt: str):
-       
-        var.set(fmt.format(value) if value is not None else "N/D")"""
+    def _loop(self):
+        if self.bot.running:
+            self.bot.loop()
+            self.actualizar_ui()
+            self.root.after(3000, self._loop)
 
     def actualizar_ui(self):
         try:
@@ -219,40 +248,6 @@ class BotInterface:
         self.consola.insert(END, mensaje + "\n")
         self.consola.see(END)
 
-    def alternar_bot(self):
-        global limpiar_visible
-        if not self.bot.running:
-            self.bot.iniciar()
-            
-            reproducir_sonido("Sounds/soundinicio.wav")
-            self.actualizar_ui()
-            self.btn_inicio.config(text="Detener") 
-                   
-        else:
-            self.bot.detener()
-            reproducir_sonido("Sounds/detner.wav")
-            #self.btn_inicio.config(text="Detener") 
-            self.btn_inicio.grid_remove()
-            limpiar_visible = True
-            self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2, pady=2)
-
-    def _loop(self):
-        if self.bot.running:
-            self.bot.loop()
-            self.actualizar_ui()
-            self.root.after(3000, self._loop)
-
-    def clear_bot(self):
-        if not self.bot.running:
-            reproducir_sonido("Sounds/soundlimpiara.wav")
-            self.bot = TradingBot()
-            self.bot.log_fn = self.log_en_consola
-            self.historial.delete('1.0', END)
-            self.consola.delete('1.0', END)
-            self.log_en_consola("\ud83d\udd04 Khazâd reiniciado")
-            self.btn_limpiar.grid_remove()
-            self.btn_inicio(text="Iniciar")
-
     def inicializar_valores_iniciales(self):
         if self.bot.precio_actual is not None:
             self.valores_iniciales["precio_actual"] = self.bot.precio_actual
@@ -266,5 +261,4 @@ class BotInterface:
             self.valores_iniciales["variacion_desde_inicio"] = self.bot.var_inicio
 
     def run(self):
-        self.actualizar_ui()
         self.root.mainloop()
