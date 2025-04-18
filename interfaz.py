@@ -24,6 +24,7 @@ class BotInterface:
         self.info_labels = {}
         self.valores_iniciales = {}
         self.limpiar_visible = False
+        
         # Layout
         self._create_frames()
         self._create_info_panel()
@@ -204,10 +205,22 @@ class BotInterface:
     def clear_bot(self):
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
-            self.bot = TradingBot()
+            
             self.bot.log_fn = self.log_en_consola
             self.historial.delete('1.0', END)
             self.consola.delete('1.0', END)
+            # Resetear propiedades internas del bot
+            self.bot.btc = 0
+            self.bot.usdt = self.initial_usdt
+            self.bot.porc_inv_por_compra = self.initial_porc_inv
+            self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
+            self.bot.contador_compras_fantasma = 0
+            self.bot.contador_ventas_fantasma = 0
+            self.bot.contador_compras_reales = 0
+            self.bot.contador_ventas_reales = 0
+            # Limpiar listas de transacciones
+            self.bot.transacciones.clear()
+            self.bot.precios_ventas.clear()
             self.log_en_consola("🔄 Khazâd reiniciado")
             self.btn_limpiar.grid_remove()
             self.btn_inicio.grid()
