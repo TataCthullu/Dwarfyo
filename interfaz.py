@@ -203,28 +203,22 @@ class BotInterface:
                 self._loop()
 
     def clear_bot(self):
+
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
-            
-            self.bot.log_fn = self.log_en_consola
-            self.historial.delete('1.0', END)
+             # Limpiar UI
             self.consola.delete('1.0', END)
-            # Resetear propiedades internas del bot
-            self.bot.btc = 0
-            self.bot.usdt = self.initial_usdt
-            self.bot.porc_inv_por_compra = self.initial_porc_inv
-            self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
-            self.bot.contador_compras_fantasma = 0
-            self.bot.contador_ventas_fantasma = 0
-            self.bot.contador_compras_reales = 0
-            self.bot.contador_ventas_reales = 0
-            # Limpiar listas de transacciones
-            self.bot.transacciones.clear()
-            self.bot.precios_ventas.clear()
+            self.historial.delete('1.0', END)
             self.log_en_consola("🔄 Khazâd reiniciado")
+             # Reiniciar lógica del bot
+            self.bot.reiniciar()
+             # Restaurar botones
             self.btn_limpiar.grid_remove()
-            self.btn_inicio.grid()
+            self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
             self.btn_inicio.config(text="Iniciar")
+        else:
+            self.btn_limpiar.grid_remove()
+
 
     def _loop(self):
         if self.bot.running:
