@@ -179,6 +179,7 @@ class BotInterface:
                 self.bot.usdt                  = float(entries[4].get())
                 # Recalcular fixed_buyer
                 self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
+                self.log_en_consola("- - - - - - - - - -")
                 self.log_en_consola("Configuración actualizada.")
                 cerrar_config()
             except ValueError:
