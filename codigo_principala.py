@@ -263,7 +263,7 @@ class TradingBot:
         self.precio_actual = self.get_precio_actual()
         self.precio_ingreso = self.precio_actual
         self.precio_ult_comp = self.precio_actual
-        self.precio_ult_venta = None
+        
         self.running = True
 
         self.log("🟡 Khazâd iniciado.")
@@ -295,14 +295,13 @@ class TradingBot:
                 self.log("🔴Error: btc negativo")
                 reproducir_sonido("Sounds/error.wav")
                 self.detener()
-                                           
-           
-            
+                                                       
             if after_fn:
                 after_fn(3000, lambda: self.loop(after_fn))
 
     def detener(self):
         self.running = False
+        
         self.log("- - - - - - - - - -")
         self.log("🔴 Khazâd detenido.")
 
