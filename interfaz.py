@@ -184,7 +184,7 @@ class BotInterface:
             except ValueError:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
 
-            Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",12)).pack(pady=8)
+        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",12)).pack(pady=8)
 
 
     def toggle_bot(self):
