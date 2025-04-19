@@ -180,7 +180,7 @@ class BotInterface:
                 self.bot.usdt                  = float(entries[4].get())
                 # Recalcular fixed_buyer
                 self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
-                
+                self.log_en_consola("- - - - - - - - - -")
                 self.log_en_consola("Configuración actualizada.")
                 self.log_en_consola("- - - - - - - - - -")
                 cerrar_config()
@@ -199,6 +199,7 @@ class BotInterface:
             else:
                 self.bot.iniciar()
                 reproducir_sonido("Sounds/soundinicio.wav")
+                self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
                 self.btn_limpiar.grid_remove()
                 self._loop()
@@ -213,13 +214,12 @@ class BotInterface:
             
              # Reiniciar lógica del bot
             self.bot.reiniciar()
+            self.inicializar_valores_iniciales() 
             # 3) Reset automático de todos los StringVar
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
                     val.set("N/D")
-
-                               
-            self.inicializar_valores_iniciales() 
+            
             self.actualizar_ui()
             
              # Restaurar botones
@@ -242,7 +242,7 @@ class BotInterface:
                 self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}" if self.bot.precio_actual else "N/D")
                 self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
                 self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
-                self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.2f}" if self.bot.precio_actual else "0")
+                self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
                 self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "N/D")
                 self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "N/D")
                 self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.4f}")
@@ -280,9 +280,7 @@ class BotInterface:
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
             return
-        if key not in self.valores_iniciales:
-            self.valores_iniciales[key] = valor_actual
-            return
+        
         inicial = self.valores_iniciales[key]
         color = "black"
         if valor_actual > inicial:
@@ -293,14 +291,16 @@ class BotInterface:
         if lbl:
             lbl.configure(fg=color)
 
+         
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n")
         self.consola.see(END)
 
     def inicializar_valores_iniciales(self):
+        self.bot.actualizar_balance()
         # Guarda el primer snapshot para colorear luego
         self.valores_iniciales = {
-            'precio_actual':     self.bot.precio_actual,
+            'precio_actual':     self.bot.precio_actual or 0,
             'balance':           self.bot.usdt_mas_btc,
             'desde_ult_comp':    self.bot.varCompra,
             'ult_vent':          self.bot.varVenta,

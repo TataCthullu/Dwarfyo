@@ -321,6 +321,7 @@ class TradingBot:
         # 4) Anota el reinicio
         if self.log_fn:
             self.log("🔄 Khazâd reiniciado")
+            self.log("- - - - - - - - - -")
         
 
 
