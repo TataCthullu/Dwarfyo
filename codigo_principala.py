@@ -306,13 +306,19 @@ class TradingBot:
         self.log("🔴 Khazâd detenido.")
 
     def reiniciar(self):
-         
-        self.running = False
-        self.transacciones.clear()
-        self.precios_ventas.clear()
-        self.valores_iniciales.clear()
+        # 1) Guarda lo que queremos preservar
+        _exchange = self.exchange
+        _logfn    = self.log_fn
+
+        # 2) Re-inicializa TODO
+        self.__init__()
+
+        # 3) Restaura exchange y callback
+        self.exchange = _exchange
+        self.log_fn   = _logfn
+
+        # 4) Anota el reinicio
         if self.log_fn:
-            self.log("- - - - - - - - - -")
             self.log("🔄 Khazâd reiniciado")
         
 
