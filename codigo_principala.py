@@ -67,6 +67,7 @@ class TradingBot:
             return ticker['last']
         except Exception as e:
             self.log(f"❌ Error obteniendo el precio: {e}")
+            self.log("- - - - - - - - - -")
             reproducir_sonido("Sounds/error.wav")
             return None
     
@@ -133,14 +134,15 @@ class TradingBot:
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_desde_compra:
             if self.usdt >= self.fixed_buyer:  
-                self.log("- - - - - - - - - -")   
+                   
                 self.log("🔵 [Parametro A].") 
+                
                 self.comprar()
                 self.precio_ult_comp = self.precio_actual                                
             else:                               
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
-                self.log("\ - - - - - - - - -")
+                
                 self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.precio_actual:.2f}, Id: {self.contador_compras_fantasma}.")
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual                                
@@ -154,14 +156,14 @@ class TradingBot:
         if self.varVenta <= -self.porc_desde_venta:
             
             if self.usdt >= self.fixed_buyer: 
-                self.log("- - - - - - - - - -")
+                
                 self.log("🔵 [Parametro B].")     
                 self.comprar()
                 self.precio_ult_venta = self.precio_actual
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
             else:  
-                self.log("- - - - - - - - - -")             
+                            
                 self.log(f"⚠️ (B) Fondos insuficientes, nueva compra fantasma registrada a $ {self.precio_actual:.2f}")
                 self.log("- - - - - - - - - -")
                 self.contador_compras_fantasma += 1                 
@@ -203,7 +205,7 @@ class TradingBot:
                 
                 transacciones_vendidas.append(transaccion)
                 
-                self.log("- - - - - - - - - -")
+                
                 self.log(f"✅ Venta realizada.")
                 self.log(f"🕒 Compra original: {self.precio_ult_comp:.2f}")
                 self.log(f"📈 Precio de venta: $ {self.precio_actual:.2f}")
@@ -229,7 +231,7 @@ class TradingBot:
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1            
             self.precio_ult_venta = self.precio_actual           
-            self.log("- - - - - - - - - -")
+            
             self.log(f"📌 Sin BTC para vender, nueva venta fantasma registrada a: $ {self.precio_actual:.2f}, Id: {self.contador_ventas_fantasma}.")
             self.log("- - - - - - - - - -")
             self.reportado_trabajando = False 
@@ -245,6 +247,7 @@ class TradingBot:
     def realizar_primera_compra(self):
         if self.precio_actual is None or self.precio_actual == 0:
             self.log("❌ Precio actual no válido, no se puede realizar la compra.")
+            self.log("- - - - - - - - - -")
             return
         self.log(f"🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")        
         self.usdt -= self.fixed_buyer 
@@ -276,7 +279,8 @@ class TradingBot:
                 return
             self.precio_actual = self.get_precio_actual()
             if not self.precio_actual:
-                self.log("⚠️ No se puede operar sin datos de precios.")   
+                self.log("⚠️ No se puede operar sin datos de precios.") 
+                self.log("- - - - - - - - - -")  
                 #reproducir_sonido("Sounds/error.wav")             
             else:            
                 self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
@@ -289,7 +293,8 @@ class TradingBot:
                 self.var_inicio = self.varpor_ingreso()
                             
                 if self.reportado_trabajando == False:                        
-                    self.log("🟡 Trabajando...")                      
+                    self.log("🟡 Trabajando...")   
+                    self.log("- - - - - - - - - -")                   
                     self.reportado_trabajando = True   
 
             if self.btc < 0:
@@ -303,8 +308,9 @@ class TradingBot:
     def detener(self):
         self.running = False
         
-        self.log("- - - - - - - - - -")
+        
         self.log("🔴 Khazâd detenido.")
+        self.log("- - - - - - - - - -")
 
     def reiniciar(self):
         # 1) Guarda lo que queremos preservar

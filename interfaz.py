@@ -116,8 +116,21 @@ class BotInterface:
     def _create_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
-        self.historial = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10)); self.historial.pack(expand=True, fill=BOTH)
-        self.consola = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10)); self.consola.pack(expand=True, fill=BOTH)
+
+        # Dividimos right_frame en 2 filas iguales
+        self.right_frame.grid_rowconfigure(0, weight=1)
+        self.right_frame.grid_rowconfigure(1, weight=1)
+        self.right_frame.grid_columnconfigure(0, weight=1)
+
+        # Historial arriba
+        self.historial = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10))
+        self.historial.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+
+        # Consola abajo
+        self.consola = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10))
+        self.consola.grid (row=1, column=0, sticky="nsew", padx=2, pady=2)
+
+
 
     def _create_buttons(self):
         self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -155,11 +168,11 @@ class BotInterface:
 
         # Campos configurables: etiqueta y valor actual
         campos = [
-            ("% Desde compra:",    self.bot.porc_desde_compra),
-            ("% Desde venta:",     self.bot.porc_desde_venta),
-            ("Profit venta (%):",  self.bot.porc_profit_x_venta),
-            ("% Inversión op:",    self.bot.porc_inv_por_compra),
-            ("Total USDT:",        self.bot.usdt),
+            ("Porcentaje Desde compra: %",    self.bot.porc_desde_compra),
+            ("Desde venta: %",     self.bot.porc_desde_venta),
+            ("Profit venta: %",  self.bot.porc_profit_x_venta),
+            ("Inversión por operaciones: %",    self.bot.porc_inv_por_compra),
+            ("Total USDT: $",        self.bot.usdt),
         ]
         entries = []
         for etiqueta, valor in campos:
@@ -182,7 +195,7 @@ class BotInterface:
                 self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
                 self.log_en_consola("- - - - - - - - - -")
                 self.log_en_consola("Configuración actualizada.")
-                self.log_en_consola("- - - - - - - - - -")
+                
                 cerrar_config()
             except ValueError:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
