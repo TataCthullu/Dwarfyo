@@ -2,6 +2,8 @@ from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
 from codigo_principala import TradingBot
+from calculador import CalculatorWindow
+
 
 
 class BotInterface:
@@ -17,7 +19,7 @@ class BotInterface:
         self.root.title("Khazâd")
         self.root.configure(bg="DarkGoldenrod")
         self.root.iconbitmap("imagenes/dm.ico")
-        self.root.attributes("-alpha", 0.95)
+        self.root.attributes("-alpha", 0.93)
 
         # UI variables and clear initial values
         self._create_stringvars()
@@ -144,9 +146,18 @@ class BotInterface:
         self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod")
         self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
         self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod")
+        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod")
+        btn_calc.grid(row=0, column=2, sticky="ew", padx=2)
         
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
+
+    def open_calculator(self):
+         # pasamos los balances actuales
+        usdt_avail = self.bot.usdt
+        btc_avail  = self.bot.btc
+        CalculatorWindow(self.root, usdt_avail, btc_avail)
+
         
 
     # Función para obtener el valor sin el símbolo %
