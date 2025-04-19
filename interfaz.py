@@ -165,9 +165,9 @@ class BotInterface:
         for etiqueta, valor in campos:
             frame = Frame(config_ventana, bg="DarkGoldenrod")
             frame.pack(fill=X, pady=4, padx=8)
-            Label(frame, text=etiqueta, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
+            Label(frame, text=etiqueta, bg="DarkGoldenrod", font=("CrushYourEnemies",8)).pack(side=LEFT)
             var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)).pack(side=LEFT, padx=6)
+            Entry(frame, textvariable=var, bg="Gold", font=("CrushYourEnemies",8)).pack(side=LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
@@ -186,7 +186,7 @@ class BotInterface:
             except ValueError:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
 
-        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",12)).pack(pady=8)
+        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",8)).pack(pady=8)
 
 
     def toggle_bot(self):
@@ -212,6 +212,10 @@ class BotInterface:
             self.log_en_consola("🔄 Khazâd reiniciado")
              # Reiniciar lógica del bot
             self.bot.reiniciar()
+            # 3) Reset automático de todos los StringVar
+            for attr, val in self.__dict__.items():
+                if isinstance(val, StringVar):
+                    val.set("N/D")
              # Restaurar botones
             self.btn_limpiar.grid_remove()
             self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
