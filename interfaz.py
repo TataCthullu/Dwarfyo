@@ -169,9 +169,9 @@ class BotInterface:
         # Campos configurables: etiqueta y valor actual
         campos = [
             ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
-            ("Desde venta, para compra: %", self.bot.porc_desde_venta),
-            ("Profit venta, desde compra: %", self.bot.porc_profit_x_venta),
-            ("Inversión por operaciones: %", self.bot.porc_inv_por_compra),
+            ("% Desde venta, para compra: %", self.bot.porc_desde_venta),
+            ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
+            ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.usdt),
         ]
         entries = []
@@ -229,11 +229,13 @@ class BotInterface:
              # Reiniciar lógica del bot
             self.bot.reiniciar()
             self.inicializar_valores_iniciales() 
+
             # 3) Reset automático de todos los StringVar
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
                     val.set("N/D")
-            
+
+            self.reset_colores()
             self.actualizar_ui()
             
              # Restaurar botones
@@ -242,7 +244,6 @@ class BotInterface:
             self.btn_inicio.config(text="Iniciar")
         else:
             self.btn_limpiar.grid_remove()
-
 
     def _loop(self):
         if self.bot.running:
@@ -275,15 +276,16 @@ class BotInterface:
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
 
                 self.actualizar_historial_consola()
-                if self.bot.running:
-                    self.actualizar_color("precio_actual", self.bot.precio_actual)
-                    self.actualizar_color("balance", self.bot.usdt_mas_btc)
-                    self.actualizar_color("desde_ult_comp", self.bot.varCompra)
-                    self.actualizar_color("ult_vent", self.bot.varVenta)
-                    self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
+                
+                self.actualizar_color("precio_actual", self.bot.precio_actual)
+                self.actualizar_color("balance", self.bot.usdt_mas_btc)
+                self.actualizar_color("desde_ult_comp", self.bot.varCompra)
+                self.actualizar_color("ult_vent", self.bot.varVenta)
+                self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
+              
         except Exception as e:
             print("Error al actualizar la UI:", e)
-
+            
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
@@ -304,6 +306,10 @@ class BotInterface:
         lbl = self.info_labels.get(key)
         if lbl:
             lbl.configure(fg=color)
+
+    def reset_colores(self):
+        for lbl in self.info_labels.values():
+            lbl.configure(fg="black")        
         
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n")

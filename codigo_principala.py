@@ -123,7 +123,7 @@ class TradingBot:
             self.actualizar_balance()            
             self.log("✅ Compra realizada.")
             self.log(f"📉 Precio de compra: $ {self.precio_actual:.6f}")
-            self.log(f"🪙 BTC comprado: ₿ {self.btc_comprado:.6f}")
+            self.log(f"🪙 Btc comprado: ₿ {self.btc_comprado:.6f}")
             self.log(f"🪙 Compra numero: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("- - - - - - - - - -")           
