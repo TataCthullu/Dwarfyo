@@ -297,7 +297,7 @@ class TradingBot:
                 self.detener()
                                                        
             if after_fn:
-                after_fn(3000, lambda: self.loop(after_fn))
+                after_fn(2000, lambda: self.loop(after_fn))
 
     def detener(self):
         self.running = False
@@ -310,7 +310,7 @@ class TradingBot:
         _exchange = self.exchange
         _logfn    = self.log_fn
 
-        # 2) Re-inicializa TODO
+        # 2) Re-inicializa 
         self.__init__()
 
         # 3) Restaura exchange y callback

@@ -180,8 +180,9 @@ class BotInterface:
                 self.bot.usdt                  = float(entries[4].get())
                 # Recalcular fixed_buyer
                 self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
-                self.log_en_consola("- - - - - - - - - -")
+                
                 self.log_en_consola("Configuración actualizada.")
+                self.log_en_consola("- - - - - - - - - -")
                 cerrar_config()
             except ValueError:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
@@ -209,13 +210,16 @@ class BotInterface:
              # Limpiar UI
             self.consola.delete('1.0', END)
             self.historial.delete('1.0', END)
-            self.log_en_consola("🔄 Khazâd reiniciado")
+            
              # Reiniciar lógica del bot
             self.bot.reiniciar()
             # 3) Reset automático de todos los StringVar
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
                     val.set("N/D")
+
+            self.actualizar_ui()
+
              # Restaurar botones
             self.btn_limpiar.grid_remove()
             self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
@@ -228,7 +232,7 @@ class BotInterface:
         if self.bot.running:
             self.bot.loop()
             self.actualizar_ui()
-            self.root.after(3000, self._loop)
+            self.root.after(2000, self._loop)
 
     def actualizar_ui(self):
         try:
