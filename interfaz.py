@@ -10,7 +10,7 @@ class BotInterface:
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         
-        
+
 
         # Main window setup
         self.root = Tk()
@@ -35,7 +35,7 @@ class BotInterface:
         self.actualizar_ui()
 
         # Baseline for color comparisons
-        #self._initialize_baseline()
+        self.inicializar_valores_iniciales()
         
 
     def _create_stringvars(self):
@@ -218,8 +218,10 @@ class BotInterface:
                 if isinstance(val, StringVar):
                     val.set("N/D")
 
+                               
+            self.inicializar_valores_iniciales() 
             self.actualizar_ui()
-
+            
              # Restaurar botones
             self.btn_limpiar.grid_remove()
             self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
@@ -257,24 +259,53 @@ class BotInterface:
                 self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}")
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
+
+                self.actualizar_historial_consola()
+                self.actualizar_color("precio_actual", self.bot.precio_actual)
+                self.actualizar_color("balance",        self.bot.usdt_mas_btc)
+                self.actualizar_color("desde_ult_comp", self.bot.varCompra)
+                self.actualizar_color("ult_vent",       self.bot.varVenta)
+                self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
         except Exception as e:
             print("Error al actualizar la UI:", e)
 
-    def log_en_consola(self, mensaje):
-        self.consola.insert(END, mensaje + "\n")
+    def actualizar_historial_consola(self):
+        self.historial.delete('1.0', END)
+        for t in self.bot.transacciones:
+            self.historial.insert(END, f"Compra: ${t['compra']:.2f} -> Obj venta: ${t['venta_obj']:.2f}\n")
+        for v in self.bot.precios_ventas:
+            self.historial.insert(END, f"Venta: ${v['venta']:.2f} Ganancia: ${v['ganancia']:.4f}\n")
+
+
+    def actualizar_color(self, key, valor_actual):
+        if valor_actual is None:
+            return
+        if key not in self.valores_iniciales:
+            self.valores_iniciales[key] = valor_actual
+            return
+        inicial = self.valores_iniciales[key]
+        color = "black"
+        if valor_actual > inicial:
+            color = "green"
+        elif valor_actual < inicial:
+            color = "red"
+        lbl = self.info_labels.get(key)
+        if lbl:
+            lbl.configure(fg=color)
+
+    def log_en_consola(self, msg):
+        self.consola.insert(END, msg+"\n")
         self.consola.see(END)
 
     def inicializar_valores_iniciales(self):
-        if self.bot.precio_actual is not None:
-            self.valores_iniciales["precio_actual"] = self.bot.precio_actual
-        if self.bot.usdt_mas_btc is not None:
-            self.valores_iniciales["balance"] = self.bot.usdt_mas_btc
-        if self.bot.varCompra is not None:
-            self.valores_iniciales["desde_ult_comp"] = self.bot.varCompra
-        if self.bot.varVenta is not None:
-            self.valores_iniciales["ult_vent"] = self.bot.varVenta
-        if self.bot.var_inicio is not None:
-            self.valores_iniciales["variacion_desde_inicio"] = self.bot.var_inicio
+        # Guarda el primer snapshot para colorear luego
+        self.valores_iniciales = {
+            'precio_actual':     self.bot.precio_actual,
+            'balance':           self.bot.usdt_mas_btc,
+            'desde_ult_comp':    self.bot.varCompra,
+            'ult_vent':          self.bot.varVenta,
+            'variacion_desde_inicio': self.bot.var_inicio
+        }
 
     def run(self):
         self.root.mainloop()

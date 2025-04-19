@@ -52,6 +52,7 @@ class TradingBot:
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
         #self.bot_iniciado = False
+        
 
     def log(self, mensaje):
         if self.log_fn:
