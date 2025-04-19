@@ -21,6 +21,7 @@ class BotInterface:
 
         # UI variables and clear initial values
         self._create_stringvars()
+        self.reset_stringvars()
         self.info_labels = {}
         self.valores_iniciales = {}
         self.limpiar_visible = False
@@ -62,7 +63,10 @@ class BotInterface:
         self.fixed_buyer_str = StringVar()
         
 
-    
+    def reset_stringvars(self):
+        for attr, val in self.__dict__.items():
+            if isinstance(val, StringVar):
+                val.set("N/D")
 
     def _create_frames(self):
         self.main_frame = Frame(self.root, bg="DarkGoldenrod")
@@ -260,7 +264,7 @@ class BotInterface:
                 self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
                 self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "N/D")
                 self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "N/D")
-                self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.4f}")
+                self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
                 self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "N/D")
                 self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "N/D")
                 self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra:.4f}")
