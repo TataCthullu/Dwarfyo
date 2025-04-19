@@ -105,13 +105,13 @@ class BotInterface:
             Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)); lbl.pack(side=LEFT)
             if key: self.info_labels[key] = lbl
-        add("% Para objetivo de venta:", self.porc_objetivo_venta_str, "porc_obj_venta")
+        add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt")
-        add("% Desde compra:", self.porc_desde_compra_str, "porc_desde_compra")
-        add("% Desde venta:", self.porc_desde_venta_str, "porc_desde_venta")
-        add("% nversión/op:", self.inv_por_compra_str, "porc_inv_por_compra")
-        add("Monto fijo inversión:", self.fixed_buyer_str, "fixed_buyer")
-        Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana).pack(pady=10)
+        add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
+        add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")
+        add("% Por operación:", self.inv_por_compra_str, "porc_inv_por_compra")
+        add("% Fijo para inversión:", self.fixed_buyer_str, "fixed_buyer")
+        Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",6)).pack(pady=10)
 
     def _create_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -168,11 +168,11 @@ class BotInterface:
 
         # Campos configurables: etiqueta y valor actual
         campos = [
-            ("Porcentaje Desde compra: %",    self.bot.porc_desde_compra),
-            ("Desde venta: %",     self.bot.porc_desde_venta),
-            ("Profit venta: %",  self.bot.porc_profit_x_venta),
-            ("Inversión por operaciones: %",    self.bot.porc_inv_por_compra),
-            ("Total USDT: $",        self.bot.usdt),
+            ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
+            ("Desde venta, para compra: %", self.bot.porc_desde_venta),
+            ("Profit venta, desde compra: %", self.bot.porc_profit_x_venta),
+            ("Inversión por operaciones: %", self.bot.porc_inv_por_compra),
+            ("Total Usdt: $", self.bot.usdt),
         ]
         entries = []
         for etiqueta, valor in campos:
@@ -193,12 +193,13 @@ class BotInterface:
                 self.bot.usdt                  = float(entries[4].get())
                 # Recalcular fixed_buyer
                 self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
-                self.log_en_consola("- - - - - - - - - -")
-                self.log_en_consola("Configuración actualizada.")
                 
+                self.log_en_consola("Configuración actualizada.")
+                self.log_en_consola("- - - - - - - - - -")
                 cerrar_config()
             except ValueError:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
+                self.log_en_consola("- - - - - - - - - -")
 
         Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",8)).pack(pady=8)
 
@@ -274,21 +275,21 @@ class BotInterface:
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
 
                 self.actualizar_historial_consola()
-                self.actualizar_color("precio_actual", self.bot.precio_actual)
-                self.actualizar_color("balance",        self.bot.usdt_mas_btc)
-                self.actualizar_color("desde_ult_comp", self.bot.varCompra)
-                self.actualizar_color("ult_vent",       self.bot.varVenta)
-                self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
+                if self.bot.running:
+                    self.actualizar_color("precio_actual", self.bot.precio_actual)
+                    self.actualizar_color("balance", self.bot.usdt_mas_btc)
+                    self.actualizar_color("desde_ult_comp", self.bot.varCompra)
+                    self.actualizar_color("ult_vent", self.bot.varVenta)
+                    self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
         except Exception as e:
             print("Error al actualizar la UI:", e)
 
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
-            self.historial.insert(END, f"Compra: ${t['compra']:.2f} -> Obj venta: ${t['venta_obj']:.2f}\n")
+            self.historial.insert(END, f"Compra de: ${t['compra']:.2f}, número: {t['numcompra']} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
         for v in self.bot.precios_ventas:
-            self.historial.insert(END, f"Venta: ${v['venta']:.2f} Ganancia: ${v['ganancia']:.4f}\n")
-
+            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f}, número: {v['venta_numero']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
@@ -303,8 +304,7 @@ class BotInterface:
         lbl = self.info_labels.get(key)
         if lbl:
             lbl.configure(fg=color)
-
-         
+        
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n")
         self.consola.see(END)
@@ -313,10 +313,10 @@ class BotInterface:
         self.bot.actualizar_balance()
         # Guarda el primer snapshot para colorear luego
         self.valores_iniciales = {
-            'precio_actual':     self.bot.precio_actual or 0,
-            'balance':           self.bot.usdt_mas_btc,
-            'desde_ult_comp':    self.bot.varCompra,
-            'ult_vent':          self.bot.varVenta,
+            'precio_actual': self.bot.precio_actual or 0,
+            'balance': self.bot.usdt_mas_btc,
+            'desde_ult_comp': self.bot.varCompra,
+            'ult_vent': self.bot.varVenta,
             'variacion_desde_inicio': self.bot.var_inicio
         }
 
