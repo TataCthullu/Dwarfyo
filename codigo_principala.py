@@ -68,6 +68,7 @@ class TradingBot:
         except Exception as e:
             self.log(f"❌ Error obteniendo el precio: {e}")
             self.log("- - - - - - - - - -")
+            self.reportado_trabajando = False 
             reproducir_sonido("Sounds/error.wav")
             return None
     
@@ -280,7 +281,8 @@ class TradingBot:
             self.precio_actual = self.get_precio_actual()
             if not self.precio_actual:
                 self.log("⚠️ No se puede operar sin datos de precios.") 
-                self.log("- - - - - - - - - -")  
+                self.log("- - - - - - - - - -") 
+                self.reportado_trabajando = False 
                 #reproducir_sonido("Sounds/error.wav")             
             else:            
                 self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
@@ -299,6 +301,7 @@ class TradingBot:
 
             if self.btc < 0:
                 self.log("🔴Error: btc negativo")
+                self.reportado_trabajando = False 
                 reproducir_sonido("Sounds/error.wav")
                 self.detener()
                                                        

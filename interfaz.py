@@ -117,8 +117,7 @@ class BotInterface:
         add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")
         add("% Por operación:", self.inv_por_compra_str, "porc_inv_por_compra")
         add("% Fijo para inversión:", self.fixed_buyer_str, "fixed_buyer")
-        Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",6)).pack(pady=10)
-
+        
     def _create_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
@@ -148,6 +147,9 @@ class BotInterface:
         self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod")
         btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod")
         btn_calc.grid(row=0, column=2, sticky="ew", padx=2)
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",6))
+        self.btn_confi.pack(pady=10)
+
         
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
@@ -223,25 +225,31 @@ class BotInterface:
             if self.bot.running:
                 self.bot.detener()
                 reproducir_sonido("Sounds/detner.wav")
+                
                 self.btn_inicio.grid_remove()  # Oculta el botón de estado
+                
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
+                self.btn_confi.pack_forget()
             else:
+                self.btn_confi.pack_forget()
                 self.bot.iniciar()
+                
                 reproducir_sonido("Sounds/soundinicio.wav")
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
                 self.btn_limpiar.grid_remove()
+                self.btn_confi.pack(pady=10)
                 self._loop()
 
     def clear_bot(self):
 
         if not self.bot.running:
             reproducir_sonido("Sounds/soundlimpiara.wav")
-             # Limpiar UI
+            # Limpiar UI
             self.consola.delete('1.0', END)
             self.historial.delete('1.0', END)
             
-             # Reiniciar lógica del bot
+            # Reiniciar lógica del bot
             self.bot.reiniciar()
             self.inicializar_valores_iniciales() 
 
@@ -253,7 +261,8 @@ class BotInterface:
             self.reset_colores()
             self.actualizar_ui()
             
-             # Restaurar botones
+            # Restaurar botones
+            self.btn_confi.pack(pady=10)
             self.btn_limpiar.grid_remove()
             self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
             self.btn_inicio.config(text="Iniciar")
