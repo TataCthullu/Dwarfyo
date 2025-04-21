@@ -10,6 +10,7 @@ Cian (\033[96m) para detalles adicionales."""
 class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance()
+        self.log_fn = None
         self.usdt = 5000
         self.btc = 0        
         self.btc_comprado = 0
@@ -306,7 +307,7 @@ class TradingBot:
                 self.detener()
                                                        
             if after_fn:
-                after_fn(2000, lambda: self.loop(after_fn))
+                after_fn(3000, lambda: self.loop(after_fn))
 
     def detener(self):
         self.running = False

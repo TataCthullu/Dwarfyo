@@ -12,8 +12,11 @@ class BotInterface:
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         
-
-
+        self._font_normal = ("CrushYourEnemies", 12)
+        self._font_nd     = ("Tolkien Dwarf Runes", 12) 
+        
+        # Lista de (StringVar, Label) para los "N/D"
+        self.nd_labels = []
         # Main window setup
         self.root = Tk()
         self.root.title("Khazâd")
@@ -23,8 +26,8 @@ class BotInterface:
 
         # UI variables and clear initial values
         self._create_stringvars()
-        self.reset_stringvars()
-        self.info_labels = {}
+        
+        
         self.valores_iniciales = {}
         self.limpiar_visible = False
         
@@ -34,7 +37,7 @@ class BotInterface:
         self._create_center_panel()
         self._create_right_panel()
         self._create_buttons()
-        
+        self.reset_stringvars()
         self.actualizar_ui()
 
         # Baseline for color comparisons
@@ -66,9 +69,18 @@ class BotInterface:
         
 
     def reset_stringvars(self):
+        """1) Pone 'N/D' en todos los StringVar.
+           2) Aplica fuente Tolkien sólo a los labels registrados."""
+        # 1) Loop sobre TODO self.__dict__ para setear "N/D"
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
                 val.set("N/D")
+
+        for var, lbl in self.nd_labels:
+            lbl.config(font=self._font_nd)     
+
+        
+
 
     def _create_frames(self):
         self.main_frame = Frame(self.root, bg="DarkGoldenrod")
@@ -83,11 +95,16 @@ class BotInterface:
     def _create_info_panel(self):
         self.info_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
+        self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)); lbl.pack(side=LEFT)
-            if key: self.info_labels[key] = lbl
+            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="Gold", font=self._font_normal); lbl.pack(side=LEFT)
+            # guardamos el par para pintar runas más tarde
+            self.nd_labels.append((var, lbl))
+            if key:
+                self.info_labels[key] = lbl
+            
         add("Precio actual BTC/USDT:", self.precio_act_var, "precio_actual")
         add("Usdt + Btc:", self.balance_var, "balance")
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
@@ -108,9 +125,12 @@ class BotInterface:
         self.center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=("CrushYourEnemies",12)).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="Gold", font=("CrushYourEnemies",12)); lbl.pack(side=LEFT)
-            if key: self.info_labels[key] = lbl
+            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="Gold", font=self._font_normal); lbl.pack(side=LEFT)
+            # guardamos el par para pintar runas más tarde
+            self.nd_labels.append((var, lbl))
+            if key:
+                self.info_labels[key] = lbl
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt")
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
@@ -128,11 +148,11 @@ class BotInterface:
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10))
+        self.historial = ScrolledText(self.right_frame, bg="Gold", font=self._font_normal)
         self.historial.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Gold", font=("CrushYourEnemies",10))
+        self.consola = ScrolledText(self.right_frame, bg="Gold", font=self._font_normal)
         self.consola.grid (row=1, column=0, sticky="nsew", padx=2, pady=2)
 
 
@@ -195,9 +215,9 @@ class BotInterface:
         for etiqueta, valor in campos:
             frame = Frame(config_ventana, bg="DarkGoldenrod")
             frame.pack(fill=X, pady=4, padx=8)
-            Label(frame, text=etiqueta, bg="DarkGoldenrod", font=("CrushYourEnemies",8)).pack(side=LEFT)
+            Label(frame, text=etiqueta, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
             var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="Gold", font=("CrushYourEnemies",8)).pack(side=LEFT, padx=6)
+            Entry(frame, textvariable=var, bg="Gold", font=self._font_normal).pack(side=LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
@@ -218,7 +238,7 @@ class BotInterface:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
                 self.log_en_consola("- - - - - - - - - -")
 
-        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",8)).pack(pady=8)
+        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=self._font_normal).pack(pady=8)
 
 
     def toggle_bot(self):
@@ -257,6 +277,9 @@ class BotInterface:
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
                     val.set("N/D")
+                    
+            for var, lbl in self.nd_labels:
+                lbl.config(font=self._font_nd) 
 
             self.reset_colores()
             self.actualizar_ui()
@@ -273,12 +296,13 @@ class BotInterface:
         if self.bot.running:
             self.bot.loop()
             self.actualizar_ui()
-            self.root.after(2000, self._loop)
+            self.root.after(3000, self._loop)
 
     def actualizar_ui(self):
         try:
             if self.bot.running:
-                self.precio_act_var.set(f"$ {self.bot.precio_actual:.4f}" if self.bot.precio_actual else "N/D")
+                precio = self.bot.precio_actual
+                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "N/D")
                 self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
                 self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
                 self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
@@ -298,6 +322,15 @@ class BotInterface:
                 self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}")
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
+
+                # ——— ahora repintamos la fuente según si es "N/D" o un valor real ———
+                for var, lbl in self.nd_labels:
+                    if var.get() == "N/D":
+                        lbl.configure(font=self._font_nd)
+                    else:
+                        lbl.configure(font=self._font_normal)
+
+
 
                 self.actualizar_historial_consola()
                 
