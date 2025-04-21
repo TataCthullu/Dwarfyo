@@ -160,12 +160,12 @@ class BotInterface:
         self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
         self.buttons_frame.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("CrushYourEnemies", 8), fg="DarkSlateGray")
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("Carolingia", 14), fg="DarkSlateGray")
         self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("CrushYourEnemies", 8), fg="DarkSlateGray")
-        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("CrushYourEnemies", 8), fg="DarkSlateGray")
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("Carolingia", 14), fg="DarkSlateGray")
+        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("Carolingia", 14), fg="DarkSlateGray")
         btn_calc.grid(row=0, column=2, sticky="e", padx=2)
-        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",8), fg="DarkSlateGray")
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("Carolingia",14), fg="DarkSlateGray")
         self.btn_confi.pack(pady=10)
 
         
@@ -236,7 +236,7 @@ class BotInterface:
                 self.log_en_consola("Error: ingresa valores numericos validos.")
                 self.log_en_consola("- - - - - - - - - -")
 
-        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("CrushYourEnemies",7), fg="PaleGoldenRod").pack(pady=8)
+        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("Carolingia",14), fg="PaleGoldenRod").pack(pady=8)
 
 
     def toggle_bot(self):
@@ -344,9 +344,9 @@ class BotInterface:
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
-            self.historial.insert(END, f"Compra de: ${t['compra']:.2f} -> Id N°: {t['numcompra']} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
+            self.historial.insert(END, f"Compra de: ${t['compra']:.2f} -> Id: {t['numcompra']} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
         for v in self.bot.precios_ventas:
-            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f} -> Id N°: {v['venta_numero']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}\n")
+            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f} -> Id: {v['venta_numero']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
