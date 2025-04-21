@@ -12,7 +12,7 @@ class BotInterface:
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         
-        self._font_normal = ("CrushYourEnemies", 12)
+        self._font_normal = ("CrushYourEnemies", 10)
         self._font_nd     = ("Tolkien Dwarf Runes", 14) 
         
         # Lista de (StringVar, Label) para los No Data
@@ -96,8 +96,8 @@ class BotInterface:
         self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal); lbl.pack(side=LEFT)
+            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="lightgray").pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
             if key:
@@ -120,11 +120,11 @@ class BotInterface:
 
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.center_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        self.center_frame.grid(row=0, column=1, sticky="n", padx=5, pady=5)
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
             Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal); lbl.pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
             if key:
@@ -146,11 +146,11 @@ class BotInterface:
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("CrushYourEnemies",8))
         self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
+        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("CrushYourEnemies",8))
         self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
 
 
@@ -160,12 +160,12 @@ class BotInterface:
         self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
         self.buttons_frame.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod")
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("CrushYourEnemies",6), fg="Gold")
         self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod")
-        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod")
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("CrushYourEnemies",6), fg="Gold")
+        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("CrushYourEnemies",8))
         btn_calc.grid(row=0, column=2, sticky="ew", padx=2)
-        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",8), fg="lightblue")
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",10), fg="lightblue")
         self.btn_confi.pack(pady=10)
 
         
