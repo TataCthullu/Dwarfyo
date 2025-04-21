@@ -69,12 +69,10 @@ class BotInterface:
         
 
     def reset_stringvars(self):
-        """1) Pone 'N/D' en todos los StringVar.
-           2) Aplica fuente Tolkien sólo a los labels registrados."""
-        # 1) Loop sobre TODO self.__dict__ para setear No Data
+
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
-                val.set("yz")
+                val.set("z")
 
         for var, lbl in self.nd_labels:
             lbl.config(font=self._font_nd)     
@@ -93,7 +91,7 @@ class BotInterface:
         self.main_frame.grid_rowconfigure(1, weight=0)
 
     def _create_info_panel(self):
-        self.info_frame = Frame(self.main_frame, bg="gray")
+        self.info_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
         self.info_labels = {}
         def add(label, var, key=None):
@@ -126,7 +124,7 @@ class BotInterface:
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
             Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="Gold", font=self._font_normal); lbl.pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
             if key:
@@ -148,12 +146,12 @@ class BotInterface:
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Gold", font=self._font_normal)
-        self.historial.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
+        self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Gold", font=self._font_normal)
-        self.consola.grid (row=1, column=0, sticky="nsew", padx=2, pady=2)
+        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
+        self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
 
 
 
@@ -167,7 +165,7 @@ class BotInterface:
         self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod")
         btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod")
         btn_calc.grid(row=0, column=2, sticky="ew", padx=2)
-        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",6))
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("CrushYourEnemies",8), fg="lightblue")
         self.btn_confi.pack(pady=10)
 
         
@@ -217,7 +215,7 @@ class BotInterface:
             frame.pack(fill=X, pady=4, padx=8)
             Label(frame, text=etiqueta, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
             var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="Gold", font=self._font_normal).pack(side=LEFT, padx=6)
+            Entry(frame, textvariable=var, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
@@ -276,7 +274,7 @@ class BotInterface:
             # 3) Reset automático de todos los StringVar
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
-                    val.set("yz")
+                    val.set("z")
 
             for var, lbl in self.nd_labels:
                 lbl.config(font=self._font_nd) 
@@ -302,18 +300,18 @@ class BotInterface:
         try:
             if self.bot.running:
                 precio = self.bot.precio_actual
-                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "yz")
+                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "z")
                 self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
                 self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
                 self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
-                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "yz")
-                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "yz")
+                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "z")
+                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "z")
                 self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
-                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "yz")
-                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "yz")
+                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "z")
+                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "z")
                 self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra:.4f}")
                 self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta:.4f}")
-                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "yz")
+                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "z")
                 self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
                 self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
                 self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
@@ -323,9 +321,9 @@ class BotInterface:
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
 
-                # ——— ahora repintamos la fuente según si es "yz" o un valor real ———
+                # ——— ahora repintamos la fuente según si es "z" o un valor real ———
                 for var, lbl in self.nd_labels:
-                    if var.get() == "yz":
+                    if var.get() == "z":
                         lbl.configure(font=self._font_nd)
                     else:
                         lbl.configure(font=self._font_normal)
