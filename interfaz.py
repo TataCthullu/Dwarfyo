@@ -146,11 +146,11 @@ class BotInterface:
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 20))
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 18))
         self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 20))
+        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 18))
         self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
 
 
@@ -344,9 +344,11 @@ class BotInterface:
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
-            self.historial.insert(END, f"Compra de: ${t['compra']:.2f} -> Id: {t['numcompra']} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
+            ts = t.get("timestamp", "")
+            self.historial.insert(END, f"Compra de: ${t['compra']:.2f} -> [{ts}] -> Objetivo de venta: ${t['venta_obj']:.2f}, Id: {t['numcompra']}\n")
         for v in self.bot.precios_ventas:
-            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f} -> Id: {v['venta_numero']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}\n")
+            ts = v.get("timestamp", "")
+            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f}, a: $ {v['venta']:.2f} [{ts}]| Ganancia: $ {v['ganancia']:.4f}, Id: {v['venta_numero']}\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:

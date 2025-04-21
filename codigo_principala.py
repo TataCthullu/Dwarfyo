@@ -1,5 +1,6 @@
 import ccxt
 from utils import reproducir_sonido
+import datetime
 
 """Azul (\033[94m) para información general.
 Amarillo (\033[93m) para valores clave como precios de ingreso.
@@ -104,6 +105,7 @@ class TradingBot:
                 self.log("⚠️ Usdt insuficiente para comprar.")
                 return
             
+            self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.usdt -= self.fixed_buyer             
             self.precio_ult_comp = self.precio_actual
             self.precios_compras.append(self.precio_ult_comp)
@@ -118,8 +120,8 @@ class TradingBot:
                     "btc": self.btc_comprado,
                     "invertido_usdt": self.fixed_buyer,
                     "ejecutado": False,
-                    "numcompra": self.contador_compras_reales
-                    #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "numcompra": self.contador_compras_reales,
+                    "timestamp": self.timestamp
                 })
                             
             self.actualizar_balance()            
@@ -182,6 +184,7 @@ class TradingBot:
             if self.btc < transaccion["btc"]:
                 continue  # Evita vender más BTC del disponible            
             elif self.precio_actual >= transaccion["venta_obj"]:
+                self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt += usdt_obtenido
@@ -201,19 +204,20 @@ class TradingBot:
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
                     "inverstido_usdt": invertido_usdt,
-                    "venta_numero": self.contador_ventas_reales
-                    #"timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    "venta_numero": self.contador_ventas_reales,
+                    "timestamp": self.timestamp
                 })
                 
                 transacciones_vendidas.append(transaccion)
                 
                 
                 self.log(f"✅ Venta realizada.")
+                self.log(f"Fecha: {self.timestamp}")
                 self.log(f"🕒 Compra original: {self.precio_ult_comp:.2f}")
                 self.log(f"📈 Precio de venta: $ {self.precio_actual:.2f}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: ₿ {btc_vender:.6f}")
-                self.log(f"💹 Ganancia de esta operación: $ {self.ganancia_neta:.8f}")
+                self.log(f"💹 Ganancia de esta operacion: $ {self.ganancia_neta:.8f}")
                 self.log("- - - - - - - - - -")
                                 
                 reproducir_sonido("Sounds/soundventa.wav")
