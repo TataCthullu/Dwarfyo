@@ -12,7 +12,7 @@ class BotInterface:
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         
-        self._font_normal = ("CrushYourEnemies", 12)
+        self._font_normal = ("Carolingia", 22)
         self._font_nd     = ("Tolkien Dwarf Runes", 14) 
         
         # Lista de (StringVar, Label) para los No Data
@@ -103,14 +103,14 @@ class BotInterface:
             if key:
                 self.info_labels[key] = lbl
             
-        add("Precio actual BTC/USDT:", self.precio_act_var, "precio_actual")
+        add("Precio actual Btc/Usdt:", self.precio_act_var, "precio_actual")
         add("Usdt + Btc:", self.balance_var, "balance")
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
-        add("% Desde última compra:", self.varpor_set_compra_str, "desde_ult_comp")
-        add("% Desde última venta:", self.varpor_set_venta_str, "ult_vent")
+        add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
+        add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
-        add("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
+        add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
@@ -133,8 +133,8 @@ class BotInterface:
         add("Usdt Disponible:", self.cant_usdt_str, "usdt")
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
         add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")
-        add("% Por operación:", self.inv_por_compra_str, "porc_inv_por_compra")
-        add("% Fijo para inversión:", self.fixed_buyer_str, "fixed_buyer")
+        add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")
+        add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def _create_right_panel(self):
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -344,9 +344,9 @@ class BotInterface:
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
-            self.historial.insert(END, f"Compra de: ${t['compra']:.2f}, numero: {t['numcompra']} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
+            self.historial.insert(END, f"Compra de: ${t['compra']:.2f} -> Id N°: {t['numcompra']} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
         for v in self.bot.precios_ventas:
-            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f}, numero: {v['venta_numero']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}\n")
+            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f} -> Id N°: {v['venta_numero']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
