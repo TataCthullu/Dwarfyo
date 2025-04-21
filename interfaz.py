@@ -74,7 +74,7 @@ class BotInterface:
         # 1) Loop sobre TODO self.__dict__ para setear No Data
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
-                val.set("y")
+                val.set("yz")
 
         for var, lbl in self.nd_labels:
             lbl.config(font=self._font_nd)     
@@ -93,13 +93,13 @@ class BotInterface:
         self.main_frame.grid_rowconfigure(1, weight=0)
 
     def _create_info_panel(self):
-        self.info_frame = Frame(self.main_frame, bg="DarkGoldenrod")
+        self.info_frame = Frame(self.main_frame, bg="gray")
         self.info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
         self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
             Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="Gold", font=self._font_normal); lbl.pack(side=LEFT)
+            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
             if key:
@@ -201,7 +201,7 @@ class BotInterface:
             detener_sonido_y_cerrar(config_ventana)
             config_ventana.destroy()
         config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
-        reproducir_sonido("Sounds/antorcha.wav")
+        reproducir_sonido("Sounds/antorchab.wav")
 
         # Campos configurables: etiqueta y valor actual
         campos = [
@@ -264,7 +264,7 @@ class BotInterface:
     def clear_bot(self):
 
         if not self.bot.running:
-            reproducir_sonido("Sounds/soundlimpiara.wav")
+            reproducir_sonido("Sounds/limpiar.wav")
             # Limpiar UI
             self.consola.delete('1.0', END)
             self.historial.delete('1.0', END)
@@ -276,7 +276,7 @@ class BotInterface:
             # 3) Reset automático de todos los StringVar
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
-                    val.set("y")
+                    val.set("yz")
 
             for var, lbl in self.nd_labels:
                 lbl.config(font=self._font_nd) 
@@ -302,18 +302,18 @@ class BotInterface:
         try:
             if self.bot.running:
                 precio = self.bot.precio_actual
-                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "y")
+                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "yz")
                 self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
                 self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
                 self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
-                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "y")
-                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "y")
+                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "yz")
+                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "yz")
                 self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
-                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "y")
-                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "y")
+                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "yz")
+                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "yz")
                 self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra:.4f}")
                 self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta:.4f}")
-                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "y")
+                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "yz")
                 self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
                 self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
                 self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
@@ -323,9 +323,9 @@ class BotInterface:
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
 
-                # ——— ahora repintamos la fuente según si es "y" o un valor real ———
+                # ——— ahora repintamos la fuente según si es "yz" o un valor real ———
                 for var, lbl in self.nd_labels:
-                    if var.get() == "y":
+                    if var.get() == "yz":
                         lbl.configure(font=self._font_nd)
                     else:
                         lbl.configure(font=self._font_normal)
@@ -355,7 +355,7 @@ class BotInterface:
             return
         
         inicial = self.valores_iniciales[key]
-        color = "black"
+        color = "Gold"
         if valor_actual > inicial:
             color = "green"
         elif valor_actual < inicial:
@@ -366,7 +366,7 @@ class BotInterface:
 
     def reset_colores(self):
         for lbl in self.info_labels.values():
-            lbl.configure(fg="black")        
+            lbl.configure(fg="Gold")        
         
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n")
