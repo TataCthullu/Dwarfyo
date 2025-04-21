@@ -179,12 +179,14 @@ class TradingBot:
     def vender(self):
         transacciones_vendidas = []
         sale_executed = False
-
+        
         for transaccion in self.transacciones:
             if self.btc < transaccion["btc"]:
                 continue  # Evita vender más BTC del disponible            
             elif self.precio_actual >= transaccion["venta_obj"]:
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # capturamos el id de la compra original
+                id_compra = transaccion["numcompra"]
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt += usdt_obtenido
@@ -205,7 +207,8 @@ class TradingBot:
                     "ganancia": self.ganancia_neta,
                     "inverstido_usdt": invertido_usdt,
                     "venta_numero": self.contador_ventas_reales,
-                    "timestamp": self.timestamp
+                    "timestamp": self.timestamp,
+                    "id_compra": id_compra
                 })
                 
                 transacciones_vendidas.append(transaccion)
@@ -214,6 +217,7 @@ class TradingBot:
                 self.log(f"✅ Venta realizada.")
                 self.log(f"Fecha: {self.timestamp}")
                 self.log(f"🕒 Compra original: {self.precio_ult_comp:.2f}")
+                self.log(f"🆔 Id numero: {id_compra}")
                 self.log(f"📈 Precio de venta: $ {self.precio_actual:.2f}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: ₿ {btc_vender:.6f}")
@@ -264,7 +268,7 @@ class TradingBot:
         self.btc = self.btc_comprado
         self.contador_compras_reales += 1
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_profit_x_venta / 100)
-        self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado, "numcompra": self.contador_compras_reales})
+        self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado, "numcompra": self.contador_compras_reales, "timestamp": self.timestamp})
         self.log(f" Btc comprado: ₿ {self.btc_comprado:.6f}")
         self.log("- - - - - - - - - -")
                         
