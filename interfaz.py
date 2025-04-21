@@ -13,9 +13,9 @@ class BotInterface:
         self.bot.log_fn = self.log_en_consola
         
         self._font_normal = ("CrushYourEnemies", 12)
-        self._font_nd     = ("Tolkien Dwarf Runes", 12) 
+        self._font_nd     = ("Tolkien Dwarf Runes", 14) 
         
-        # Lista de (StringVar, Label) para los "N/D"
+        # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
         # Main window setup
         self.root = Tk()
@@ -71,10 +71,10 @@ class BotInterface:
     def reset_stringvars(self):
         """1) Pone 'N/D' en todos los StringVar.
            2) Aplica fuente Tolkien sólo a los labels registrados."""
-        # 1) Loop sobre TODO self.__dict__ para setear "N/D"
+        # 1) Loop sobre TODO self.__dict__ para setear No Data
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
-                val.set("N/D")
+                val.set("y")
 
         for var, lbl in self.nd_labels:
             lbl.config(font=self._font_nd)     
@@ -276,8 +276,8 @@ class BotInterface:
             # 3) Reset automático de todos los StringVar
             for attr, val in self.__dict__.items():
                 if isinstance(val, StringVar):
-                    val.set("N/D")
-                    
+                    val.set("y")
+
             for var, lbl in self.nd_labels:
                 lbl.config(font=self._font_nd) 
 
@@ -302,18 +302,18 @@ class BotInterface:
         try:
             if self.bot.running:
                 precio = self.bot.precio_actual
-                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "N/D")
+                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "y")
                 self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
                 self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
                 self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
-                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "N/D")
-                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "N/D")
+                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "y")
+                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "y")
                 self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
-                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "N/D")
-                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "N/D")
+                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "y")
+                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "y")
                 self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra:.4f}")
                 self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta:.4f}")
-                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "N/D")
+                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "y")
                 self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
                 self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
                 self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
@@ -323,9 +323,9 @@ class BotInterface:
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
 
-                # ——— ahora repintamos la fuente según si es "N/D" o un valor real ———
+                # ——— ahora repintamos la fuente según si es "y" o un valor real ———
                 for var, lbl in self.nd_labels:
-                    if var.get() == "N/D":
+                    if var.get() == "y":
                         lbl.configure(font=self._font_nd)
                     else:
                         lbl.configure(font=self._font_normal)
