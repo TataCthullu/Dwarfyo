@@ -1,6 +1,8 @@
 import ccxt
 from utils import reproducir_sonido
 import datetime
+#import uuid
+from secrets import token_hex
 
 """Azul (\033[94m) para información general.
 Amarillo (\033[93m) para valores clave como precios de ingreso.
@@ -96,16 +98,18 @@ class TradingBot:
             return 0
         return ((self.precio_actual - self.precio_ingreso) / self.precio_ingreso) * 100
 
-        
-
     def cant_inv(self):
         return (self.usdt * self.porc_inv_por_compra) / 100
+    
+    def _new_id(self):
+        # Genera 4 dígitos hex aleatorios
+        return token_hex(2)  # e.g. '9f3b'
 
     def comprar(self):
             if self.usdt < self.fixed_buyer:
                 self.log("⚠️ Usdt insuficiente para comprar.")
                 return
-            
+            id_op = self._new_id()
             self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.usdt -= self.fixed_buyer             
             self.precio_ult_comp = self.precio_actual
@@ -116,7 +120,8 @@ class TradingBot:
             self.contador_compras_reales += 1 
             
             self.transacciones.append({
-                    "compra": self.precio_ult_comp,                  
+                    "compra": self.precio_ult_comp,
+                    "id": id_op,     
                     "venta_obj": self.precio_objetivo_venta,
                     "btc": self.btc_comprado,
                     "invertido_usdt": self.fixed_buyer,
@@ -129,7 +134,8 @@ class TradingBot:
             self.log("✅ Compra realizada.")
             self.log(f"📉 Precio de compra: $ {self.precio_actual:.6f}")
             self.log(f"🪙 Btc comprado: ₿ {self.btc_comprado:.6f}")
-            self.log(f"🪙 Compra numero: {self.contador_compras_reales}")
+            self.log(f"🪙 Compra id: {id_op}")
+            self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
             self.log("- - - - - - - - - -")           
             reproducir_sonido("Sounds/soundcompra.wav")            
@@ -187,7 +193,8 @@ class TradingBot:
             elif self.precio_actual >= transaccion["venta_obj"]:
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
-                #id_compra = transaccion["numcompra"]
+                id_compra = transaccion["id"] 
+                id_venta = self._new_id()
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt += usdt_obtenido
@@ -207,9 +214,10 @@ class TradingBot:
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
                     "inverstido_usdt": invertido_usdt,
+                    "id_venta": id_venta,
                     "venta_numero": self.contador_ventas_reales,
                     "timestamp": self.timestamp,
-                    #"id_compra": id_compra
+                    "id_compra": id_compra,
                 })
                 
                 transacciones_vendidas.append(transaccion)
@@ -218,7 +226,7 @@ class TradingBot:
                 self.log(f"✅ Venta realizada.")
                 self.log(f"Fecha y hora: {self.timestamp}")
                 self.log(f"🕒 Compra original: {self.precio_ult_comp:.2f}")
-                #self.log(f"🆔 Id numero: {id_compra}")
+                self.log(f"🆔 Id: {id_compra}")
                 self.log(f"📈 Precio de venta: $ {self.precio_actual:.2f}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: ₿ {btc_vender:.6f}")
@@ -261,6 +269,7 @@ class TradingBot:
             self.log("- - - - - - - - - -")
             return
         # calculamos el timestamp **aquí**
+        id_op = self._new_id()
         self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         self.log(f"🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")        
@@ -272,8 +281,9 @@ class TradingBot:
         self.btc = self.btc_comprado
         self.contador_compras_reales += 1
         self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_profit_x_venta / 100)
-        self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado, "numcompra": self.contador_compras_reales, "timestamp": self.timestamp})
+        self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado, "numcompra": self.contador_compras_reales, "id": id_op, "timestamp": self.timestamp})
         self.log(f" Btc comprado: ₿ {self.btc_comprado:.6f}")
+        self.log(f" Id: {id_op}")
         self.log("- - - - - - - - - -")
                         
     def iniciar(self):

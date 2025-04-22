@@ -345,10 +345,11 @@ class BotInterface:
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
-            self.historial.insert(END, f"Compra desde: ${t['compra']:.2f} -> Objetivo de venta: ${t['venta_obj']:.2f}, Id: {t['numcompra']} -> {ts}\n")
+            id_op = t.get("id")
+            self.historial.insert(END, f"Compra desde: ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> {ts} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
-            self.historial.insert(END, f"Venta desde: $ {v['compra']:.2f}, id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Id: {v['venta_numero']} -> {ts}\n")
+            self.historial.insert(END, f"Venta desde: $ {v['compra']:.2f} -> id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> {ts}\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
