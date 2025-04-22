@@ -345,10 +345,10 @@ class BotInterface:
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
-            self.historial.insert(END, f"Compra de: ${t['compra']:.2f} -> [{ts}] -> Objetivo de venta: ${t['venta_obj']:.2f}, Id: {t['numcompra']}\n")
+            self.historial.insert(END, f"Compra desde: ${t['compra']:.2f} -> Objetivo de venta: ${t['venta_obj']:.2f}, Id: {t['numcompra']} -> {ts}\n")
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
-            self.historial.insert(END, f"Venta de: $ {v['compra']:.2f}, a: $ {v['venta']:.2f} [{ts}]| Ganancia: $ {v['ganancia']:.4f}, Id: {v['venta_numero']}\n")
+            self.historial.insert(END, f"Venta desde: $ {v['compra']:.2f}, id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Id: {v['venta_numero']} -> {ts}\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
@@ -359,7 +359,7 @@ class BotInterface:
         if valor_actual > inicial:
             color = "green"
         elif valor_actual < inicial:
-            color = "red"
+            color = "Crimson"
         lbl = self.info_labels.get(key)
         if lbl:
             lbl.configure(fg=color)

@@ -53,6 +53,7 @@ class TradingBot:
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
+        self.timestamp = None
         #self.bot_iniciado = False
         
 
@@ -186,7 +187,7 @@ class TradingBot:
             elif self.precio_actual >= transaccion["venta_obj"]:
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
-                id_compra = transaccion["numcompra"]
+                #id_compra = transaccion["numcompra"]
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt += usdt_obtenido
@@ -208,16 +209,16 @@ class TradingBot:
                     "inverstido_usdt": invertido_usdt,
                     "venta_numero": self.contador_ventas_reales,
                     "timestamp": self.timestamp,
-                    "id_compra": id_compra
+                    #"id_compra": id_compra
                 })
                 
                 transacciones_vendidas.append(transaccion)
                 
                 
                 self.log(f"✅ Venta realizada.")
-                self.log(f"Fecha: {self.timestamp}")
+                self.log(f"Fecha y hora: {self.timestamp}")
                 self.log(f"🕒 Compra original: {self.precio_ult_comp:.2f}")
-                self.log(f"🆔 Id numero: {id_compra}")
+                #self.log(f"🆔 Id numero: {id_compra}")
                 self.log(f"📈 Precio de venta: $ {self.precio_actual:.2f}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: ₿ {btc_vender:.6f}")
@@ -259,6 +260,9 @@ class TradingBot:
             self.log("❌ Precio actual no válido, no se puede realizar la compra.")
             self.log("- - - - - - - - - -")
             return
+        # calculamos el timestamp **aquí**
+        self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         self.log(f"🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")        
         self.usdt -= self.fixed_buyer 
         self.actualizar_balance()        
