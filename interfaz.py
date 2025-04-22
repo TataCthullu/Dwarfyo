@@ -313,13 +313,13 @@ class BotInterface:
                 self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta:.4f}")
                 self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "z")
                 self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
-                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}")
-                self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma))
-                self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma))
-                self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta}")
-                self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}")
-                self.compras_realizadas_str.set(str(self.bot.contador_compras_reales))
-                self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales))
+                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}" if self.bot.total_ganancia else "z")
+                self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma) if self.bot.contador_compras_fantasma else "z")
+                self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma) if self.bot.contador_ventas_fantasma else "z")
+                self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta}" if self.bot.porc_profit_x_venta else "z")
+                self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}" if self.bot.calcular_ghost_ratio() else "z")
+                self.compras_realizadas_str.set(str(self.bot.contador_compras_reales) if self.bot.contador_compras_reales else "z")
+                self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales) if self.bot.contador_ventas_reales else "z")
 
                 # ——— ahora repintamos la fuente según si es "z" o un valor real ———
                 for var, lbl in self.nd_labels:
