@@ -36,6 +36,8 @@ class BotInterface:
         self._create_info_panel()
         self._create_center_panel()
         self._create_right_panel()
+        self.historial.tag_configure('venta_tag', foreground='green')
+        self.historial.tag_configure('compra_tag', foreground='blue')
         self._create_buttons()
         self.reset_stringvars()
         self.actualizar_ui()
@@ -351,11 +353,19 @@ class BotInterface:
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
+
+            self.historial.insert(END, "Compra desde:", 'compra_tag')
+            # el resto de la línea en color por defecto
+            resto = f" ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> {ts} -> Objetivo: ${t['venta_obj']:.2f}\n"
+            self.historial.insert(END, resto)
             id_op = t.get("id")
-            self.historial.insert(END, f"Compra desde: ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> {ts} -> Objetivo de venta: ${t['venta_obj']:.2f}\n")
+            
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
-            self.historial.insert(END, f"Venta desde: $ {v['compra']:.2f} -> id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> {ts}\n")
+
+            self.historial.insert(END, "Venta desde:", 'venta_tag')
+            resto = f" $ {v['compra']:.2f} -> id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> {ts}\n"
+            self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None:
