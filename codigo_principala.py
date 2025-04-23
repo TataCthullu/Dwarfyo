@@ -14,6 +14,7 @@ class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance()
         self.log_fn = None
+        self.start_time = None
         self.usdt = 5000
         self.btc = 0        
         self.btc_comprado = 0
@@ -291,12 +292,40 @@ class TradingBot:
         self.precio_actual = self.get_precio_actual()
         self.precio_ingreso = self.precio_actual
         self.precio_ult_comp = self.precio_actual
+        self.start_time = datetime.datetime.now()
         
         self.running = True
 
         self.log("🟡 Khazâd iniciado.")
         self.log("- - - - - - - - - -")
         self.realizar_primera_compra()
+
+    def get_start_time_str(self) -> str:
+        """Devuelve la fecha/hora de inicio formateada, o '-' si no arrancó."""
+        if not self.start_time:
+            return "z"
+        return self.start_time.strftime("%Y-%m-%d %H:%M:%S")
+    
+
+    def get_runtime_str(self) -> str:
+        """
+        Devuelve una cadena tipo 'Xd Yh Zm' con
+        días, horas y minutos transcurridos desde start_time.
+        """
+        if not self.start_time:
+            return "-"
+        delta = datetime.datetime.now() - self.start_time
+        days = delta.days
+        hours, rem = divmod(delta.seconds, 3600)
+        minutes = rem // 60
+        parts = []
+        if days:
+            parts.append(f"{days} día{'s' if days!=1 else ''}")
+        if hours:
+            parts.append(f"{hours} h")
+        if minutes or not parts:
+            parts.append(f"{minutes} m")
+        return " ".join(parts) 
                                      
     def loop(self, after_fn=None):
             if not self.running:

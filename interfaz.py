@@ -48,6 +48,9 @@ class BotInterface:
         # Display and config variables
         self.precio_act_var = StringVar()
         self.balance_var = StringVar()
+           # <--- nueva var
+        self.start_time_str = StringVar()
+        self.runtime_str    = StringVar()
         self.cant_btc_str = StringVar()
         self.btc_en_usdt = StringVar()
         self.varpor_set_compra_str = StringVar()
@@ -86,7 +89,7 @@ class BotInterface:
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         for i in range(3):
-            self.main_frame.grid_columnconfigure(i, weight=0 if i<2 else 2, minsize=350)
+            self.main_frame.grid_columnconfigure(i, weight=0 if i<2 else 2)
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(1, weight=0)
 
@@ -116,7 +119,11 @@ class BotInterface:
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
         add("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
-        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")
+        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")      
+        add("Fecha de inicio:", self.start_time_str, "start_time")
+        add("Tiempo activo:", self.runtime_str,    "runtime")
+
+
 
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -146,7 +153,7 @@ class BotInterface:
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 18))
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 17))
         self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
@@ -319,8 +326,10 @@ class BotInterface:
                 self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta}" if self.bot.porc_profit_x_venta else "z")
                 self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}" if self.bot.calcular_ghost_ratio() else "z")
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales) if self.bot.contador_compras_reales else "z")
-                self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales) if self.bot.contador_ventas_reales else "z")
-
+                self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales) if self.bot.contador_ventas_reales else "z")               
+                self.start_time_str.set(self.bot.get_start_time_str())
+                self.runtime_str.set(self.bot.get_runtime_str())
+                
                 # ——— ahora repintamos la fuente según si es "z" o un valor real ———
                 for var, lbl in self.nd_labels:
                     if var.get() == "z":
@@ -328,10 +337,7 @@ class BotInterface:
                     else:
                         lbl.configure(font=self._font_normal)
 
-
-
-                self.actualizar_historial_consola()
-                
+                self.actualizar_historial_consola()                
                 self.actualizar_color("precio_actual", self.bot.precio_actual)
                 self.actualizar_color("balance", self.bot.usdt_mas_btc)
                 self.actualizar_color("desde_ult_comp", self.bot.varCompra)
