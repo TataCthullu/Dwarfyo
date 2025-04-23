@@ -8,21 +8,24 @@ from calculador import CalculatorWindow
 
 class BotInterface:
     def __init__(self, bot: TradingBot):
+
+         # Main window setup
+        self.root = Tk()
+        self.root.title("Khazâd")
+        self.root.configure(bg="DarkGoldenrod")
+        self.root.iconbitmap("imagenes/dm.ico")
+        self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         
         self._font_normal = ("Carolingia", 22)
         self._font_nd     = ("Tolkien Dwarf Runes", 14) 
-        
+        self.initial_usdt = bot.usdt
+        self.hold_usdt_var = StringVar()
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
-        # Main window setup
-        self.root = Tk()
-        self.root.title("Khazâd")
-        self.root.configure(bg="DarkGoldenrod")
-        self.root.iconbitmap("imagenes/dm.ico")
-        self.root.attributes("-alpha", 0.93)
+       
 
         # UI variables and clear initial values
         self._create_stringvars()
@@ -34,6 +37,7 @@ class BotInterface:
         # Layout
         self._create_frames()
         self._create_info_panel()
+        self._add_hold_comparator()
         self._create_center_panel()
         self._create_right_panel()
         self.historial.tag_configure('venta_tag', foreground='green')
@@ -44,15 +48,27 @@ class BotInterface:
 
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
-        
 
+    def _add_hold_comparator(self):
+        """Agrega la fila de USDT que habrías tenido si hubieras hecho hold."""
+        row = Frame(self.info_frame, bg="DarkGoldenrod")
+        row.pack(anchor="w", pady=2)
+        #Label(row, text="Hold BTC ⇢").pack(side=LEFT)
+        Label(row, text="Hold USDT ⇢", bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
+        #lbl = Label(row, textvariable=self.hold_btc_var)
+        lbl = Label(row, textvariable=self.hold_usdt_var, bg="Gold", font=self._font_normal)
+        lbl.pack(side=LEFT)
+        lbl.configure(fg="skyblue")
+        # si quieres poder estilizar “no data”:
+        self.nd_labels.append((self.hold_usdt_var, lbl))
+    
+        
     def _create_stringvars(self):
         # Display and config variables
         self.precio_act_var = StringVar()
         self.balance_var = StringVar()
-           # <--- nueva var
         self.start_time_str = StringVar()
-        self.runtime_str    = StringVar()
+        self.runtime_str = StringVar()
         self.cant_btc_str = StringVar()
         self.btc_en_usdt = StringVar()
         self.varpor_set_compra_str = StringVar()
@@ -72,7 +88,7 @@ class BotInterface:
         self.inv_por_compra_str = StringVar()
         self.fixed_buyer_str = StringVar()
         
-
+        
     def reset_stringvars(self):
 
         for attr, val in self.__dict__.items():
@@ -81,9 +97,6 @@ class BotInterface:
 
         for var, lbl in self.nd_labels:
             lbl.config(font=self._font_nd)     
-
-        
-
 
     def _create_frames(self):
         self.main_frame = Frame(self.root, bg="DarkGoldenrod")
@@ -125,11 +138,11 @@ class BotInterface:
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str,    "runtime")
 
-
-
     def _create_center_panel(self):
+
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.center_frame.grid(row=0, column=1, sticky="n", padx=5, pady=5)
+
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
             Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="PaleGoldenRod").pack(side=LEFT)
@@ -138,6 +151,7 @@ class BotInterface:
             self.nd_labels.append((var, lbl))
             if key:
                 self.info_labels[key] = lbl
+
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt")
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
@@ -146,6 +160,7 @@ class BotInterface:
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def _create_right_panel(self):
+
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
 
@@ -165,6 +180,7 @@ class BotInterface:
 
 
     def _create_buttons(self):
+
         self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
@@ -191,6 +207,7 @@ class BotInterface:
 
     # Función para obtener el valor sin el símbolo %
     def obtener_valor_limpio(entry_var):
+
         valor = entry_var.get().replace('%', '').replace('$', '').strip()
         
         try:
@@ -200,6 +217,7 @@ class BotInterface:
             return 0  # o lo que quieras como fallback
 
     def abrir_configuracion_subventana(self):
+
         config_ventana = Toplevel(self.root)
         config_ventana.title("Configuración de operativa")
         config_ventana.configure(bg="DarkGoldenrod")
@@ -209,7 +227,6 @@ class BotInterface:
             config_ventana.destroy()
         config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
         reproducir_sonido("Sounds/antorchab.wav")
-
         # Campos configurables: etiqueta y valor actual
         campos = [
             ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
@@ -218,7 +235,9 @@ class BotInterface:
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.usdt),
         ]
+
         entries = []
+
         for etiqueta, valor in campos:
             frame = Frame(config_ventana, bg="DarkGoldenrod")
             frame.pack(fill=X, pady=4, padx=8)
@@ -234,8 +253,7 @@ class BotInterface:
                 self.bot.porc_desde_venta     = float(entries[1].get())
                 self.bot.porc_profit_x_venta  = float(entries[2].get())
                 self.bot.porc_inv_por_compra  = float(entries[3].get())
-                self.bot.usdt                  = float(entries[4].get())
-                # Recalcular fixed_buyer
+                self.bot.usdt                 = float(entries[4].get())     
                 self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
                 
                 self.log_en_consola("Configuracion actualizada.")
@@ -247,20 +265,20 @@ class BotInterface:
 
         Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("Carolingia",14), fg="PaleGoldenRod").pack(pady=8)
 
-
     def toggle_bot(self):
+            
             if self.bot.running:
+
                 self.bot.detener()
                 reproducir_sonido("Sounds/detner.wav")
                 
-                self.btn_inicio.grid_remove()  # Oculta el botón de estado
-                
+                self.btn_inicio.grid_remove()  # Oculta el botón de estado               
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
                 self.btn_confi.pack_forget()
+
             else:
                 self.btn_confi.pack_forget()
-                self.bot.iniciar()
-                
+                self.bot.iniciar()                
                 reproducir_sonido("Sounds/soundinicio.wav")
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
@@ -271,6 +289,7 @@ class BotInterface:
     def clear_bot(self):
 
         if not self.bot.running:
+
             reproducir_sonido("Sounds/limpiar.wav")
             # Limpiar UI
             self.consola.delete('1.0', END)
@@ -306,6 +325,7 @@ class BotInterface:
             self.root.after(3000, self._loop)
 
     def actualizar_ui(self):
+
         try:
             if self.bot.running:
                 precio = self.bot.precio_actual
@@ -331,7 +351,14 @@ class BotInterface:
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales) if self.bot.contador_ventas_reales else "z")               
                 self.start_time_str.set(self.bot.get_start_time_str())
                 self.runtime_str.set(self.bot.get_runtime_str())
-                
+                hold_usdt = (self.initial_usdt / self.bot.precio_ingreso) * self.bot.precio_actual
+
+                if self.bot.precio_ingreso and precio:
+                    hold_usdt = (self.initial_usdt / self.bot.precio_ingreso) * precio
+                    self.hold_usdt_var.set(f"$ {hold_usdt:.2f}")
+                else:
+                    self.hold_usdt_var.set("z")  
+                    
                 # ——— ahora repintamos la fuente según si es "z" o un valor real ———
                 for var, lbl in self.nd_labels:
                     if var.get() == "z":
@@ -350,6 +377,7 @@ class BotInterface:
             print("Error al actualizar la UI:", e)
             
     def actualizar_historial_consola(self):
+
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
@@ -368,6 +396,7 @@ class BotInterface:
             self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
+
         if valor_actual is None:
             return
         
@@ -382,14 +411,17 @@ class BotInterface:
             lbl.configure(fg=color)
 
     def reset_colores(self):
+
         for lbl in self.info_labels.values():
             lbl.configure(fg="Gold")        
         
     def log_en_consola(self, msg):
+
         self.consola.insert(END, msg+"\n")
         self.consola.see(END)
 
     def inicializar_valores_iniciales(self):
+
         self.bot.actualizar_balance()
         # Guarda el primer snapshot para colorear luego
         self.valores_iniciales = {
