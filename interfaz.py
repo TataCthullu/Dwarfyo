@@ -13,7 +13,7 @@ class BotInterface:
         self.root = Tk()
         self.root.title("Khazâd")
         self.root.configure(bg="DarkGoldenrod")
-        self.root.iconbitmap("imagenes/dm.ico")
+        self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
         self.bot = bot
@@ -22,7 +22,7 @@ class BotInterface:
         self._font_normal = ("Carolingia", 22)
         self._font_nd     = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
-        self.hold_usdt_var = StringVar()
+        
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
        
@@ -37,7 +37,7 @@ class BotInterface:
         # Layout
         self._create_frames()
         self._create_info_panel()
-        self._add_hold_comparator()
+        
         self._create_center_panel()
         self._create_right_panel()
         self.historial.tag_configure('venta_tag', foreground='green')
@@ -49,18 +49,7 @@ class BotInterface:
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
 
-    def _add_hold_comparator(self):
-        """Agrega la fila de USDT que habrías tenido si hubieras hecho hold."""
-        row = Frame(self.info_frame, bg="DarkGoldenrod")
-        row.pack(anchor="w", pady=2)
-        #Label(row, text="Hold BTC ⇢").pack(side=LEFT)
-        Label(row, text="Hold USDT ⇢", bg="DarkGoldenrod", font=self._font_normal).pack(side=LEFT)
-        #lbl = Label(row, textvariable=self.hold_btc_var)
-        lbl = Label(row, textvariable=self.hold_usdt_var, bg="Gold", font=self._font_normal)
-        lbl.pack(side=LEFT)
-        lbl.configure(fg="skyblue")
-        # si quieres poder estilizar “no data”:
-        self.nd_labels.append((self.hold_usdt_var, lbl))
+    
     
         
     def _create_stringvars(self):
@@ -87,8 +76,11 @@ class BotInterface:
         self.porc_desde_venta_str = StringVar()
         self.inv_por_compra_str = StringVar()
         self.fixed_buyer_str = StringVar()
-        
-        
+        self.hold_usdt_var = StringVar()
+        self.hold_btc_var = StringVar()
+        self.var_total_str = StringVar() 
+        self.var_inicio_str = StringVar()
+
     def reset_stringvars(self):
 
         for attr, val in self.__dict__.items():
@@ -136,7 +128,10 @@ class BotInterface:
         add("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
         add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")      
         add("Fecha de inicio:", self.start_time_str, "start_time")
-        add("Tiempo activo:", self.runtime_str,    "runtime")
+        add("Tiempo activo:", self.runtime_str, "runtime")
+        add("Hold Btc/Usdt Comparativo:", self.hold_usdt_var, "hold_usdt")
+        add("Hold Btc Comparativo:", self.hold_btc_var, "hold_btc")
+        add("% Variación Total:", self.var_total_str, "variacion_total")
 
     def _create_center_panel(self):
 
@@ -328,6 +323,7 @@ class BotInterface:
 
         try:
             if self.bot.running:
+                self.bot.actualizar_balance()
                 precio = self.bot.precio_actual
                 self.precio_act_var.set(f"$ {precio:.4f}" if precio else "z")
                 self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
@@ -351,20 +347,6 @@ class BotInterface:
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales) if self.bot.contador_ventas_reales else "z")               
                 self.start_time_str.set(self.bot.get_start_time_str())
                 self.runtime_str.set(self.bot.get_runtime_str())
-                hold_usdt = (self.initial_usdt / self.bot.precio_ingreso) * self.bot.precio_actual
-
-                if self.bot.precio_ingreso and precio:
-                    hold_usdt = (self.initial_usdt / self.bot.precio_ingreso) * precio
-                    self.hold_usdt_var.set(f"$ {hold_usdt:.2f}")
-                else:
-                    self.hold_usdt_var.set("z")  
-                    
-                # ——— ahora repintamos la fuente según si es "z" o un valor real ———
-                for var, lbl in self.nd_labels:
-                    if var.get() == "z":
-                        lbl.configure(font=self._font_nd)
-                    else:
-                        lbl.configure(font=self._font_normal)
 
                 self.actualizar_historial_consola()                
                 self.actualizar_color("precio_actual", self.bot.precio_actual)
@@ -372,6 +354,38 @@ class BotInterface:
                 self.actualizar_color("desde_ult_comp", self.bot.varCompra)
                 self.actualizar_color("ult_vent", self.bot.varVenta)
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
+
+                # Total variation from initial balance
+                if self.initial_usdt:
+                    delta = (self.bot.usdt_mas_btc - self.initial_usdt) / self.initial_usdt * 100
+                    self.var_total_str.set(f"{delta:.8f}%")
+                else:
+                    self.var_total_str.set("z")
+                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}" if self.bot.total_ganancia else "z")
+                # Cálculo Hold USDT
+                if self.bot.precio_ingreso and precio:
+                    hold_usdt = (self.initial_usdt / self.bot.precio_ingreso) * precio
+                    self.hold_usdt_var.set(f"$ {hold_usdt:.4f}")
+                else:
+                    self.hold_usdt_var.set("z")
+                
+                # Cálculo Hold BTC en sats
+                if self.bot.precio_ingreso:
+                    sats = (self.initial_usdt / self.bot.precio_ingreso)
+                    self.hold_btc_var.set(f"₿ {float(sats):.8f}")
+                else:
+                    self.hold_btc_var.set("z")
+
+                # Repintar fuente según valor real o placeholder
+                for var, lbl in self.nd_labels:
+                    if var.get() == "z":
+                        lbl.configure(font=self._font_nd)
+                    else:
+                        lbl.configure(font=self._font_normal)
+        except Exception as e:
+            print("Error al actualizar la UI:", e)
+
+                
               
         except Exception as e:
             print("Error al actualizar la UI:", e)
