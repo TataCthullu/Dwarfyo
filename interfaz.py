@@ -112,27 +112,27 @@ class BotInterface:
             self.nd_labels.append((var, lbl))
             if key:
                 self.info_labels[key] = lbl
-            
+
+        add("Usdt + Btc:", self.balance_var, "balance") 
+        add("% Variación Total:", self.var_total_str, "variacion_total") 
+        add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")  
         add("Precio actual Btc/Usdt:", self.precio_act_var, "precio_actual")
-        add("Usdt + Btc:", self.balance_var, "balance")
-        add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
-        add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
-        add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
-        add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
-        add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
-        add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
-        add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
-        add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
-        add("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
-        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")      
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
         add("Hold Btc/Usdt Comparativo:", self.hold_usdt_var, "hold_usdt")
         add("Hold Btc Comparativo:", self.hold_btc_var, "hold_btc")
-        add("% Variación Total:", self.var_total_str, "variacion_total")
-
+        add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
+        add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
+        add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
+        add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
+        add("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
+        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")      
+        add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
+        add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
+        add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
+            
     def _create_center_panel(self):
 
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
