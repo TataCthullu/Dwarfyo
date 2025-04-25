@@ -19,7 +19,7 @@ class BotInterface:
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
         
-        self._font_normal = ("Carolingia", 22)
+        self._font_normal = ("CrushYourEnemies", 12)
         self._font_nd     = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
         
