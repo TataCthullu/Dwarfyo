@@ -313,7 +313,7 @@ class TradingBot:
         días, horas y minutos transcurridos desde start_time.
         """
         if not self.start_time:
-            return "-"
+            return "z"
         delta = datetime.datetime.now() - self.start_time
         days = delta.days
         hours, rem = divmod(delta.seconds, 3600)

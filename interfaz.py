@@ -40,8 +40,8 @@ class BotInterface:
         
         self._create_center_panel()
         self._create_right_panel()
-        self.historial.tag_configure('venta_tag', foreground='green')
-        self.historial.tag_configure('compra_tag', foreground='blue')
+        self.historial.tag_configure('venta_tag', foreground='PaleGreen')
+        self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
         self.reset_stringvars()
         self.actualizar_ui()
@@ -215,7 +215,7 @@ class BotInterface:
 
         config_ventana = Toplevel(self.root)
         config_ventana.title("Configuración de operativa")
-        config_ventana.configure(bg="DarkGoldenrod")
+        config_ventana.configure(bg="GoldenRod")
         # Al cerrar la ventana
         def cerrar_config():
             detener_sonido_y_cerrar(config_ventana)
@@ -234,11 +234,11 @@ class BotInterface:
         entries = []
 
         for etiqueta, valor in campos:
-            frame = Frame(config_ventana, bg="DarkGoldenrod")
+            frame = Frame(config_ventana, bg="GoldenRod")
             frame.pack(fill=X, pady=4, padx=8)
-            Label(frame, text=etiqueta, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
+            Label(frame, text=etiqueta, bg="GoldenRod", font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
             var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold").pack(side=LEFT, padx=6)
+            Entry(frame, textvariable=var, bg="GoldenRod", font=self._font_normal, fg="Gold").pack(side=LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
@@ -323,6 +323,14 @@ class BotInterface:
 
         try:
             if self.bot.running:
+                # ——— Detectar reconexión de Internet ———
+                prev_price = getattr(self.bot, 'precio_actual', None)
+                new_price  = self.bot.get_precio_actual()
+                # Si antes no había precio y ahora sí, reiniciamos todo el loop
+                if prev_price is None and new_price is not None:
+                    self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
+                    self._loop()
+                # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
                 precio = self.bot.precio_actual
                 self.precio_act_var.set(f"$ {precio:.4f}" if precio else "z")
@@ -385,10 +393,6 @@ class BotInterface:
         except Exception as e:
             print("Error al actualizar la UI:", e)
 
-                
-              
-        except Exception as e:
-            print("Error al actualizar la UI:", e)
             
     def actualizar_historial_consola(self):
 
@@ -417,7 +421,7 @@ class BotInterface:
         inicial = self.valores_iniciales[key]
         color = "Gold"
         if valor_actual > inicial:
-            color = "green"
+            color = "PaleGreen"
         elif valor_actual < inicial:
             color = "Crimson"
         lbl = self.info_labels.get(key)
