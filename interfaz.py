@@ -18,9 +18,9 @@ class BotInterface:
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
-        
+        self.config_ventana = None
         self._font_normal = ("CrushYourEnemies", 12)
-        self._font_nd     = ("Tolkien Dwarf Runes", 14) 
+        self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
         
         # Lista de (StringVar, Label) para los No Data
@@ -212,17 +212,25 @@ class BotInterface:
             return 0  # o lo que quieras como fallback
 
     def abrir_configuracion_subventana(self):
+        # Si ya existe y no fue destruida, la traemos al frente y salimos
+        if self.config_ventana is not None and self.config_ventana.winfo_exists():
+            self.config_ventana.lift()
+            return
 
-        config_ventana = Toplevel(self.root)
-        config_ventana.title("Configuración de operativa")
-        config_ventana.configure(bg="GoldenRod")
-        # Al cerrar la ventana
+        # Si no existe, la creamos
+        self.config_ventana = Toplevel(self.root)
+        self.config_ventana.title("Configuración de operativa")
+        self.config_ventana.configure(bg="GoldenRod")
+
+        # Al cerrar, destruye y pone la referencia a None
         def cerrar_config():
-            detener_sonido_y_cerrar(config_ventana)
-            config_ventana.destroy()
-        config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
+            detener_sonido_y_cerrar(self.config_ventana)
+            self.config_ventana.destroy()
+            self.config_ventana = None
+
+        self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
         reproducir_sonido("Sounds/antorchab.wav")
-        # Campos configurables: etiqueta y valor actual
+
         campos = [
             ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
             ("% Desde venta, para compra: %", self.bot.porc_desde_venta),
@@ -230,35 +238,37 @@ class BotInterface:
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.usdt),
         ]
-
         entries = []
 
         for etiqueta, valor in campos:
-            frame = Frame(config_ventana, bg="GoldenRod")
+            frame = Frame(self.config_ventana, bg="GoldenRod")
             frame.pack(fill=X, pady=4, padx=8)
-            Label(frame, text=etiqueta, bg="GoldenRod", font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
+            Label(frame, text=etiqueta, bg="GoldenRod",
+                font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
             var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="GoldenRod", font=self._font_normal, fg="Gold").pack(side=LEFT, padx=6)
+            Entry(frame, textvariable=var, bg="GoldenRod",
+                font=self._font_normal, fg="Gold").pack(side=LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
             try:
-                # Asignar los nuevos valores al bot
                 self.bot.porc_desde_compra    = float(entries[0].get())
                 self.bot.porc_desde_venta     = float(entries[1].get())
                 self.bot.porc_profit_x_venta  = float(entries[2].get())
                 self.bot.porc_inv_por_compra  = float(entries[3].get())
-                self.bot.usdt                 = float(entries[4].get())     
-                self.bot.fixed_buyer = self.bot.usdt * self.bot.porc_inv_por_compra / 100
-                
-                self.log_en_consola("Configuracion actualizada.")
-                self.log_en_consola("- - - - - - - - - -")
+                self.bot.usdt                 = float(entries[4].get())
+                self.bot.fixed_buyer = (self.bot.usdt *
+                    self.bot.porc_inv_por_compra / 100)
+
+                self.log_en_consola("Configuracion actualizada")
                 cerrar_config()
             except ValueError:
-                self.log_en_consola("Error: ingresa valores numericos validos.")
-                self.log_en_consola("- - - - - - - - - -")
+                self.log_en_consola("Error: ingresa valores numéricos válidos.")
 
-        Button(config_ventana, text="Guardar", bg="Goldenrod", command=guardar_config, font=("Carolingia",14), fg="PaleGoldenRod").pack(pady=8)
+        Button(self.config_ventana, text="Guardar",
+            bg="Goldenrod", command=guardar_config,
+            font=self._font_normal, fg="PaleGoldenRod").pack(pady=8)
+
 
     def toggle_bot(self):
             
