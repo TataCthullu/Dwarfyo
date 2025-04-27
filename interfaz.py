@@ -6,7 +6,8 @@ from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
 from codigo_principala import TradingBot
 from calculador import CalculatorWindow
-
+from PIL import ImageGrab
+from tkinter import filedialog
 
 
 class BotInterface:
@@ -51,9 +52,39 @@ class BotInterface:
 
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
+        
+        self.sound_enabled = True
+        self.bot.sound_enabled = True
+        # BARRA DE MENÚ
+        menubar = Menu(self.root)
+        config_menu = Menu(menubar, tearoff=0)
+        config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
+        config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
+        menubar.add_cascade(label="Opciones", menu=config_menu)
+        self.root.config(menu=menubar)
 
-    
-    
+    def toggle_sound(self):
+        self.sound_enabled = not self.sound_enabled
+        self.bot.sound_enabled = self.sound_enabled
+
+        estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
+        self.log_en_consola(estado)
+       
+
+    def save_screenshot(self):
+        x = self.root.winfo_rootx()
+        y = self.root.winfo_rooty()
+        w = x + self.root.winfo_width()
+        h = y + self.root.winfo_height()
+        img = ImageGrab.grab(bbox=(x, y, w, h))
+        ruta = filedialog.asksaveasfilename(defaultextension=".png",
+                                           filetypes=[("PNG","*.png")])
+        if ruta:
+            img.save(ruta)
+            self.log_en_consola(f"📸 Captura guardada en: {ruta}")
+
+        
+
         
     def _create_stringvars(self):
         # Display and config variables
@@ -232,7 +263,8 @@ class BotInterface:
             self.config_ventana = None
 
         self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
-        reproducir_sonido("Sounds/antorchab.wav")
+        if self.sound_enabled:
+            reproducir_sonido("Sounds/antorchab.wav")
 
         campos = [
             ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
@@ -279,7 +311,8 @@ class BotInterface:
             if self.bot.running:
 
                 self.bot.detener()
-                reproducir_sonido("Sounds/detner.wav")
+                if self.sound_enabled:
+                   reproducir_sonido("Sounds/detner.wav")
                 
                 self.btn_inicio.grid_remove()  # Oculta el botón de estado               
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
@@ -287,8 +320,9 @@ class BotInterface:
 
             else:
                 self.btn_confi.pack_forget()
-                self.bot.iniciar()                
-                reproducir_sonido("Sounds/soundinicio.wav")
+                self.bot.iniciar()   
+                if self.sound_enabled:             
+                    reproducir_sonido("Sounds/soundinicio.wav")
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
                 self.btn_limpiar.grid_remove()
@@ -298,8 +332,8 @@ class BotInterface:
     def clear_bot(self):
 
         if not self.bot.running:
-
-            reproducir_sonido("Sounds/limpiar.wav")
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/limpiar.wav")
             # Limpiar UI
             self.consola.delete('1.0', END)
             self.historial.delete('1.0', END)

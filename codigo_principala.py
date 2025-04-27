@@ -17,6 +17,7 @@ class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance()
         self.log_fn = None
+        self.sound_enabled = True
         self.start_time = None
         self.usdt = 5000
         self.btc = 0        
@@ -78,7 +79,8 @@ class TradingBot:
             self.log(f"❌ Error obteniendo el precio: {e}")
             self.log("- - - - - - - - - -")
             self.reportado_trabajando = False 
-            reproducir_sonido("Sounds/error.wav")
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/error.wav")
             return None
     
     def actualizar_balance(self):
@@ -141,8 +143,9 @@ class TradingBot:
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
-            self.log("- - - - - - - - - -")           
-            reproducir_sonido("Sounds/soundcompra.wav")            
+            self.log("- - - - - - - - - -") 
+            if self.sound_enabled:          
+                reproducir_sonido("Sounds/soundcompra.wav")            
             self.reportado_trabajando = False
 
     def parametro_compra_A(self):
@@ -162,7 +165,8 @@ class TradingBot:
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual                                
                 self.reportado_trabajando = False
-                reproducir_sonido("Sounds/ghostcom.wav")
+                if self.sound_enabled:
+                    reproducir_sonido("Sounds/ghostcom.wav")
               
     def parametro_compra_B(self):
         #Compra con referencia a la ultima venta
@@ -184,7 +188,8 @@ class TradingBot:
                 self.contador_compras_fantasma += 1                 
                 self.param_b_enabled = False       
                 self.reportado_trabajando = False
-                reproducir_sonido("Sounds/ghostcom.wav")                                         
+                if self.sound_enabled:
+                    reproducir_sonido("Sounds/ghostcom.wav")                                         
                 return      
         
     def vender(self):
@@ -236,8 +241,9 @@ class TradingBot:
                 self.log(f"📤 Btc vendido: ₿ {btc_vender:.6f}")
                 self.log(f"💹 Ganancia de esta operacion: $ {self.ganancia_neta:.8f}")
                 self.log("- - - - - - - - - -")
-                                
-                reproducir_sonido("Sounds/soundventa.wav")
+                
+                if self.sound_enabled:               
+                    reproducir_sonido("Sounds/soundventa.wav")
                 self.reportado_trabajando = False
                 
         # Eliminar las vendidas después del bucle
@@ -258,7 +264,8 @@ class TradingBot:
             self.log(f"📌 Sin BTC para vender, nueva venta fantasma registrada a: $ {self.precio_actual:.2f}, Id: {self.contador_ventas_fantasma}.")
             self.log("- - - - - - - - - -")
             self.reportado_trabajando = False 
-            reproducir_sonido("Sounds/ghostven.wav")               
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/ghostven.wav")               
                    
     def calcular_ghost_ratio(self):
         total_signals = (self.contador_compras_fantasma + self.contador_ventas_fantasma +
@@ -356,8 +363,9 @@ class TradingBot:
 
             if self.btc < 0:
                 self.log("🔴Error: btc negativo")
-                self.reportado_trabajando = False 
-                reproducir_sonido("Sounds/error.wav")
+                self.reportado_trabajando = False
+                if self.sound_enabled: 
+                    reproducir_sonido("Sounds/error.wav")
                 self.detener()
                                                        
             if after_fn:
