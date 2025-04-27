@@ -1,3 +1,6 @@
+# © 2025 Khazâd Trading Bot
+# Todos los derechos reservados.
+
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
@@ -261,13 +264,14 @@ class BotInterface:
                     self.bot.porc_inv_por_compra / 100)
 
                 self.log_en_consola("Configuracion actualizada")
+                self.log_en_consola("-------------------------")
                 cerrar_config()
             except ValueError:
                 self.log_en_consola("Error: ingresa valores numéricos válidos.")
 
         Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
-            font=self._font_normal, fg="PaleGoldenRod").pack(pady=8)
+            font=("Carolingia", 8), fg="PaleGoldenRod").pack(pady=8)
 
 
     def toggle_bot(self):
@@ -339,6 +343,7 @@ class BotInterface:
                 # Si antes no había precio y ahora sí, reiniciamos todo el loop
                 if prev_price is None and new_price is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
+                    self.log_en_consola("--------------------------------------------")
                     self._loop()
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()

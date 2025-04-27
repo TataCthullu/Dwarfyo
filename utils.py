@@ -1,3 +1,6 @@
+# © 2025 Khazâd Trading Bot
+# Todos los derechos reservados.
+
 import pygame
 pygame.mixer.init()
 

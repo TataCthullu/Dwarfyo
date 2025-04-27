@@ -1,3 +1,6 @@
+# © 2025 Khazâd Trading Bot
+# Todos los derechos reservados.
+
 from codigo_principala import TradingBot
 from interfaz import BotInterface
 

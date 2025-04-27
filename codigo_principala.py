@@ -1,3 +1,6 @@
+# © 2025 Khazâd Trading Bot
+# Todos los derechos reservados.
+
 import ccxt
 from utils import reproducir_sonido
 import datetime
