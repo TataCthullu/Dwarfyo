@@ -152,16 +152,16 @@ class TradingBot:
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_desde_compra:
             if self.usdt >= self.fixed_buyer:  
-                   
-                self.log("🔵 [Parametro A].") 
-                
+                                   
                 self.comprar()
-                self.precio_ult_comp = self.precio_actual                                
+                self.log("🔵 [Parametro A].") 
+                self.precio_ult_comp = self.precio_actual   
+
             else:                               
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
                 
-                self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.precio_actual:.2f}, Id: {self.contador_compras_fantasma}.")
+                self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.precio_actual:.2f}, Num: {self.contador_compras_fantasma}.")
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual                                
                 self.reportado_trabajando = False
@@ -176,14 +176,15 @@ class TradingBot:
             
             if self.usdt >= self.fixed_buyer: 
                 
-                self.log("🔵 [Parametro B].")     
+                     
                 self.comprar()
-                self.precio_ult_venta = self.precio_actual
+                self.log("🔵 [Parametro B].")
+                #self.precio_ult_venta = self.precio_actual
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
             else:  
                             
-                self.log(f"⚠️ (B) Fondos insuficientes, nueva compra fantasma registrada a $ {self.precio_actual:.2f}")
+                self.log(f"⚠️ (B) Fondos insuficientes, nueva compra fantasma registrada a: $ {self.precio_actual:.2f}")
                 self.log("- - - - - - - - - -")
                 self.contador_compras_fantasma += 1                 
                 self.param_b_enabled = False       
