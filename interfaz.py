@@ -12,7 +12,6 @@ from tkinter import filedialog
 
 class BotInterface:
     def __init__(self, bot: TradingBot):
-
          # Main window setup
         self.root = Tk()
         self.root.title("Khazâd")
@@ -30,10 +29,8 @@ class BotInterface:
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
        
-
         # UI variables and clear initial values
-        self._create_stringvars()
-        
+        self._create_stringvars() 
         
         self.valores_iniciales = {}
         self.limpiar_visible = False
@@ -44,7 +41,7 @@ class BotInterface:
         
         self._create_center_panel()
         self._create_right_panel()
-        self.historial.tag_configure('venta_tag', foreground='PaleGreen')
+        self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
         self.reset_stringvars()
@@ -70,7 +67,6 @@ class BotInterface:
         estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
         self.log_en_consola(estado)
        
-
     def save_screenshot(self):
         x = self.root.winfo_rootx()
         y = self.root.winfo_rooty()
@@ -83,9 +79,6 @@ class BotInterface:
             img.save(ruta)
             self.log_en_consola(f"📸 Captura guardada en: {ruta}")
 
-        
-
-        
     def _create_stringvars(self):
         # Display and config variables
         self.precio_act_var = StringVar()
@@ -116,7 +109,6 @@ class BotInterface:
         self.var_inicio_str = StringVar()
 
     def reset_stringvars(self):
-
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
                 val.set("z")
@@ -140,7 +132,7 @@ class BotInterface:
         self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="PaleGoldenRod").pack(side=LEFT)
+            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="Black").pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
@@ -168,7 +160,6 @@ class BotInterface:
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
             
     def _create_center_panel(self):
-
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.center_frame.grid(row=0, column=1, sticky="n", padx=5, pady=5)
 
@@ -189,7 +180,6 @@ class BotInterface:
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def _create_right_panel(self):
-
         self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
 
@@ -199,17 +189,14 @@ class BotInterface:
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 17))
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 14))
         self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
         self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 18))
         self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
 
-
-
     def _create_buttons(self):
-
         self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
         self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
@@ -221,8 +208,6 @@ class BotInterface:
         btn_calc.grid(row=0, column=2, sticky="e", padx=2)
         self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("Carolingia",14), fg="DarkSlateGray")
         self.btn_confi.pack(pady=10)
-
-        
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
 
@@ -232,16 +217,11 @@ class BotInterface:
         btc_avail  = self.bot.btc
         CalculatorWindow(self.root, usdt_avail, btc_avail)
 
-        
-
     # Función para obtener el valor sin el símbolo %
     def obtener_valor_limpio(entry_var):
-
         valor = entry_var.get().replace('%', '').replace('$', '').strip()
-        
         try:
-            return float(valor)
-            
+            return float(valor)           
         except ValueError:
             return 0  # o lo que quieras como fallback
 
@@ -303,11 +283,10 @@ class BotInterface:
 
         Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
-            font=("Carolingia", 8), fg="PaleGoldenRod").pack(pady=8)
+            font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
 
-    def toggle_bot(self):
-            
+    def toggle_bot(self):            
             if self.bot.running:
 
                 self.bot.detener()
@@ -330,7 +309,6 @@ class BotInterface:
                 self._loop()
 
     def clear_bot(self):
-
         if not self.bot.running:
             if self.sound_enabled:
                 reproducir_sonido("Sounds/limpiar.wav")
@@ -368,7 +346,6 @@ class BotInterface:
             self.root.after(3000, self._loop)
 
     def actualizar_ui(self):
-
         try:
             if self.bot.running:
                 # ——— Detectar reconexión de Internet ———
@@ -376,7 +353,7 @@ class BotInterface:
                 new_price  = self.bot.get_precio_actual()
                 # Si antes no había precio y ahora sí, reiniciamos todo el loop
                 if prev_price is None and new_price is not None:
-                    self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
+                    self.log_en_consola("🔄 Conexion restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
                     self._loop()
                 # Actualizamos el balance con el precio (que ya cargamos)
@@ -439,38 +416,33 @@ class BotInterface:
                         lbl.configure(font=self._font_nd)
                     else:
                         lbl.configure(font=self._font_normal)
+
         except Exception as e:
             print("Error al actualizar la UI:", e)
-
             
     def actualizar_historial_consola(self):
-
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
-
             self.historial.insert(END, "Compra desde:", 'compra_tag')
             # el resto de la línea en color por defecto
-            resto = f" ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> {ts} -> Objetivo: ${t['venta_obj']:.2f}\n"
+            resto = f" ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> {ts} -> Objetivo: ${t['venta_obj']:.2f} -> Fecha: {ts}\n"
             self.historial.insert(END, resto)
             id_op = t.get("id")
             
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
-
             self.historial.insert(END, "Venta desde:", 'venta_tag')
-            resto = f" $ {v['compra']:.2f} -> id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> {ts}\n"
+            resto = f" $ {v['compra']:.2f} -> id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> Fecha: {ts}\n"
             self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
-
         if valor_actual is None:
             return
-        
         inicial = self.valores_iniciales[key]
         color = "Gold"
         if valor_actual > inicial:
-            color = "PaleGreen"
+            color = "Green"
         elif valor_actual < inicial:
             color = "Crimson"
         lbl = self.info_labels.get(key)
@@ -478,17 +450,14 @@ class BotInterface:
             lbl.configure(fg=color)
 
     def reset_colores(self):
-
         for lbl in self.info_labels.values():
             lbl.configure(fg="Gold")        
         
     def log_en_consola(self, msg):
-
         self.consola.insert(END, msg+"\n")
         self.consola.see(END)
 
     def inicializar_valores_iniciales(self):
-
         self.bot.actualizar_balance()
         # Guarda el primer snapshot para colorear luego
         self.valores_iniciales = {

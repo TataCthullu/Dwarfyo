@@ -143,7 +143,7 @@ class TradingBot:
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta:.2f}")
-            self.log("- - - - - - - - - -") 
+             
             if self.sound_enabled:          
                 reproducir_sonido("Sounds/soundcompra.wav")            
             self.reportado_trabajando = False
@@ -155,6 +155,7 @@ class TradingBot:
                                    
                 self.comprar()
                 self.log("🔵 [Parametro A].") 
+                self.log("- - - - - - - - - -")
                 self.precio_ult_comp = self.precio_actual   
 
             else:                               
@@ -172,18 +173,14 @@ class TradingBot:
         #Compra con referencia a la ultima venta
         if not self.param_b_enabled:
             return
-        if self.varVenta <= -self.porc_desde_venta:
-            
-            if self.usdt >= self.fixed_buyer: 
-                
-                     
+        if self.varVenta <= -self.porc_desde_venta:            
+            if self.usdt >= self.fixed_buyer:                     
                 self.comprar()
                 self.log("🔵 [Parametro B].")
-                #self.precio_ult_venta = self.precio_actual
+                self.log("- - - - - - - - - -")
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
-            else:  
-                            
+            else:                          
                 self.log(f"⚠️ (B) Fondos insuficientes, nueva compra fantasma registrada a: $ {self.precio_actual:.2f}")
                 self.log("- - - - - - - - - -")
                 self.contador_compras_fantasma += 1                 
@@ -283,7 +280,6 @@ class TradingBot:
         # calculamos el timestamp **aquí**
         id_op = self._new_id()
         self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         self.log(f"🚀 Realizando primera compra a: $ {self.precio_actual:.6f}")        
         self.usdt -= self.fixed_buyer 
         self.actualizar_balance()        
@@ -311,12 +307,10 @@ class TradingBot:
         self.log("- - - - - - - - - -")
         self.realizar_primera_compra()
 
-    def get_start_time_str(self) -> str:
-        """Devuelve la fecha/hora de inicio formateada, o '-' si no arrancó."""
+    def get_start_time_str(self) -> str:    
         if not self.start_time:
             return "z"
         return self.start_time.strftime("%Y-%m-%d %H:%M:%S")
-    
 
     def get_runtime_str(self) -> str:
         """
@@ -335,7 +329,7 @@ class TradingBot:
         if hours:
             parts.append(f"{hours} h")
         if minutes or not parts:
-            parts.append(f"{minutes} m")
+            parts.append(f"{minutes} min")
         return " ".join(parts) 
                                      
     def loop(self, after_fn=None):
@@ -346,15 +340,17 @@ class TradingBot:
                 self.log("⚠️ No se puede operar sin datos de precios.") 
                 self.log("- - - - - - - - - -") 
                 self.reportado_trabajando = False 
+                if self.sound_enabled:
+                    reproducir_sonido("Sounds/error.wav")
                 #reproducir_sonido("Sounds/error.wav")             
             else:            
                 self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
                 self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 
                 self.actualizar_balance()
-                self.vender()
-                self.parametro_venta_fantasma = self.parametro_venta_B()
+                self.vender()                
                 self.parametro_compra_desde_compra = self.parametro_compra_A()                
-                self.parametro_compra_desde_venta = self.parametro_compra_B()                
+                self.parametro_compra_desde_venta = self.parametro_compra_B()  
+                self.parametro_venta_fantasma = self.parametro_venta_B()              
                 self.var_inicio = self.varpor_ingreso()
                             
                 if self.reportado_trabajando == False:                        
@@ -373,9 +369,7 @@ class TradingBot:
                 after_fn(3000, lambda: self.loop(after_fn))
 
     def detener(self):
-        self.running = False
-        
-        
+        self.running = False  
         self.log("🔴 Khazâd detenido.")
         self.log("- - - - - - - - - -")
 

@@ -154,7 +154,7 @@ class TradingBot:
                 self.log("- - - - - - - - - -")
                 self.log("🔵 [Parametro B].")     
                 self.comprar()
-                self.precio_ult_venta = self.precio_actual
+                #self.precio_ult_venta = self.precio_actual
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
             else:  
