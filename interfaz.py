@@ -9,7 +9,6 @@ from calculador import CalculatorWindow
 from PIL import ImageGrab
 from tkinter import filedialog
 
-
 class BotInterface:
     def __init__(self, bot: TradingBot):
          # Main window setup
@@ -54,10 +53,10 @@ class BotInterface:
         self.bot.sound_enabled = True
         # BARRA DE MENÚ
         menubar = Menu(self.root)
-        config_menu = Menu(menubar, tearoff=0)
-        config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
-        config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
-        menubar.add_cascade(label="Opciones", menu=config_menu)
+        self.config_menu = Menu(menubar, tearoff=0)
+        self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
+        self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
+        menubar.add_cascade(label="Opciones", menu=self.config_menu)
         self.root.config(menu=menubar)
 
     def toggle_sound(self):
@@ -66,6 +65,11 @@ class BotInterface:
 
         estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
         self.log_en_consola(estado)
+
+        # Actualizamos también el texto del menú:
+        nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
+        # entryconfig(0, ...) actúa sobre la primera entrada que creamos en config_menu
+        self.config_menu.entryconfig(0, label=nuevo_label)
        
     def save_screenshot(self):
         x = self.root.winfo_rootx()
