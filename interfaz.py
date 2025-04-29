@@ -264,12 +264,12 @@ class BotInterface:
         self.config_ventana.title("Configuración de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
-        # Si la etiqueta no existe o ha sido destruida, la creamos de nuevo
-        if not getattr(self, 'torch_label', None) or not self.torch_label.winfo_exists():
+        if not (self.torch_label and self.torch_label.winfo_exists()):
             self.torch_label = Label(self.config_ventana, bg="DarkGoldenrod")
             self.torch_label.pack(pady=(8, 0))
 
         self._animate_torch()
+
        # Al cerrar, destruye y pone la referencia a None
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
@@ -321,31 +321,23 @@ class BotInterface:
             font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
     def _animate_torch(self):
-        # Si la ventana de configuración ya no existe, detenemos la animación
+        # si la ventana de configuración NO existe, detenemos la animación
         if not (self.config_ventana and self.config_ventana.winfo_exists()):
             return
 
-        # Si la etiqueta ya fue destruida, salimos
+        # si la etiqueta fue destruida, detenemos la animación
         if not (self.torch_label and self.torch_label.winfo_exists()):
             return
 
-        try:
-            # Actualiza la imagen
-            frame = self.torch_frames[self.torch_frame_index]
-            self.torch_label.configure(image=frame)
-        except TclError:
-            # Si la etiqueta ya no es válida, salimos
-            return
+        # actualiza el fotograma actual
+        frame = self.torch_frames[self.torch_frame_index]
+        self.torch_label.configure(image=frame)
 
-        # Avanza al siguiente fotograma
+        # avanza al siguiente
         self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
 
-        # Programa el siguiente fotograma
-        # Usamos try/except por si config_ventana desaparece entre medias
-        try:
-            self.config_ventana.after(100, self._animate_torch)
-        except TclError:
-            return
+        # reprograma siempre en el mainloop
+        self.root.after(100, self._animate_torch)
 
     def toggle_bot(self):            
             if self.bot.running:
