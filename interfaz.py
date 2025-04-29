@@ -23,7 +23,7 @@ class BotInterface:
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("CrushYourEnemies", 12)
+        self._font_normal = ("CrushYourEnemies", 10)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
         self.loop_id = None
@@ -64,7 +64,8 @@ class BotInterface:
         self.root.config(menu=menubar)
 
         self.torch_frames = [
-            PhotoImage(file=f"imagenes/torch_{i}.png") for i in range(1, 5)
+            PhotoImage(file=f"imagenes/torch_{i}.png").zoom(3, 3)
+            for i in range(1, 5)
         ]
         self.torch_frame_index = 0
         self.torch_label = None
@@ -146,7 +147,7 @@ class BotInterface:
         self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="Black").pack(side=LEFT)
+            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
@@ -207,7 +208,7 @@ class BotInterface:
         self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 18))
+        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 14))
         self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
 
     def _create_buttons(self):
@@ -286,12 +287,12 @@ class BotInterface:
         entries = []
 
         for etiqueta, valor in campos:
-            frame = Frame(self.config_ventana, bg="GoldenRod")
+            frame = Frame(self.config_ventana, bg="DarkGoldenRod")
             frame.pack(fill=X, pady=4, padx=8)
-            Label(frame, text=etiqueta, bg="GoldenRod",
+            Label(frame, text=etiqueta, bg="DarkGoldenRod",
                 font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
             var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="GoldenRod",
+            Entry(frame, textvariable=var, bg="DarkGoldenRod",
                 font=self._font_normal, fg="Gold").pack(side=LEFT, padx=6)
             entries.append(var)
 
@@ -309,7 +310,7 @@ class BotInterface:
                 self.log_en_consola("-------------------------")
                 cerrar_config()
             except ValueError:
-                self.log_en_consola("Error: ingresa valores numéricos válidos.")
+                self.log_en_consola("Error: ingresa valores numericos validos.")
 
         Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
