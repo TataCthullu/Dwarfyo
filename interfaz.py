@@ -38,6 +38,8 @@ class BotInterface:
         self.valores_iniciales = {}
         self.limpiar_visible = False
         
+        self.root.after(100, self._animate_torch)
+
         # Layout
         self._create_frames()
         self._create_info_panel()
@@ -317,15 +319,14 @@ class BotInterface:
             font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
     def _animate_torch(self):
-            if not (self.config_ventana and self.config_ventana.winfo_exists()):
-                return
-            # actualiza la imagen del label
+        # si la ventana de config existe y la etiqueta está creada, actualiza la imagen
+        if self.config_ventana and self.config_ventana.winfo_exists() and self.torch_label:
             frame = self.torch_frames[self.torch_frame_index]
             self.torch_label.configure(image=frame)
-            # avanza índice
             self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
-            # repite cada 100 ms
-            self.config_ventana.after(100, self._animate_torch)
+        # reprograma siempre el siguiente frame sobre la raíz
+        self.root.after(100, self._animate_torch)
+
 
     def toggle_bot(self):            
             if self.bot.running:
