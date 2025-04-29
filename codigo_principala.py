@@ -15,7 +15,7 @@ Cian (\033[96m) para detalles adicionales."""
 
 class TradingBot:
     def __init__(self):
-        self.exchange = ccxt.binance()
+        self.exchange = ccxt.binance({ 'timeout': 3000 })
         self.log_fn = None
         self.sound_enabled = True
         self.start_time = None

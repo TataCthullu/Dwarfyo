@@ -8,6 +8,7 @@ from codigo_principala import TradingBot
 from calculador import CalculatorWindow
 from PIL import ImageGrab
 from tkinter import filedialog
+from concurrent.futures import ThreadPoolExecutor
 
 class BotInterface:
     def __init__(self, bot: TradingBot):
@@ -20,11 +21,14 @@ class BotInterface:
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.bot.log_fn = self.log_en_consola
+        self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
         self._font_normal = ("CrushYourEnemies", 12)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
-        
+        self.loop_id = None
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
        
@@ -45,12 +49,12 @@ class BotInterface:
         self._create_buttons()
         self.reset_stringvars()
         self.actualizar_ui()
-
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
         
         self.sound_enabled = True
         self.bot.sound_enabled = True
+
         # BARRA DE MENÚ
         menubar = Menu(self.root)
         self.config_menu = Menu(menubar, tearoff=0)
@@ -58,6 +62,12 @@ class BotInterface:
         self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
         menubar.add_cascade(label="Opciones", menu=self.config_menu)
         self.root.config(menu=menubar)
+
+        self.torch_frames = [
+            PhotoImage(file=f"imagenes/torch_{i}.png") for i in range(1, 5)
+        ]
+        self.torch_frame_index = 0
+        self.torch_label = None
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -215,6 +225,16 @@ class BotInterface:
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
 
+    def _thread_callback(self, future):
+        if future.cancelled():
+            return
+        if exc := future.exception():
+            # Lo logueamos en la UI
+            if self.root.winfo_exists():
+                self.root.after(0, lambda:
+                    self.log_en_consola(f"⚠️ Excepción en hilo: {exc}")
+                )
+    
     def open_calculator(self):
          # pasamos los balances actuales
         usdt_avail = self.bot.usdt
@@ -238,9 +258,15 @@ class BotInterface:
         # Si no existe, la creamos
         self.config_ventana = Toplevel(self.root)
         self.config_ventana.title("Configuración de operativa")
-        self.config_ventana.configure(bg="GoldenRod")
+        self.config_ventana.configure(bg="DarkGoldenRod")
 
-        # Al cerrar, destruye y pone la referencia a None
+        # ——— Colocar la antorcha animada ———
+        if self.torch_label is None:
+            self.torch_label = Label(self.config_ventana,
+                                     bg="DarkGoldenRod")
+            self.torch_label.pack(pady=(8, 0))
+        self._animate_torch()
+       # Al cerrar, destruye y pone la referencia a None
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
@@ -289,6 +315,16 @@ class BotInterface:
             bg="Goldenrod", command=guardar_config,
             font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
+    def _animate_torch(self):
+            if not (self.config_ventana and self.config_ventana.winfo_exists()):
+                return
+            # actualiza la imagen del label
+            frame = self.torch_frames[self.torch_frame_index]
+            self.torch_label.configure(image=frame)
+            # avanza índice
+            self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
+            # repite cada 100 ms
+            self.config_ventana.after(100, self._animate_torch)
 
     def toggle_bot(self):            
             if self.bot.running:
@@ -343,11 +379,55 @@ class BotInterface:
         else:
             self.btn_limpiar.grid_remove()
 
+    def _on_close(self):
+        # 1) cancelar el after programado
+        if self.loop_id is not None:
+            try:
+                self.root.after_cancel(self.loop_id)
+            except Exception:
+                pass
+        # 2) Detener el executor
+        self.executor.shutdown(wait=False, cancel_futures=True)
+        # 3) cerrar la ventana
+        self.root.destroy()
+            
     def _loop(self):
-        if self.bot.running:
+        if not self.bot.running:
+            return
+        # lanzamos la petición en background  
+        future = self.executor.submit(self._fetch_price_async)
+        future.add_done_callback(self._thread_callback)
+
+        # programamos la siguiente pasada
+        self.loop_id = self.root.after(3000, self._loop)
+        
+    def _on_price_fetched(self, price):
+        try:
+            if not self.root.winfo_exists():
+                return
+            # 1. Actualiza el precio en el bot
+            self.bot.precio_actual = price
+            # 2. Ejecuta la lógica de compra/venta
             self.bot.loop()
+            # 3. Refresca la interfaz (también bajo try/except)
             self.actualizar_ui()
-            self.root.after(3000, self._loop)
+        except Exception:
+            # si la ventana ya fue destruida o hubo otro error, simplemente ignoramos
+            pass
+
+    def _fetch_price_async(self):
+        try:
+            # Intentamos recuperar el ticker en el hilo de fondo
+            ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
+            price = ticker['last']
+        except Exception as e:
+            # Re-lanzamos la excepción para que future.exception() la recoja
+            raise RuntimeError(f"Error al obtener precio: {e}") from e
+
+        # Si todo fue bien, pasamos el precio al hilo principal
+        if self.root.winfo_exists():
+            self.root.after(0, lambda: self._on_price_fetched(price))
+
 
     def actualizar_ui(self):
         try:
@@ -359,7 +439,7 @@ class BotInterface:
                 if prev_price is None and new_price is not None:
                     self.log_en_consola("🔄 Conexion restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
-                    self._loop()
+                    #self._loop()
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
                 precio = self.bot.precio_actual
@@ -423,6 +503,7 @@ class BotInterface:
 
         except Exception as e:
             print("Error al actualizar la UI:", e)
+            pass
             
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
