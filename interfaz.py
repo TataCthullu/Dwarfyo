@@ -9,6 +9,7 @@ from calculador import CalculatorWindow
 from PIL import ImageGrab
 from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
+from tkinter import TclError
 
 class BotInterface:
     def __init__(self, bot: TradingBot):
@@ -182,7 +183,7 @@ class BotInterface:
 
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
-            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="PaleGoldenRod").pack(side=LEFT)
+            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlategray").pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
             self.nd_labels.append((var, lbl))
@@ -218,12 +219,12 @@ class BotInterface:
         self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
         self.buttons_frame.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("Carolingia", 14), fg="DarkSlateGray")
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
         self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("Carolingia", 14), fg="DarkSlateGray")
-        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("Carolingia", 14), fg="DarkSlateGray")
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
+        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
         btn_calc.grid(row=0, column=2, sticky="e", padx=2)
-        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("Carolingia",14), fg="DarkSlateGray")
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("Carolingia",14), fg="PaleGoldenRod")
         self.btn_confi.pack(pady=10)
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
@@ -263,17 +264,18 @@ class BotInterface:
         self.config_ventana.title("Configuración de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
-        # ——— Colocar la antorcha animada ———
-        if self.torch_label is None:
-            self.torch_label = Label(self.config_ventana,
-                                     bg="DarkGoldenRod")
+        # Si la etiqueta no existe o ha sido destruida, la creamos de nuevo
+        if not getattr(self, 'torch_label', None) or not self.torch_label.winfo_exists():
+            self.torch_label = Label(self.config_ventana, bg="DarkGoldenrod")
             self.torch_label.pack(pady=(8, 0))
+
         self._animate_torch()
        # Al cerrar, destruye y pone la referencia a None
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
             self.config_ventana = None
+            self.torch_label = None 
 
         self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
         if self.sound_enabled:
@@ -319,14 +321,31 @@ class BotInterface:
             font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
     def _animate_torch(self):
-        # si la ventana de config existe y la etiqueta está creada, actualiza la imagen
-        if self.config_ventana and self.config_ventana.winfo_exists() and self.torch_label:
+        # Si la ventana de configuración ya no existe, detenemos la animación
+        if not (self.config_ventana and self.config_ventana.winfo_exists()):
+            return
+
+        # Si la etiqueta ya fue destruida, salimos
+        if not (self.torch_label and self.torch_label.winfo_exists()):
+            return
+
+        try:
+            # Actualiza la imagen
             frame = self.torch_frames[self.torch_frame_index]
             self.torch_label.configure(image=frame)
-            self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
-        # reprograma siempre el siguiente frame sobre la raíz
-        self.root.after(100, self._animate_torch)
+        except TclError:
+            # Si la etiqueta ya no es válida, salimos
+            return
 
+        # Avanza al siguiente fotograma
+        self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
+
+        # Programa el siguiente fotograma
+        # Usamos try/except por si config_ventana desaparece entre medias
+        try:
+            self.config_ventana.after(100, self._animate_torch)
+        except TclError:
+            return
 
     def toggle_bot(self):            
             if self.bot.running:
