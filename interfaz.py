@@ -119,9 +119,9 @@ class BotInterface:
         # Creamos dos Labels, uno sobre el otro
         
         self.hydra_top_label    = Label(self.center_frame, bg="DarkGoldenrod")
-        self.hydra_top_label.pack(pady=(0,10))  # un poco de separación
+        self.hydra_top_label.pack()  
         self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod")
-        self.hydra_bottom_label.pack(pady=5)
+        self.hydra_bottom_label.pack()
         
         # Asegúrate de llamar a esto en tu actualizar_ui() o justo tras cada venta fantasma:
         self._update_hydra_image()
@@ -147,11 +147,7 @@ class BotInterface:
         # ——— Top: limitamos a la lista de top_frames
         idx_top = min(count-1, len(self.hydra_top_frames)-1)
 
-        # Mostramos ambos Labels (por si estaban ocultos)
-        self.hydra_top_label.pack()
-        self.hydra_bottom_label.pack()
-        
-
+       
         # Configuramos las imágenes
         self.hydra_top_label   .configure(image=self.hydra_top_frames[idx_top])
         self.hydra_bottom_label.configure(image=self.hydra_bottom_frames[chosen_bottom])
@@ -503,6 +499,7 @@ class BotInterface:
 
             self.reset_colores()
             self._update_sales_image()
+            self._update_hydra_image()
             self.actualizar_ui()
             
             # Restaurar botones
