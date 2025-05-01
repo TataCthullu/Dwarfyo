@@ -10,6 +10,7 @@ from PIL import ImageGrab
 from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import TclError
+import os
 
 class BotInterface:
     def __init__(self, bot: TradingBot):
@@ -29,7 +30,7 @@ class BotInterface:
         self.initial_usdt = bot.usdt
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-
+        MAX_CABEZAS = 10
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
        
@@ -97,6 +98,63 @@ class BotInterface:
         self.sales_label = Label(self.center_frame, bg="DarkGoldenrod")
         self.sales_label.pack(pady=5)
 
+        # Definimos en disco qué bottom frames tienes:
+        bottom_indices = [1,5,7,8,9]
+        self.hydra_bottom_frames = {
+            n: PhotoImage(file=f"imagenes/deco/lernaean_hydra_{n}_bottom.png").zoom(2,2)
+            for n in bottom_indices
+        }
+        
+        self.hydra_top_frames = []  
+        for i in range(1, MAX_CABEZAS+1):
+            path = f"imagenes/deco/lernaean_hydra_{i}_top.png"
+            if not os.path.exists(path):
+                break    # si no está, dejamos de buscar más
+            try:
+                img = PhotoImage(file=path).zoom(2,2)
+                self.hydra_top_frames.append(img)
+            except TclError:
+                break    # si hay otro problema al cargar, también rompemos
+
+        # Creamos dos Labels, uno sobre el otro
+        
+        self.hydra_top_label    = Label(self.center_frame, bg="DarkGoldenrod")
+        self.hydra_top_label.pack(pady=(0,10))  # un poco de separación
+        self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod")
+        self.hydra_bottom_label.pack(pady=5)
+        
+        # Asegúrate de llamar a esto en tu actualizar_ui() o justo tras cada venta fantasma:
+        self._update_hydra_image()
+
+    def _update_hydra_image(self):
+        count = self.bot.contador_ventas_fantasma
+
+        if count < 1:
+            # no hay hydra todavía
+            self.hydra_bottom_label.pack_forget()
+            self.hydra_top_label.pack_forget()
+            return
+
+        # ——— Bottom: escogemos el mayor índice disponible ≤ count
+        available = sorted(self.hydra_bottom_frames.keys())
+        # filtramos los ≤ count
+        lower = [n for n in available if n <= count]
+        if lower:
+            chosen_bottom = lower[-1]
+        else:
+            chosen_bottom = available[0]  # por si acaso
+
+        # ——— Top: limitamos a la lista de top_frames
+        idx_top = min(count-1, len(self.hydra_top_frames)-1)
+
+        # Mostramos ambos Labels (por si estaban ocultos)
+        self.hydra_top_label.pack()
+        self.hydra_bottom_label.pack()
+        
+
+        # Configuramos las imágenes
+        self.hydra_top_label   .configure(image=self.hydra_top_frames[idx_top])
+        self.hydra_bottom_label.configure(image=self.hydra_bottom_frames[chosen_bottom])
         
 
     def _update_sales_image(self):
@@ -111,6 +169,9 @@ class BotInterface:
         for i, th in enumerate(thresholds):
             if count >= th:
                 idx = i
+
+        # Asegurarnos de no pasarnos del último índice disponible
+        idx = min(idx, len(self.sales_frames) - 1)        
 
         self.sales_label.configure(image=self.sales_frames[idx])
    
@@ -575,7 +636,7 @@ class BotInterface:
                         lbl.configure(font=self._font_normal)
 
                 self._update_sales_image()
-        
+                self._update_hydra_image()
 
         except Exception as e:
             print("Error al actualizar la UI:", e)
