@@ -43,11 +43,11 @@ class BotInterface:
         self.root.after(100, self._animate_guard)
                  # ——— frames del guardián ———
         self.guard_open_frames = [
-            PhotoImage(file=f"imagenes/deco/guardian-eyeopen-flame_{i}.png").zoom(3,3)
+            PhotoImage(file=f"imagenes/deco/guardian-eyeopen-flame_{i}.png").zoom(2,2)
             for i in range(1,5)
         ]
         self.guard_closed_frames = [
-            PhotoImage(file=f"imagenes/deco/guardian-eyeclosed-flame_{i}.png").zoom(3,3)
+            PhotoImage(file=f"imagenes/deco/guardian-eyeclosed-flame_{i}.png").zoom(2,2)
             for i in range(1,5)
         ]
         self.guard_frame_index = 0
@@ -87,6 +87,33 @@ class BotInterface:
         self.torch_frame_index = 0
         self.torch_label = None
 
+        # Secuencia de montones de oro: 1–10, luego 16, 19, 23, 25
+        piles = list(range(1,11)) + [16,19,23,25]
+        self.sales_frames = [
+            PhotoImage(file=f"imagenes/deco/gold_pile_{n}.png").zoom(2,2)
+            for n in piles
+        ]
+        
+        self.sales_label = Label(self.center_frame, bg="DarkGoldenrod")
+        self.sales_label.pack(pady=5)
+
+        
+
+    def _update_sales_image(self):
+        count = self.bot.contador_ventas_reales
+        if count < 1:
+            # nada aún
+            self.sales_label.configure(image='')
+            return
+
+        thresholds = list(range(1,11)) + [16,19,23,25]
+        idx = 0
+        for i, th in enumerate(thresholds):
+            if count >= th:
+                idx = i
+
+        self.sales_label.configure(image=self.sales_frames[idx])
+   
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
@@ -414,6 +441,7 @@ class BotInterface:
                 lbl.config(font=self._font_nd) 
 
             self.reset_colores()
+            self._update_sales_image()
             self.actualizar_ui()
             
             # Restaurar botones
@@ -545,6 +573,9 @@ class BotInterface:
                         lbl.configure(font=self._font_nd)
                     else:
                         lbl.configure(font=self._font_normal)
+
+                self._update_sales_image()
+        
 
         except Exception as e:
             print("Error al actualizar la UI:", e)
