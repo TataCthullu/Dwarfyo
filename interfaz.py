@@ -33,7 +33,10 @@ class BotInterface:
         MAX_CABEZAS = 10
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
-       
+
+        
+        
+    
         # UI variables and clear initial values
         self._create_stringvars() 
         
@@ -119,9 +122,9 @@ class BotInterface:
         # Creamos dos Labels, uno sobre el otro
         
         self.hydra_top_label    = Label(self.center_frame, bg="DarkGoldenrod")
-        self.hydra_top_label.pack()  
+        self.hydra_top_label.pack(side="top", pady=(0))
         self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod")
-        self.hydra_bottom_label.pack()
+        self.hydra_bottom_label.pack(side="top", pady=0)
         
         # Asegúrate de llamar a esto en tu actualizar_ui() o justo tras cada venta fantasma:
         self._update_hydra_image()
@@ -147,9 +150,15 @@ class BotInterface:
         # ——— Top: limitamos a la lista de top_frames
         idx_top = min(count-1, len(self.hydra_top_frames)-1)
 
-       
+        # Mostramos ambos Labels (por si estaban ocultos)
+        
+        self.hydra_top_label.pack(pady=(0))
+        
+        self.hydra_bottom_label.pack(pady=(0))
+        
+
         # Configuramos las imágenes
-        self.hydra_top_label   .configure(image=self.hydra_top_frames[idx_top])
+        self.hydra_top_label.configure(image=self.hydra_top_frames[idx_top])
         self.hydra_bottom_label.configure(image=self.hydra_bottom_frames[chosen_bottom])
         
 
@@ -284,10 +293,10 @@ class BotInterface:
             
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.center_frame.grid(row=0, column=1, sticky="n", padx=5, pady=5)
+        self.center_frame.grid(row=0, column=1, sticky="n")
 
         def add(label, var, key=None):
-            row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
+            row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
             Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlategray").pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
@@ -330,7 +339,7 @@ class BotInterface:
         btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
         btn_calc.grid(row=0, column=2, sticky="e", padx=2)
         self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("Carolingia",14), fg="PaleGoldenRod")
-        self.btn_confi.pack(pady=10)
+        self.btn_confi.pack()
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
 
@@ -652,7 +661,7 @@ class BotInterface:
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
             self.historial.insert(END, "Venta desde:", 'venta_tag')
-            resto = f" $ {v['compra']:.2f} -> id compra: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> Fecha: {ts}\n"
+            resto = f" $ {v['compra']:.2f} -> id: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> Fecha: {ts}\n"
             self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
