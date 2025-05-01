@@ -61,7 +61,6 @@ class TradingBot:
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
         self.timestamp = None
-        #self.bot_iniciado = False
         
 
     def log(self, mensaje):
@@ -341,8 +340,7 @@ class TradingBot:
                 self.log("- - - - - - - - - -") 
                 self.reportado_trabajando = False 
                 if self.sound_enabled:
-                    reproducir_sonido("Sounds/error.wav")
-                #reproducir_sonido("Sounds/error.wav")             
+                    reproducir_sonido("Sounds/error.wav")             
             else:            
                 self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
                 self.varVenta = self.varpor_venta (self.precio_ult_venta, self.precio_actual) 

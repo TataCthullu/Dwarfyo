@@ -40,6 +40,17 @@ class BotInterface:
         self.limpiar_visible = False
         
         self.root.after(100, self._animate_torch)
+        self.root.after(100, self._animate_guard)
+                 # ——— frames del guardián ———
+        self.guard_open_frames = [
+            PhotoImage(file=f"imagenes/deco/guardian-eyeopen-flame_{i}.png").zoom(3,3)
+            for i in range(1,5)
+        ]
+        self.guard_closed_frames = [
+            PhotoImage(file=f"imagenes/deco/guardian-eyeclosed-flame_{i}.png").zoom(3,3)
+            for i in range(1,5)
+        ]
+        self.guard_frame_index = 0
 
         # Layout
         self._create_frames()
@@ -55,6 +66,9 @@ class BotInterface:
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
         
+       
+
+        
         self.sound_enabled = True
         self.bot.sound_enabled = True
 
@@ -67,7 +81,7 @@ class BotInterface:
         self.root.config(menu=menubar)
 
         self.torch_frames = [
-            PhotoImage(file=f"imagenes/torch_{i}.png").zoom(3, 3)
+            PhotoImage(file=f"imagenes/deco/torch_{i}.png").zoom(3, 3)
             for i in range(1, 5)
         ]
         self.torch_frame_index = 0
@@ -176,6 +190,13 @@ class BotInterface:
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
+
+                # colocamos el guardián en la esquina superior derecha del info_frame
+        self.guard_label = Label(self.info_frame,
+                                image=self.guard_closed_frames[0],
+                                bg="DarkGoldenrod")
+        self.guard_label.pack(side="left", anchor="e", padx=5, pady=5)
+
             
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -236,7 +257,7 @@ class BotInterface:
             # Lo logueamos en la UI
             if self.root.winfo_exists():
                 self.root.after(0, lambda:
-                    self.log_en_consola(f"⚠️ Excepción en hilo: {exc}")
+                    self.log_en_consola(f"⚠️ Excepcion en hilo: {exc}")
                 )
     
     def open_calculator(self):
@@ -261,7 +282,7 @@ class BotInterface:
 
         # Si no existe, la creamos
         self.config_ventana = Toplevel(self.root)
-        self.config_ventana.title("Configuración de operativa")
+        self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
         if not (self.torch_label and self.torch_label.winfo_exists()):
@@ -321,23 +342,31 @@ class BotInterface:
             font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
     def _animate_torch(self):
-        # si la ventana de configuración NO existe, detenemos la animación
-        if not (self.config_ventana and self.config_ventana.winfo_exists()):
-            return
+        # si la ventana de config existe y la etiqueta está creada, actualiza la imagen
+        if (self.config_ventana and self.config_ventana.winfo_exists()
+            and self.torch_label and self.torch_label.winfo_exists()):
+            frame = self.torch_frames[self.torch_frame_index]
+            self.torch_label.configure(image=frame)
+            self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
 
-        # si la etiqueta fue destruida, detenemos la animación
-        if not (self.torch_label and self.torch_label.winfo_exists()):
-            return
-
-        # actualiza el fotograma actual
-        frame = self.torch_frames[self.torch_frame_index]
-        self.torch_label.configure(image=frame)
-
-        # avanza al siguiente
-        self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
-
-        # reprograma siempre en el mainloop
+        # reprograma siempre el siguiente frame sobre la raíz
         self.root.after(100, self._animate_torch)
+
+    def _animate_guard(self):
+        # escogemos la secuencia abierta o cerrada
+        frames = (self.guard_open_frames if self.bot.running
+                  else self.guard_closed_frames)
+
+        # actualizamos el frame
+        frame = frames[self.guard_frame_index % len(frames)]
+        self.guard_label.configure(image=frame)
+
+        # avanzamos índice
+        self.guard_frame_index = (self.guard_frame_index + 1) % len(frames)
+
+        # reprogramamos sobre la raíz cada 100 ms
+        self.root.after(100, self._animate_guard)
+  
 
     def toggle_bot(self):            
             if self.bot.running:
@@ -345,7 +374,8 @@ class BotInterface:
                 self.bot.detener()
                 if self.sound_enabled:
                    reproducir_sonido("Sounds/detner.wav")
-                
+                # ahora mostramos el ojo cerrado
+                self.guard_label.configure(image=self.guard_closed_frames[0])
                 self.btn_inicio.grid_remove()  # Oculta el botón de estado               
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
                 self.btn_confi.pack_forget()
@@ -355,6 +385,8 @@ class BotInterface:
                 self.bot.iniciar()   
                 if self.sound_enabled:             
                     reproducir_sonido("Sounds/soundinicio.wav")
+                
+                self.guard_label.configure(image=self.guard_open_frames[0])
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
                 self.btn_limpiar.grid_remove()
@@ -524,7 +556,7 @@ class BotInterface:
             ts = t.get("timestamp", "")
             self.historial.insert(END, "Compra desde:", 'compra_tag')
             # el resto de la línea en color por defecto
-            resto = f" ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> {ts} -> Objetivo: ${t['venta_obj']:.2f} -> Fecha: {ts}\n"
+            resto = f" ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> Fecha: {ts} -> Objetivo: ${t['venta_obj']:.2f}\n"
             self.historial.insert(END, resto)
             id_op = t.get("id")
             
