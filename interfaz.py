@@ -11,8 +11,9 @@ from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import TclError
 import os
+from animation_mixin import AnimationMixin
 
-class BotInterface:
+class BotInterface(AnimationMixin):
     def __init__(self, bot: TradingBot):
          # Main window setup
         self.root = Tk()
@@ -30,32 +31,15 @@ class BotInterface:
         self.initial_usdt = bot.usdt
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-        MAX_CABEZAS = 10
+        
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
 
-        
-        
-    
         # UI variables and clear initial values
-        self._create_stringvars() 
-        
+        self._create_stringvars()         
         self.valores_iniciales = {}
         self.limpiar_visible = False
-        
-        self.root.after(100, self._animate_torch)
-        self.root.after(100, self._animate_guard)
-                 # ——— frames del guardián ———
-        self.guard_open_frames = [
-            PhotoImage(file=f"imagenes/deco/guardian-eyeopen-flame_{i}.png").zoom(2,2)
-            for i in range(1,5)
-        ]
-        self.guard_closed_frames = [
-            PhotoImage(file=f"imagenes/deco/guardian-eyeclosed-flame_{i}.png").zoom(2,2)
-            for i in range(1,5)
-        ]
-        self.guard_frame_index = 0
-
+                
         # Layout
         self._create_frames()
         self._create_info_panel()
@@ -69,10 +53,8 @@ class BotInterface:
         self.actualizar_ui()
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
-        
-       
-
-        
+        self.init_animation()
+               
         self.sound_enabled = True
         self.bot.sound_enabled = True
 
@@ -83,99 +65,7 @@ class BotInterface:
         self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
         menubar.add_cascade(label="Opciones", menu=self.config_menu)
         self.root.config(menu=menubar)
-
-        self.torch_frames = [
-            PhotoImage(file=f"imagenes/deco/torch_{i}.png").zoom(3, 3)
-            for i in range(1, 5)
-        ]
-        self.torch_frame_index = 0
-        self.torch_label = None
-
-        # Secuencia de montones de oro: 1–10, luego 16, 19, 23, 25
-        piles = list(range(1,11)) + [16,19,23,25]
-        self.sales_frames = [
-            PhotoImage(file=f"imagenes/deco/gold_pile_{n}.png").zoom(2,2)
-            for n in piles
-        ]
-        
-        self.sales_label = Label(self.center_frame, bg="DarkGoldenrod")
-        self.sales_label.pack(pady=5)
-
-        # Definimos en disco qué bottom frames tienes:
-        bottom_indices = [1,5,7,8,9]
-        self.hydra_bottom_frames = {
-            n: PhotoImage(file=f"imagenes/deco/lernaean_hydra_{n}_bottom.png").zoom(2,2)
-            for n in bottom_indices
-        }
-        
-        self.hydra_top_frames = []  
-        for i in range(1, MAX_CABEZAS+1):
-            path = f"imagenes/deco/lernaean_hydra_{i}_top.png"
-            if not os.path.exists(path):
-                break    # si no está, dejamos de buscar más
-            try:
-                img = PhotoImage(file=path).zoom(2,2)
-                self.hydra_top_frames.append(img)
-            except TclError:
-                break    # si hay otro problema al cargar, también rompemos
-
-        # Creamos dos Labels, uno sobre el otro
-        self.hydra_top_label    = Label(self.center_frame, bg="DarkGoldenrod", bd=0)
-        self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod", bd=0)
-        # pack sin padding
-        self.hydra_top_label   .pack()
-        self.hydra_bottom_label.pack()
-
-
-        # Asegúrate de llamar a esto en tu actualizar_ui() o justo tras cada venta fantasma:
-        self._update_hydra_image()
-
-    def _update_hydra_image(self):
-        count = self.bot.contador_ventas_fantasma
-
-        if count < 1:
-            # no hay hydra todavía
-            self.hydra_bottom_label.configure(image='')
-            self.hydra_top_label.configure(image='')
-            return
-
-        # ——— Bottom: escogemos el mayor índice disponible ≤ count
-        available = sorted(self.hydra_bottom_frames.keys())
-        # filtramos los ≤ count
-        lower = [n for n in available if n <= count]
-        if lower:
-            chosen_bottom = lower[-1]
-        else:
-            chosen_bottom = available[0]  # por si acaso
-
-        # ——— Top: limitamos a la lista de top_frames
-        idx_top = min(count-1, len(self.hydra_top_frames)-1)
-
-        
-
-        # Configuramos las imágenes
-        self.hydra_top_label.configure(image=self.hydra_top_frames[idx_top])
-        self.hydra_bottom_label.configure(image=self.hydra_bottom_frames[chosen_bottom])
-        
-
-    def _update_sales_image(self):
-        count = self.bot.contador_ventas_reales
-        if count < 1:
-            # nada aún
-            self.sales_label.configure(image='')
-            return
-
-        thresholds = list(range(1,11)) + [16,19,23,25]
-        idx = 0
-        for i, th in enumerate(thresholds):
-            if count >= th:
-                idx = i
-
-        # Asegurarnos de no pasarnos del último índice disponible
-        idx = min(idx, len(self.sales_frames) - 1)        
-
-        self.sales_label.configure(image=self.sales_frames[idx])
-   
+  
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
@@ -227,8 +117,7 @@ class BotInterface:
         self.hold_usdt_var = StringVar()
         self.hold_btc_var = StringVar()
         self.var_total_str = StringVar() 
-        self.var_inicio_str = StringVar()
-
+        
     def reset_stringvars(self):
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
@@ -280,12 +169,7 @@ class BotInterface:
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
 
-                # colocamos el guardián en la esquina superior derecha del info_frame
-        self.guard_label = Label(self.info_frame,
-                                image=self.guard_closed_frames[0],
-                                bg="DarkGoldenrod")
-        self.guard_label.pack(side="left", anchor="e", padx=5, pady=5)
-
+        
             
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
@@ -364,28 +248,15 @@ class BotInterface:
             return 0  # o lo que quieras como fallback
 
     def abrir_configuracion_subventana(self):
-        # Si ya existe y no fue destruida, la traemos al frente y salimos
-        if self.config_ventana is not None and self.config_ventana.winfo_exists():
-            self.config_ventana.lift()
-            return
-
-        # Si no existe, la creamos
         self.config_ventana = Toplevel(self.root)
         self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
-        if not (self.torch_label and self.torch_label.winfo_exists()):
-            self.torch_label = Label(self.config_ventana, bg="DarkGoldenrod")
-            self.torch_label.pack(pady=(8, 0))
-
-        self._animate_torch()
-
-       # Al cerrar, destruye y pone la referencia a None
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
             self.config_ventana = None
-            self.torch_label = None 
+             
 
         self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
         if self.sound_enabled:
@@ -430,41 +301,13 @@ class BotInterface:
             bg="Goldenrod", command=guardar_config,
             font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
 
-    def _animate_torch(self):
-        # si la ventana de config existe y la etiqueta está creada, actualiza la imagen
-        if (self.config_ventana and self.config_ventana.winfo_exists()
-            and self.torch_label and self.torch_label.winfo_exists()):
-            frame = self.torch_frames[self.torch_frame_index]
-            self.torch_label.configure(image=frame)
-            self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
-
-        # reprograma siempre el siguiente frame sobre la raíz
-        self.root.after(100, self._animate_torch)
-
-    def _animate_guard(self):
-        # escogemos la secuencia abierta o cerrada
-        frames = (self.guard_open_frames if self.bot.running
-                  else self.guard_closed_frames)
-
-        # actualizamos el frame
-        frame = frames[self.guard_frame_index % len(frames)]
-        self.guard_label.configure(image=frame)
-
-        # avanzamos índice
-        self.guard_frame_index = (self.guard_frame_index + 1) % len(frames)
-
-        # reprogramamos sobre la raíz cada 100 ms
-        self.root.after(100, self._animate_guard)
-  
-
     def toggle_bot(self):            
             if self.bot.running:
-
                 self.bot.detener()
                 if self.sound_enabled:
                    reproducir_sonido("Sounds/detner.wav")
                 # ahora mostramos el ojo cerrado
-                self.guard_label.configure(image=self.guard_closed_frames[0])
+                #self.guard_label.configure(image=self.guard_closed_frames[0])
                 self.btn_inicio.grid_remove()  # Oculta el botón de estado               
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
                 self.btn_confi.pack_forget()
@@ -479,7 +322,7 @@ class BotInterface:
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
                 self.btn_limpiar.grid_remove()
-                self.btn_confi.pack(pady=10)
+                self.btn_confi.pack()
                 self._loop()
 
     def clear_bot(self):
@@ -503,12 +346,11 @@ class BotInterface:
                 lbl.config(font=self._font_nd) 
 
             self.reset_colores()
-            self._update_sales_image()
-            self._update_hydra_image()
+            self.init_animation()
             self.actualizar_ui()
             
             # Restaurar botones
-            self.btn_confi.pack(pady=10)
+            self.btn_confi.pack()
             self.btn_limpiar.grid_remove()
             self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
             self.btn_inicio.config(text="Iniciar")
@@ -564,7 +406,6 @@ class BotInterface:
         if self.root.winfo_exists():
             self.root.after(0, lambda: self._on_price_fetched(price))
 
-
     def actualizar_ui(self):
         try:
             if self.bot.running:
@@ -608,6 +449,7 @@ class BotInterface:
                 self.actualizar_color("desde_ult_comp", self.bot.varCompra)
                 self.actualizar_color("ult_vent", self.bot.varVenta)
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
+                
 
                 # Total variation from initial balance
                 if self.initial_usdt:
@@ -636,10 +478,7 @@ class BotInterface:
                         lbl.configure(font=self._font_nd)
                     else:
                         lbl.configure(font=self._font_normal)
-
-                self._update_sales_image()
-                self._update_hydra_image()
-
+             
         except Exception as e:
             print("Error al actualizar la UI:", e)
             pass
