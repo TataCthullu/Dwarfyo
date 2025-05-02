@@ -1,4 +1,4 @@
-from tkinter import Label, PhotoImage
+from tkinter import Label, PhotoImage, TclError, Frame, LEFT, RIGHT
 import os
 
 class AnimationMixin:
@@ -94,6 +94,64 @@ class AnimationMixin:
         self.root.after(100, self._animate_torch)
         self.root.after(100, self._animate_guard)
         self.root.after(500, self._update_decor)
+        self.init_skeleton_hydra()
+
+        # --- Código de skeleton hydra integrado ---
+    def init_skeleton_hydra(self):
+        # Cargar frames skeleton hydra compra (new) y venta (old)
+        self.skel_purchase_frames = []
+        self.skel_sale_frames = []
+        idx = 1
+        while True:
+            new_path = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
+            old_path = f"imagenes/deco/skeleton_hydra_{idx}_old.png"
+            if not os.path.exists(new_path) and not os.path.exists(old_path):
+                break
+            if os.path.exists(new_path):
+                self.skel_purchase_frames.append(PhotoImage(file=new_path).zoom(3,3))
+            if os.path.exists(old_path):
+                self.skel_sale_frames.append(PhotoImage(file=old_path).zoom(3,3))
+            idx += 1
+
+        # Crear labels en el panel de controles, justo tras el botón de configuración
+        parent = getattr(self, 'controls_frame', None) or getattr(self, 'center_frame')
+        self.skel_purchase_label = Label(parent, bg="DarkGoldenrod")
+        self.skel_sale_label     = Label(parent, bg="DarkGoldenrod")
+        # Ocultarlos inicialmente
+        self.skel_purchase_label.pack_forget()
+        self.skel_sale_label.pack_forget()
+
+        # Arrancar actualización periódica
+        self.root.after(500, self._update_skel_hydra)
+
+    def _update_skel_hydra(self):
+        # Compras reales
+        pur_count = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
+        if pur_count > 0 and self.skel_purchase_frames:
+            ix = min(pur_count-1, len(self.skel_purchase_frames)-1)
+            self.skel_purchase_label.configure(image=self.skel_purchase_frames[ix])
+            
+            try:
+                self.skel_purchase_label.pack(side=RIGHT, padx=5)
+            except TclError:
+                self.skel_purchase_label.pack(side=RIGHT, padx=5)
+        else:
+            self.skel_purchase_label.pack_forget()
+
+        # Ventas reales
+        sale_count = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
+        if sale_count > 0 and self.skel_sale_frames:
+            ix = min(sale_count-1, len(self.skel_sale_frames)-1)
+            self.skel_sale_label.configure(image=self.skel_sale_frames[ix])
+            try:
+                self.skel_sale_label.pack(side=LEFT, padx=2)
+            except TclError:
+                self.skel_sale_label.pack(side=LEFT, padx=2)
+        else:
+            self.skel_sale_label.pack_forget()
+
+        # Replanificar
+        self.root.after(500, self._update_skel_hydra)    
 
     def _animate_torch(self):
         if getattr(self, 'config_ventana', None) and self.config_ventana and self.config_ventana.winfo_exists():
