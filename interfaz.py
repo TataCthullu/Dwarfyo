@@ -120,12 +120,13 @@ class BotInterface:
                 break    # si hay otro problema al cargar, también rompemos
 
         # Creamos dos Labels, uno sobre el otro
-        
-        self.hydra_top_label    = Label(self.center_frame, bg="DarkGoldenrod")
-        self.hydra_top_label.pack(side="top", pady=(0))
-        self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod")
-        self.hydra_bottom_label.pack(side="top", pady=0)
-        
+        self.hydra_top_label    = Label(self.center_frame, bg="DarkGoldenrod", bd=0)
+        self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod", bd=0)
+        # pack sin padding
+        self.hydra_top_label   .pack()
+        self.hydra_bottom_label.pack()
+
+
         # Asegúrate de llamar a esto en tu actualizar_ui() o justo tras cada venta fantasma:
         self._update_hydra_image()
 
@@ -134,8 +135,8 @@ class BotInterface:
 
         if count < 1:
             # no hay hydra todavía
-            self.hydra_bottom_label.pack_forget()
-            self.hydra_top_label.pack_forget()
+            self.hydra_bottom_label.configure(image='')
+            self.hydra_top_label.configure(image='')
             return
 
         # ——— Bottom: escogemos el mayor índice disponible ≤ count
@@ -150,11 +151,6 @@ class BotInterface:
         # ——— Top: limitamos a la lista de top_frames
         idx_top = min(count-1, len(self.hydra_top_frames)-1)
 
-        # Mostramos ambos Labels (por si estaban ocultos)
-        
-        self.hydra_top_label.pack(pady=(0))
-        
-        self.hydra_bottom_label.pack(pady=(0))
         
 
         # Configuramos las imágenes
@@ -293,7 +289,7 @@ class BotInterface:
             
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.center_frame.grid(row=0, column=1, sticky="n")
+        self.center_frame.grid(row=0, column=1, sticky="nsew")
 
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
