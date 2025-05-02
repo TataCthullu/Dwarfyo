@@ -9,6 +9,16 @@ class AnimationMixin:
     MAX_CABEZAS = 9  # Ajustar según cantidad máxima de frames superiores de la hidra
 
     def init_animation(self):
+        # Si los labels ya existen, solo reiniciamos imágenes sin re-empaquetar
+        if hasattr(self, 'sales_label'):
+            # Ocultar decor inicial
+            self.sales_label.configure(image='')
+            self.hydra_top_label.configure(image='')
+            self.hydra_bottom_label.configure(image='')
+            # Reset índices de animación
+            self.torch_frame_index = 0
+            self.guard_frame_index = 0
+            return
         # --- Antorcha ---
         self.torch_frames = []
         for i in range(1, 5):
