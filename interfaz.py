@@ -26,7 +26,7 @@ class BotInterface(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("CrushYourEnemies", 10)
+        self._font_normal = ("GregorianFLF", 23)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
         self.loop_id = None
@@ -201,11 +201,11 @@ class BotInterface(AnimationMixin):
         self.right_frame.grid_columnconfigure(0, weight=1)
 
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 14))
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=("Carolingia", 14))
+        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
 
     def _create_buttons(self):
@@ -213,12 +213,12 @@ class BotInterface(AnimationMixin):
         self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
         self.buttons_frame.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         self.btn_inicio.grid(row=0, column=0, sticky="ew", padx=2)
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
-        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("Carolingia", 14), fg="PaleGoldenRod")
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         btn_calc.grid(row=0, column=2, sticky="e", padx=2)
-        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=("Carolingia",14), fg="PaleGoldenRod")
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
         self.btn_confi.pack()
         self.btn_limpiar.grid(row=0, column=1, sticky="ew", padx=2)
         self.btn_limpiar.grid_remove()
@@ -299,7 +299,7 @@ class BotInterface(AnimationMixin):
 
         Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
-            font=("Carolingia", 12), fg="PaleGoldenRod").pack(pady=8)
+            font=self._font_normal, fg="PaleGoldenRod").pack(pady=8)
 
     def toggle_bot(self):            
             if self.bot.running:

@@ -108,9 +108,9 @@ class AnimationMixin:
             if not os.path.exists(new_path) and not os.path.exists(old_path):
                 break
             if os.path.exists(new_path):
-                self.skel_purchase_frames.append(PhotoImage(file=new_path).zoom(3,3))
+                self.skel_purchase_frames.append(PhotoImage(file=new_path).zoom(2,2))
             if os.path.exists(old_path):
-                self.skel_sale_frames.append(PhotoImage(file=old_path).zoom(3,3))
+                self.skel_sale_frames.append(PhotoImage(file=old_path).zoom(2,2))
             idx += 1
 
         # Crear labels en el panel de controles, justo tras el botón de configuración
@@ -132,9 +132,9 @@ class AnimationMixin:
             self.skel_purchase_label.configure(image=self.skel_purchase_frames[ix])
             
             try:
-                self.skel_purchase_label.pack(side=RIGHT, padx=5)
+                self.skel_purchase_label.pack(side=RIGHT)
             except TclError:
-                self.skel_purchase_label.pack(side=RIGHT, padx=5)
+                self.skel_purchase_label.pack(side=RIGHT)
         else:
             self.skel_purchase_label.pack_forget()
 
@@ -144,9 +144,9 @@ class AnimationMixin:
             ix = min(sale_count-1, len(self.skel_sale_frames)-1)
             self.skel_sale_label.configure(image=self.skel_sale_frames[ix])
             try:
-                self.skel_sale_label.pack(side=LEFT, padx=2)
+                self.skel_sale_label.pack(side=LEFT)
             except TclError:
-                self.skel_sale_label.pack(side=LEFT, padx=2)
+                self.skel_sale_label.pack(side=LEFT)
         else:
             self.skel_sale_label.pack_forget()
 
@@ -158,7 +158,7 @@ class AnimationMixin:
             # Crear label si no existe o fue destruido
             if not hasattr(self, 'torch_label') or not getattr(self.torch_label, 'winfo_exists', lambda: False)():
                 self.torch_label = Label(self.config_ventana, bg="DarkGoldenrod")
-                self.torch_label.pack(pady=(8, 0))
+                self.torch_label.pack()
             # Actualizar imagen si aún existe
             if self.torch_frames and getattr(self.torch_label, 'winfo_exists', lambda: False)():
                 frame = self.torch_frames[self.torch_frame_index]
