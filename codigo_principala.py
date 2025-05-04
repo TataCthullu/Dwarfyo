@@ -5,6 +5,7 @@ import ccxt
 from utils import reproducir_sonido
 import datetime
 #import uuid
+from decimal import Decimal
 from secrets import token_hex
 
 """Azul (\033[94m) para información general.
@@ -120,7 +121,7 @@ class TradingBot:
             self.precio_ult_comp = self.precio_actual
             self.precios_compras.append(self.precio_ult_comp)
             self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
-            self.precio_objetivo_venta = self.precio_ult_comp * (1 + self.porc_profit_x_venta / 100)
+            self.precio_objetivo_venta = self.precio_ult_comp * (1 + self.porc_profit_x_venta)
             self.btc += self.btc_comprado
             self.contador_compras_reales += 1 
             
@@ -200,7 +201,7 @@ class TradingBot:
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
                 id_compra = transaccion["id"] 
-                id_venta = self._new_id()
+                
                 btc_vender = transaccion["btc"]
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt += usdt_obtenido
@@ -220,7 +221,6 @@ class TradingBot:
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
                     "inverstido_usdt": invertido_usdt,
-                    "id_venta": id_venta,
                     "venta_numero": self.contador_ventas_reales,
                     "timestamp": self.timestamp,
                     "id_compra": id_compra,
@@ -253,7 +253,8 @@ class TradingBot:
 
     def parametro_venta_B(self):
         #Venta fantasma
-        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:                       
+        pendiente = sum(t["btc"] for t in self.transacciones if not t["ejecutado"])
+        if pendiente == 0 and self.varVenta >= self.porc_desde_venta:                       
             self.ventas_fantasma.append(self.precio_actual)
             self.contador_ventas_fantasma += 1            
             self.precio_ult_venta = self.precio_actual           
@@ -284,13 +285,15 @@ class TradingBot:
         self.actualizar_balance()        
         self.precio_ult_comp = self.precio_actual
         self.precios_compras.append(self.precio_ult_comp)
-        self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
+        
         self.btc = self.btc_comprado
         self.contador_compras_reales += 1
-        self.precio_objetivo_venta = self.precio_actual * (1 + self.porc_profit_x_venta / 100)
+        
         self.transacciones.append({"compra": self.precio_actual, "venta_obj": self.precio_objetivo_venta, "btc": self.btc_comprado, "numcompra": self.contador_compras_reales, "id": id_op, "timestamp": self.timestamp})
         self.log(f" Btc comprado: ₿ {self.btc_comprado:.6f}")
+        self.log(f" Precio de compra: ₿ {self.precio_actual:.2f}")
         self.log(f" Id: {id_op}")
+        self.log(f" Precio objetivo de venta: {self.precio_objetivo_venta:.2f}")
         self.log("- - - - - - - - - -")
                         
     def iniciar(self):

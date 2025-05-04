@@ -9,8 +9,8 @@ from calculador import CalculatorWindow
 from PIL import ImageGrab
 from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
-from tkinter import TclError
-import os
+#from tkinter import TclError
+#import os
 from animation_mixin import AnimationMixin
 
 class BotInterface(AnimationMixin):
@@ -26,12 +26,12 @@ class BotInterface(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("GregorianFLF", 23)
+        self._font_normal = ("Artford", 14)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.initial_usdt = bot.usdt
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-        
+        self.inv_inic = self.initial_usdt
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
 
@@ -306,8 +306,7 @@ class BotInterface(AnimationMixin):
                 self.bot.detener()
                 if self.sound_enabled:
                    reproducir_sonido("Sounds/detner.wav")
-                # ahora mostramos el ojo cerrado
-                #self.guard_label.configure(image=self.guard_closed_frames[0])
+                
                 self.btn_inicio.grid_remove()  # Oculta el botón de estado               
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
                 self.btn_confi.pack_forget()
@@ -452,23 +451,23 @@ class BotInterface(AnimationMixin):
                 
 
                 # Total variation from initial balance
-                if self.initial_usdt:
-                    delta = (self.bot.usdt_mas_btc - self.initial_usdt) / self.initial_usdt * 100
+                if self.inv_inic:
+                    delta = (self.bot.usdt_mas_btc - self.inv_inic) / self.inv_inic * 100
                     self.var_total_str.set(f"{delta:.8f}%")
                 else:
                     self.var_total_str.set("z")
                 self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}" if self.bot.total_ganancia else "z")
                 # Cálculo Hold USDT
                 if self.bot.precio_ingreso and precio:
-                    hold_usdt = (self.initial_usdt / self.bot.precio_ingreso) * precio
-                    self.hold_usdt_var.set(f"$ {hold_usdt:.4f}")
+                    hold_usdt = (self.inv_inic / self.bot.precio_ingreso) * precio
+                    self.hold_usdt_var.set(f"$ {hold_usdt:.2f}")
                 else:
                     self.hold_usdt_var.set("z")
                 
                 # Cálculo Hold BTC en sats
                 if self.bot.precio_ingreso:
-                    sats = (self.initial_usdt / self.bot.precio_ingreso)
-                    self.hold_btc_var.set(f"₿ {float(sats):.8f}")
+                    sats = (self.inv_inic / self.bot.precio_ingreso)
+                    self.hold_btc_var.set(f"₿ {float(sats):.4f}")
                 else:
                     self.hold_btc_var.set("z")
 
