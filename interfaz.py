@@ -244,7 +244,7 @@ class BotInterface(AnimationMixin):
     def obtener_valor_limpio(entry_var):
         valor = entry_var.get().replace('%', '').replace('$', '').strip()
         try:
-            return float(valor)           
+            return Decimal(valor)           
         except InvalidOperation:
             return 0  # o lo que quieras como fallback
 
@@ -292,7 +292,7 @@ class BotInterface(AnimationMixin):
                 txt_usdt = entries[4].get().strip()
                 txt_fixed_buyer = entries[4].get().strip()
 
-                # 2) Construimos Decimal desde cadena (sin pasar por float)
+                # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
                 porc_compra = Decimal(txt_compra)
                 porc_venta  = Decimal(txt_venta)
                 porc_profit  = Decimal(txt_profit)
@@ -494,7 +494,7 @@ class BotInterface(AnimationMixin):
                 # Cálculo Hold BTC en sats
                 if self.bot.precio_ingreso:
                     sats = (self.inv_inic / self.bot.precio_ingreso)
-                    self.hold_btc_var.set(f"₿ {float(sats)}")
+                    self.hold_btc_var.set(f"₿ {Decimal(sats)}")
                 else:
                     self.hold_btc_var.set("z")
 
