@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 #from tkinter import TclError
 #import os
 from animation_mixin import AnimationMixin
+from decimal import Decimal, InvalidOperation
 
 class BotInterface(AnimationMixin):
     def __init__(self, bot: TradingBot):
@@ -244,7 +245,7 @@ class BotInterface(AnimationMixin):
         valor = entry_var.get().replace('%', '').replace('$', '').strip()
         try:
             return float(valor)           
-        except ValueError:
+        except InvalidOperation:
             return 0  # o lo que quieras como fallback
 
     def abrir_configuracion_subventana(self):
@@ -283,18 +284,44 @@ class BotInterface(AnimationMixin):
 
         def guardar_config():
             try:
-                self.bot.porc_desde_compra    = float(entries[0].get())
-                self.bot.porc_desde_venta     = float(entries[1].get())
-                self.bot.porc_profit_x_venta  = float(entries[2].get())
-                self.bot.porc_inv_por_compra  = float(entries[3].get())
-                self.bot.usdt                 = float(entries[4].get())
-                self.bot.fixed_buyer = (self.bot.usdt *
-                    self.bot.porc_inv_por_compra / 100)
+                # 1) Leemos la cadena exacta
+                txt_compra = entries[0].get().strip()   # p.e. "0.0003234" o "5"
+                txt_venta  = entries[1].get().strip()
+                txt_profit  = entries[2].get().strip()
+                txt_porc_inv = entries[3].get().strip()
+                txt_usdt = entries[4].get().strip()
+                txt_fixed_buyer = entries[4].get().strip()
+
+                # 2) Construimos Decimal desde cadena (sin pasar por float)
+                porc_compra = Decimal(txt_compra)
+                porc_venta  = Decimal(txt_venta)
+                porc_profit  = Decimal(txt_profit)
+                porc_inv = Decimal(txt_porc_inv)
+                usdtinit = Decimal(txt_usdt)
+                fixed_b = Decimal(txt_fixed_buyer)
+
+
+                # 3) Asignamos al bot (para los cálculos internos)
+                self.bot.porc_desde_compra = porc_compra
+                self.bot.porc_desde_venta = porc_venta
+                self.bot.porc_profit_x_venta = porc_profit
+                self.bot.porc_inv_por_compra = porc_inv
+                self.bot.usdt = usdtinit
+                self.bot.fixed_buyer = fixed_b   
+
+                self.porc_desde_compra_str.set(f"% {txt_compra}")
+                self.porc_desde_venta_str.set(f"% {txt_venta}")
+                self.porc_objetivo_venta_str.set(f"% {txt_profit}")
+                self.inv_por_compra_str.set(f"% {txt_porc_inv}")
+                self.cant_usdt_str.set(f"% {txt_usdt}")
+                self.fixed_buyer_str.set(f"% {txt_fixed_buyer}")
+             
 
                 self.log_en_consola("Configuracion actualizada")
                 self.log_en_consola("-------------------------")
                 cerrar_config()
-            except ValueError:
+
+            except InvalidOperation:
                 self.log_en_consola("Error: ingresa valores numericos validos.")
 
         Button(self.config_ventana, text="Guardar",
@@ -388,7 +415,7 @@ class BotInterface(AnimationMixin):
             self.bot.loop()
             # 3. Refresca la interfaz (también bajo try/except)
             self.actualizar_ui()
-        except Exception:
+        except InvalidOperation:
             # si la ventana ya fue destruida o hubo otro error, simplemente ignoramos
             pass
 
@@ -397,9 +424,9 @@ class BotInterface(AnimationMixin):
             # Intentamos recuperar el ticker en el hilo de fondo
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
             price = ticker['last']
-        except Exception as e:
+        except InvalidOperation as e:
             # Re-lanzamos la excepción para que future.exception() la recoja
-            raise RuntimeError(f"Error al obtener precio: {e}") from e
+            pass
 
         # Si todo fue bien, pasamos el precio al hilo principal
         if self.root.winfo_exists():
@@ -410,7 +437,7 @@ class BotInterface(AnimationMixin):
             if self.bot.running:
                 # ——— Detectar reconexión de Internet ———
                 prev_price = getattr(self.bot, 'precio_actual', None)
-                new_price  = self.bot.get_precio_actual()
+                new_price  = self.bot._fetch_precio()
                 # Si antes no había precio y ahora sí, reiniciamos todo el loop
                 if prev_price is None and new_price is not None:
                     self.log_en_consola("🔄 Conexion restablecida, Khazad reactivado.")
@@ -419,24 +446,24 @@ class BotInterface(AnimationMixin):
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
                 precio = self.bot.precio_actual
-                self.precio_act_var.set(f"$ {precio:.4f}" if precio else "z")
-                self.cant_btc_str.set(f"₿ {self.bot.btc:.6f}")
-                self.cant_usdt_str.set(f"$ {self.bot.usdt:.6f}")
-                self.balance_var.set(f"$ {self.bot.usdt_mas_btc:.6f}" if self.bot.precio_actual else "0")
-                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt:.6f}" if self.bot.precio_actual else "z")
-                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso:.4f}" if self.bot.precio_ingreso else "z")
-                self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra:.2f}")
-                self.varpor_set_compra_str.set(f"% {self.bot.varCompra:.6f}" if self.bot.varCompra else "z")
-                self.varpor_set_venta_str.set(f"% {self.bot.varVenta:.6f}" if self.bot.varVenta else "z")
-                self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra:.4f}")
-                self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta:.4f}")
-                self.var_inicio_str.set(f"% {self.bot.var_inicio:.6f}" if self.bot.var_inicio else "z")
-                self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer:.2f}")
-                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}" if self.bot.total_ganancia else "z")
+                self.precio_act_var.set(f"$ {precio}" if precio else "z")
+                self.cant_btc_str.set(f"₿ {self.bot.btc}")
+                self.cant_usdt_str.set(f"$ {self.bot.usdt}")
+                self.balance_var.set(f"$ {self.bot.usdt_mas_btc}" if self.bot.precio_actual else "0")
+                self.btc_en_usdt.set(f"$ {self.bot.btc_usdt}" if self.bot.precio_actual else "z")
+                self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso}" if self.bot.precio_ingreso else "z")
+                self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra}")
+                self.varpor_set_compra_str.set(f"% {self.bot.varCompra}" if self.bot.varCompra else "z")
+                self.varpor_set_venta_str.set(f"% {self.bot.varVenta}" if self.bot.varVenta else "z")
+                self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra}")
+                self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta}")
+                self.var_inicio_str.set(f"% {self.bot.var_inicio}" if self.bot.var_inicio else "z")
+                self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer}")
+                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia}" if self.bot.total_ganancia else "z")
                 self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma) if self.bot.contador_compras_fantasma else "z")
                 self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma) if self.bot.contador_ventas_fantasma else "z")
                 self.porc_objetivo_venta_str.set(f"% {self.bot.porc_profit_x_venta}" if self.bot.porc_profit_x_venta else "z")
-                self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio():.2f}" if self.bot.calcular_ghost_ratio() else "z")
+                self.ghost_ratio_var.set(f"{self.bot.calcular_ghost_ratio()}" if self.bot.calcular_ghost_ratio() else "z")
                 self.compras_realizadas_str.set(str(self.bot.contador_compras_reales) if self.bot.contador_compras_reales else "z")
                 self.ventas_realizadas_str.set(str(self.bot.contador_ventas_reales) if self.bot.contador_ventas_reales else "z")               
                 self.start_time_str.set(self.bot.get_start_time_str())
@@ -453,21 +480,21 @@ class BotInterface(AnimationMixin):
                 # Total variation from initial balance
                 if self.inv_inic:
                     delta = (self.bot.usdt_mas_btc - self.inv_inic) / self.inv_inic * 100
-                    self.var_total_str.set(f"{delta:.8f}%")
+                    self.var_total_str.set(f"{delta}%")
                 else:
                     self.var_total_str.set("z")
-                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia:.6f}" if self.bot.total_ganancia else "z")
+                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia}" if self.bot.total_ganancia else "z")
                 # Cálculo Hold USDT
                 if self.bot.precio_ingreso and precio:
                     hold_usdt = (self.inv_inic / self.bot.precio_ingreso) * precio
-                    self.hold_usdt_var.set(f"$ {hold_usdt:.2f}")
+                    self.hold_usdt_var.set(f"$ {hold_usdt}")
                 else:
                     self.hold_usdt_var.set("z")
                 
                 # Cálculo Hold BTC en sats
                 if self.bot.precio_ingreso:
                     sats = (self.inv_inic / self.bot.precio_ingreso)
-                    self.hold_btc_var.set(f"₿ {float(sats):.4f}")
+                    self.hold_btc_var.set(f"₿ {float(sats)}")
                 else:
                     self.hold_btc_var.set("z")
 
@@ -488,14 +515,14 @@ class BotInterface(AnimationMixin):
             ts = t.get("timestamp", "")
             self.historial.insert(END, "Compra desde:", 'compra_tag')
             # el resto de la línea en color por defecto
-            resto = f" ${t['compra']:.2f} -> Id: {t['id']} -> Num: {t['numcompra']} -> Fecha: {ts} -> Objetivo: ${t['venta_obj']:.2f}\n"
+            resto = f" ${t['compra']} -> Id: {t['id']} -> Num: {t['numcompra']} -> Fecha: {ts} -> Objetivo: ${t['venta_obj']}\n"
             self.historial.insert(END, resto)
             id_op = t.get("id")
             
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
             self.historial.insert(END, "Venta desde:", 'venta_tag')
-            resto = f" $ {v['compra']:.2f} -> id: {v['id_compra']}, a: $ {v['venta']:.2f} | Ganancia: $ {v['ganancia']:.4f}, Num: {v['venta_numero']} -> Fecha: {ts}\n"
+            resto = f" $ {v['compra']} -> id: {v['id_compra']}, a: $ {v['venta']} | Ganancia: $ {v['ganancia']}, Num: {v['venta_numero']} -> Fecha: {ts}\n"
             self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
