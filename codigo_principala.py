@@ -308,11 +308,6 @@ class TradingBot:
         return (self.contador_compras_fantasma + self.contador_ventas_fantasma) / Decimal(total)
              
     def realizar_primera_compra(self):
-        if self.precio_actual is None or self.precio_actual == 0:
-            self.log("❌ Precio actual no válido, no se puede realizar la compra.")
-            self.log("- - - - - - - - - -")
-            return
-        
         self.comprar()
         
     def iniciar(self):

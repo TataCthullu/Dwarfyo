@@ -50,7 +50,7 @@ class BotInterface(AnimationMixin):
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
-        self.reset_stringvars()
+        #self.reset_stringvars()
         self.actualizar_ui()
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
@@ -119,13 +119,7 @@ class BotInterface(AnimationMixin):
         self.hold_btc_var = StringVar()
         self.var_total_str = StringVar() 
         
-    def reset_stringvars(self):
-        for attr, val in self.__dict__.items():
-            if isinstance(val, StringVar):
-                val.set("z")
-
-        for var, lbl in self.nd_labels:
-            lbl.config(font=self._font_nd)     
+        
 
     def _create_frames(self):
         self.main_frame = Frame(self.root, bg="DarkGoldenrod")
@@ -247,6 +241,14 @@ class BotInterface(AnimationMixin):
             return Decimal(valor)           
         except InvalidOperation:
             return 0  # o lo que quieras como fallback
+        
+    def reset_stringvars(self):
+        for attr, val in self.__dict__.items():
+            if isinstance(val, StringVar):
+                val.set("z")
+
+        for var, lbl in self.nd_labels:
+            lbl.config(font=self._font_nd)     
 
     def abrir_configuracion_subventana(self):
         self.config_ventana = Toplevel(self.root)
@@ -363,13 +365,7 @@ class BotInterface(AnimationMixin):
             self.bot.reiniciar()
             self.inicializar_valores_iniciales() 
 
-            # 3) Reset automático de todos los StringVar
-            for attr, val in self.__dict__.items():
-                if isinstance(val, StringVar):
-                    val.set("z")
-
-            for var, lbl in self.nd_labels:
-                lbl.config(font=self._font_nd) 
+            self.reset_stringvars()
 
             self.reset_colores()
             self.init_animation()
@@ -498,12 +494,7 @@ class BotInterface(AnimationMixin):
                 else:
                     self.hold_btc_var.set("z")
 
-                # Repintar fuente según valor real o placeholder
-                for var, lbl in self.nd_labels:
-                    if var.get() == "z":
-                        lbl.configure(font=self._font_nd)
-                    else:
-                        lbl.configure(font=self._font_normal)
+                #self.reset_stringvars()
              
         except Exception as e:
             print("Error al actualizar la UI:", e)
