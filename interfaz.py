@@ -27,7 +27,7 @@ class BotInterface(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("Artford", 14)
+        self._font_normal = ("Artford", 12)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         
         self.loop_id = None

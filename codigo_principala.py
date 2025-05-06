@@ -240,7 +240,7 @@ class TradingBot:
         if nuevo_precio is None:
             return
         self.precio_actual = nuevo_precio
-
+        self.actualizar_balance()
         ejecutadas = []
        
         
@@ -250,11 +250,15 @@ class TradingBot:
             if not isinstance(venta_obj, Decimal):
                 continue
             if self.precio_actual >= venta_obj:
+                               
+                btc_vender = transaccion["btc"]
+                if btc_vender > self.btc:
+                    self.log(f"⚠️ No hay suficiente BTC para vender {btc_vender}, tienes {self.btc}")
+                    continue
+
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
-                id_compra = transaccion["id"] 
-                
-                btc_vender = transaccion["btc"]
+                id_compra = transaccion["id"]     
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt += usdt_obtenido
                 self.btc -= btc_vender
@@ -262,7 +266,7 @@ class TradingBot:
                 invertido_usdt = transaccion.get("invertido_usdt", self.fixed_buyer)
                 self.ganancia_neta = usdt_obtenido - invertido_usdt
                 self.total_ganancia += self.ganancia_neta              
-                self.actualizar_balance()
+                
                 
                 self.contador_ventas_reales += 1
                 
@@ -293,31 +297,32 @@ class TradingBot:
                 self.log(f"💹 Ganancia de esta operacion: $ {self.ganancia_neta}")
                 self.log("- - - - - - - - - -")
                 ejecutadas.append(transaccion)
+                
                 if self.sound_enabled:               
                     reproducir_sonido("Sounds/soundventa.wav")
                 self.reportado_trabajando = False
-                
+                break
         # eliminar transacciones ejecutadas y reactivar parámetro B
         for tx in ejecutadas:
             if tx in self.transacciones:
                 self.transacciones.remove(tx)
         if ejecutadas:
             self.param_b_enabled = True
+            
 
         self.venta_fantasma()
         self.actualizar_balance()               
 
          
 
-    def venta_fantasma(self):
-        """Registra una venta fantasma si no hay BTC y supera el umbral."""
-        # solo si no hay BTC disponible y ya hubo al menos una venta real
-        if self.btc == 0 and self.precio_ult_venta is not None:
-             
+    def venta_fantasma(self) -> bool:  
+        # Verifica: no hay BTC y ya existe un precio de referencia
+        if self.btc == Decimal("0") and self.precio_ult_venta is not None:
+            # Comprueba si la variación (%) supera el umbral
             if self.varVenta >= self.porc_desde_venta:
                 id_f = token_hex(2)
                 self.contador_ventas_fantasma += 1
-                # actualiza el último precio de venta de referencia
+                # Actualiza el punto de referencia para el próximo umbral
                 self.precio_ult_venta = self.precio_actual
                 self.ventas_fantasma.append({
                     'id': id_f,
@@ -326,6 +331,7 @@ class TradingBot:
                 self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a $ {self.precio_actual}")
                 if self.sound_enabled:
                     reproducir_sonido("Sounds/ghostven.wav")
+                
 
     def variacion_total(self) -> Decimal:
         if self.inv_inic == 0:
