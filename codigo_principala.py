@@ -5,7 +5,7 @@ import ccxt
 from utils import reproducir_sonido
 import datetime
 #import uuid
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, DivisionByZero, getcontext
 from secrets import token_hex
 
 """Azul (\033[94m) para información general.
@@ -23,7 +23,7 @@ class TradingBot:
         self.start_time = None
 
         self.usdt = Decimal("5000")
-        self.inv_ini = self.usdt
+        self.inv_inic = self.usdt
         self.btc = Decimal("0")        
         self.btc_comprado = Decimal("0")
 
@@ -52,12 +52,12 @@ class TradingBot:
         self.compras_fantasma = []
         self.transacciones = []
         self.kant_usdt_vendido = 0       
-        self.varCompra = 0
-        self.varVenta = 0       
+        self.varCompra = Decimal("0")
+        self.varVenta = Decimal("0")       
         self.btc_vendido = 0
         self.precio_objetivo_venta = None
         self.precio_ingreso = None
-        self.var_inicio = 0
+        self.var_inicio = Decimal("0")
         self.log_fn = None
         self.usdt_obtenido = 0
         self.contador_compras_fantasma = 0
@@ -102,21 +102,37 @@ class TradingBot:
             # en caso de error, no modificar balances
             pass
 
-    #Variacion de precio con respecto a ultima compra
-    def varpor_compra(self, precio_ult_comp: Decimal, precio_actual: Decimal) -> Decimal:
-        if precio_ult_comp is None or precio_actual is None:
+    def varpor_compra(self, precio_ult_comp: Decimal, precio_act_btc: Decimal) -> Decimal:
+        """Variación porcentual desde la última compra, o 0 si no aplicable."""
+        try:
+            # Si alguno es None o cero, devolvemos 0
+            if precio_ult_comp is None or precio_act_btc is None or precio_ult_comp == Decimal("0"):
+                return Decimal("0")
+            # (nuevo − viejo) / viejo * 100
+            return (precio_act_btc - precio_ult_comp) / precio_ult_comp * Decimal("100")
+        except (InvalidOperation, DivisionByZero) as e:
+            self.log(f"❌ Error calculando varpor_compra: {e}")
             return Decimal("0")
-        return (precio_actual - precio_ult_comp) / precio_ult_comp
 
-    def varpor_venta(self, precio_ult_venta: Decimal, precio_actual: Decimal) -> Decimal:
-        if precio_ult_venta is None or precio_actual is None:
+    def varpor_venta(self, precio_ult_venta: Decimal, precio_act_btc: Decimal) -> Decimal:
+        """Variación porcentual desde la última venta, o 0 si no aplicable."""
+        try:
+            if precio_ult_venta is None or precio_act_btc is None or precio_ult_venta == Decimal("0"):
+                return Decimal("0")
+            return (precio_act_btc - precio_ult_venta) / precio_ult_venta * Decimal("100")
+        except (InvalidOperation, DivisionByZero) as e:
+            self.log(f"❌ Error calculando varpor_venta: {e}")
             return Decimal("0")
-        return (precio_actual - precio_ult_venta) / precio_ult_venta
 
     def varpor_ingreso(self) -> Decimal:
-        if self.precio_ingreso is None or self.precio_actual is None:
+        """Variación porcentual desde el precio de ingreso, o 0 si no aplicable."""
+        try:
+            if self.precio_ingreso is None or self.precio_actual is None or self.precio_ingreso == Decimal("0"):
+                return Decimal("0")
+            return (self.precio_actual - self.precio_ingreso) / self.precio_ingreso * Decimal("100")
+        except (InvalidOperation, DivisionByZero) as e:
+            self.log(f"❌ Error calculando varpor_ingreso: {e}")
             return Decimal("0")
-        return (self.precio_actual - self.precio_ingreso) / self.precio_ingreso
     
     def _new_id(self):
         # Genera 4 dígitos hex aleatorios
@@ -298,7 +314,31 @@ class TradingBot:
                 })
                 self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a $ {self.precio_actual}")
                 if self.sound_enabled:
-                    reproducir_sonido("Sounds/ghostven.wav")             
+                    reproducir_sonido("Sounds/ghostven.wav")
+
+    def variacion_total(self) -> Decimal:
+        if self.inv_inic is None:
+            return None
+        # Convertimos a Decimal antes de operar
+        inicial = Decimal(str(self.inv_inic))
+        actual  = Decimal(str(self.usdt_mas_btc))
+        return (actual - inicial) / inicial * Decimal('100')
+
+    def hold_usdt(self, precio_actual: float) -> Decimal:
+        if self.inv_inic is None or precio_actual is None:
+            return None
+        inicial = Decimal(str(self.inv_inic))
+        ingreso = Decimal(str(self.precio_ingreso))
+        precio  = Decimal(str(precio_actual))
+        return (inicial / ingreso) * precio
+
+    def hold_btc(self) -> Decimal:
+        if self.precio_ingreso is None:
+            return None
+        inicial = Decimal(str(self.inv_inic))
+        ingreso = Decimal(str(self.precio_ingreso))
+        return inicial / ingreso
+                             
                    
     def calcular_ghost_ratio(self) -> Decimal:
         total = (self.contador_compras_reales + self.contador_ventas_reales +
@@ -317,6 +357,7 @@ class TradingBot:
             return
         self.precio_ingreso = self.precio_actual
         self.precio_ult_comp = self.precio_actual
+        self.inv_inic = self.usdt
         self.start_time = datetime.datetime.now()
         
         self.running = True

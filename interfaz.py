@@ -243,12 +243,13 @@ class BotInterface(AnimationMixin):
             return 0  # o lo que quieras como fallback
         
     def reset_stringvars(self):
+        # Pone "z" en todas y aplica runas a esos labels
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
                 val.set("z")
-
         for var, lbl in self.nd_labels:
-            lbl.config(font=self._font_nd)     
+            lbl.configure(font=self._font_nd)
+    
 
     def abrir_configuracion_subventana(self):
         self.config_ventana = Toplevel(self.root)
@@ -438,14 +439,13 @@ class BotInterface(AnimationMixin):
                 if prev_price is None and new_price is not None:
                     self.log_en_consola("🔄 Conexion restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
-                    #self._loop()
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
                 precio = self.bot.precio_actual
                 self.precio_act_var.set(f"$ {precio}" if precio else "z")
                 self.cant_btc_str.set(f"₿ {self.bot.btc}")
                 self.cant_usdt_str.set(f"$ {self.bot.usdt}")
-                self.balance_var.set(f"$ {self.bot.usdt_mas_btc}" if self.bot.precio_actual else "0")
+                self.balance_var.set(f"$ {self.bot.usdt_mas_btc}" if self.bot.precio_actual else "z")
                 self.btc_en_usdt.set(f"$ {self.bot.btc_usdt}" if self.bot.precio_actual else "z")
                 self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso}" if self.bot.precio_ingreso else "z")
                 self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra}")
@@ -465,6 +465,12 @@ class BotInterface(AnimationMixin):
                 self.start_time_str.set(self.bot.get_start_time_str())
                 self.runtime_str.set(self.bot.get_runtime_str())
 
+                for var, lbl in self.nd_labels:
+                    if var.get() == "z":
+                        lbl.configure(font=self._font_nd)
+                    else:
+                        lbl.configure(font=self._font_normal)
+
                 self.actualizar_historial_consola()                
                 self.actualizar_color("precio_actual", self.bot.precio_actual)
                 self.actualizar_color("balance", self.bot.usdt_mas_btc)
@@ -472,29 +478,14 @@ class BotInterface(AnimationMixin):
                 self.actualizar_color("ult_vent", self.bot.varVenta)
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
                 
+                var_tot = self.bot.variacion_total()
+                self.var_total_str.set(f"{var_tot} %" if var_tot is not None else "z")
 
-                # Total variation from initial balance
-                if self.inv_inic:
-                    delta = (self.bot.usdt_mas_btc - self.inv_inic) / self.inv_inic * 100
-                    self.var_total_str.set(f"{delta}%")
-                else:
-                    self.var_total_str.set("z")
-                self.ganancia_total_str.set(f"$ {self.bot.total_ganancia}" if self.bot.total_ganancia else "z")
-                # Cálculo Hold USDT
-                if self.bot.precio_ingreso and precio:
-                    hold_usdt = (self.inv_inic / self.bot.precio_ingreso) * precio
-                    self.hold_usdt_var.set(f"$ {hold_usdt}")
-                else:
-                    self.hold_usdt_var.set("z")
-                
-                # Cálculo Hold BTC en sats
-                if self.bot.precio_ingreso:
-                    sats = (self.inv_inic / self.bot.precio_ingreso)
-                    self.hold_btc_var.set(f"₿ {Decimal(sats)}")
-                else:
-                    self.hold_btc_var.set("z")
+                hold_usdt = self.bot.hold_usdt(self.bot.precio_actual)
+                self.hold_usdt_var.set(f"$ {hold_usdt}" if hold_usdt is not None else "z")
 
-                #self.reset_stringvars()
+                hold_btc = self.bot.hold_btc()
+                self.hold_btc_var.set(f"₿ {hold_btc}" if hold_btc is not None else "z")
              
         except Exception as e:
             print("Error al actualizar la UI:", e)
