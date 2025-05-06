@@ -339,17 +339,16 @@ class TradingBot:
         Calcula (balance_actual - inversión_inicial) / inversión_inicial * 100.
         """
         try:
-            # Asegúrate de que el balance esté actualizado
-            self.actualizar_balance()
-            # Si no hay inversión inicial, evitamos división por cero
-            if self.inv_inic == Decimal("0"):
-                return Decimal("0")
-            # Balance actual: USDT + valor de BTC en USDT
-            actual = self.usdt_mas_btc
-            return (actual - self.inv_inic) / self.inv_inic * Decimal("100")
+            # Usa capital inicial vs balance actual
+            actual = self.usdt + (self.btc * self.precio_ingreso or Decimal('0'))
+            delta = (actual - self.inv_inic) / self.inv_inic * Decimal('100')
+            # Evita notación exponencial y ceros sobrantes
+            if delta == 0:
+                return Decimal('0')
+            return delta.normalize()
         except Exception as e:
-            self.log(f"❌ Error en variacion_total: {e}")
-            return Decimal("0")
+            self.log(f"❌ Error variacion_total: {e}")
+            return Decimal('0')
 
 
     def hold_usdt(self, precio_actual: Decimal) -> Decimal:
