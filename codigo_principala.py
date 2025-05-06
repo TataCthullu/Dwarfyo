@@ -16,7 +16,11 @@ Cian (\033[96m) para detalles adicionales."""
 
 class TradingBot:
     def __init__(self):
-        self.exchange = ccxt.binance({ 'timeout': 3000 })
+        self.exchange = ccxt.binance({
+            'enableRateLimit': True,
+            'timeout': 10000,                # 10 segundos
+            'options': {'defaultType': 'spot'}
+        })
 
         self.log_fn = None
         self.sound_enabled = True
@@ -41,7 +45,7 @@ class TradingBot:
         self.porc_profit_x_venta = Decimal("0.005")
 
 
-        self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal("100")
+        self.fixed_buyer = self.cant_inv()
         self.running = False
         self.valores_iniciales = {}
         self.precio_ult_comp = None
@@ -81,16 +85,17 @@ class TradingBot:
         self.valores_iniciales = valores  # un dict con los datos iniciales
                         
     def _fetch_precio(self) -> Decimal:
-        """Trae el precio BTC/USDT como Decimal exacto."""
         try:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
-            # Convertir a string para preservar precisión / ceros
-            return Decimal(str(ticker['last']))
-        except (InvalidOperation, Exception) as e:
-            self.log(f"❌ Error obteniendo precio: {e}")
-            if self.sound_enabled:
-                reproducir_sonido("Sounds/error.wav")
-            return None
+            return ticker['last']
+        except (ccxt.NetworkError, ccxt.RequestTimeout) as e:
+            self.log(f"⚠️ Error de red al obtener precio: {e}")
+        except ccxt.ExchangeError as e:
+            self.log(f"⚠️ Error del intercambio al obtener precio: {e}")
+        except Exception as e:
+            self.log(f"❌ Error inesperado obteniendo el precio: {e}")
+        reproducir_sonido("Sounds/error.wav")
+        return None
         
     def actualizar_balance(self):
         
@@ -101,6 +106,10 @@ class TradingBot:
         else:
             # en caso de error, no modificar balances
             pass
+
+    def cant_inv(self):
+     
+        return self.inv_inic * self.porc_inv_por_compra / Decimal('100')       
 
     def varpor_compra(self, precio_ult_comp: Decimal, precio_act_btc: Decimal) -> Decimal:
         """Variación porcentual desde la última compra, o 0 si no aplicable."""
@@ -153,7 +162,7 @@ class TradingBot:
             self.precio_ult_comp = self.precio_actual
             
             self.btc_comprado = (1/self.precio_actual) * self.fixed_buyer
-            self.precio_objetivo_venta = self.precio_ult_comp * (Decimal('1') + self.porc_profit_x_venta)
+            self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
             self.btc += self.btc_comprado
             self.contador_compras_reales += 1 
             
@@ -317,16 +326,17 @@ class TradingBot:
                     reproducir_sonido("Sounds/ghostven.wav")
 
     def variacion_total(self) -> Decimal:
-        if self.inv_inic is None:
-            return None
-        # Convertimos a Decimal antes de operar
-        inicial = Decimal(str(self.inv_inic))
-        actual  = Decimal(str(self.usdt_mas_btc))
-        return (actual - inicial) / inicial * Decimal('100')
+        try:
+            # Usa capital inicial vs balance actual
+            actual = (self.usdt + (self.btc * self.precio_ingreso or Decimal('0')))
+            return (actual - self.inv_inic) / self.inv_inic * Decimal('100')
+        except Exception as e:
+            self.log(f"❌ Error variacion_total: {e}")
+            return Decimal('0')
 
     def hold_usdt(self, precio_actual: float) -> Decimal:
         if self.inv_inic is None or precio_actual is None:
-            return None
+            return Decimal("0")
         inicial = Decimal(str(self.inv_inic))
         ingreso = Decimal(str(self.precio_ingreso))
         precio  = Decimal(str(precio_actual))
@@ -334,7 +344,7 @@ class TradingBot:
 
     def hold_btc(self) -> Decimal:
         if self.precio_ingreso is None:
-            return None
+            return Decimal("0")
         inicial = Decimal(str(self.inv_inic))
         ingreso = Decimal(str(self.precio_ingreso))
         return inicial / ingreso
@@ -392,35 +402,40 @@ class TradingBot:
         return " ".join(parts) 
                                         
     def loop(self, after_fn=None):
-            if not self.running:
-                return
-            self.precio_actual = self._fetch_precio()
-            if self.precio_actual is None:
-                return             
-            else:            
-                self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
-                self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual) 
-                self.actualizar_balance()
-                self.vender()                
-                self.parametro_compra_desde_compra = self.parametro_compra_A()                
-                self.parametro_compra_desde_venta = self.parametro_compra_B()  
-                self.parametro_venta_fantasma = self.venta_fantasma()              
-                self.var_inicio = self.varpor_ingreso()
-                            
-                if self.reportado_trabajando == False:                        
-                    self.log("🟡 Trabajando...")   
-                    self.log("- - - - - - - - - -")                   
-                    self.reportado_trabajando = True   
+            try:    
+                if not self.running:
+                    return
+                self.precio_actual = self._fetch_precio()
+                if self.precio_actual is None:
+                    return             
+                else:            
+                    self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
+                    self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual) 
+                    self.actualizar_balance()
+                    self.vender()                
+                    self.parametro_compra_desde_compra = self.parametro_compra_A()                
+                    self.parametro_compra_desde_venta = self.parametro_compra_B()  
+                    self.parametro_venta_fantasma = self.venta_fantasma()              
+                    self.var_inicio = self.varpor_ingreso()
+                                
+                    if self.reportado_trabajando == False:                        
+                        self.log("🟡 Trabajando...")   
+                        self.log("- - - - - - - - - -")                   
+                        self.reportado_trabajando = True   
 
-            if self.btc < 0:
-                self.log("🔴Error: btc negativo")
-                self.reportado_trabajando = False
-                if self.sound_enabled: 
-                    reproducir_sonido("Sounds/error.wav")
-                self.detener()
-                                                       
-            if after_fn:
-                after_fn(3000, lambda: self.loop(after_fn))
+                if self.btc < 0:
+                    self.log("🔴Error: btc negativo")
+                    self.reportado_trabajando = False
+                    if self.sound_enabled: 
+                        reproducir_sonido("Sounds/error.wav")
+                    self.detener()
+            except Exception as e:
+                self.log(f"🔴 Excepción en bucle: {e}")
+                reproducir_sonido("Sounds/error.wav")    
+                    
+            finally:                                            
+                if after_fn:
+                    after_fn(3000, lambda: self.loop(after_fn))
 
     def detener(self):
         self.running = False  

@@ -29,10 +29,10 @@ class BotInterface(AnimationMixin):
         self.config_ventana = None
         self._font_normal = ("Artford", 14)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
-        self.initial_usdt = bot.usdt
+        
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-        self.inv_inic = self.initial_usdt
+       
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
 
@@ -536,7 +536,8 @@ class BotInterface(AnimationMixin):
             'balance': self.bot.usdt_mas_btc,
             'desde_ult_comp': self.bot.varCompra,
             'ult_vent': self.bot.varVenta,
-            'variacion_desde_inicio': self.bot.var_inicio
+            'variacion_desde_inicio': self.bot.var_inicio,
+            'variacion_total': 0
         }
 
     def run(self):
