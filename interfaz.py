@@ -479,7 +479,12 @@ class BotInterface(AnimationMixin):
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
                 
                 var_tot = self.bot.variacion_total()
-                self.var_total_str.set(f"{var_tot} %" if var_tot is not None else "z")
+                if var_tot is None:
+                    display = "z"
+                else:
+                    # 'f' fuerza formato de punto fijo, sin exponenciales
+                    display = f"{format(var_tot, 'f')} %"
+                self.var_total_str.set(display)
 
                 hold_usdt = self.bot.hold_usdt(self.bot.precio_actual)
                 self.hold_usdt_var.set(f"$ {hold_usdt}" if hold_usdt is not None else "z")
