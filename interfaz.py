@@ -478,19 +478,23 @@ class BotInterface(AnimationMixin):
                 self.actualizar_color("ult_vent", self.bot.varVenta)
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
                 
+                # Variación total
                 var_tot = self.bot.variacion_total()
-                if var_tot is None:
-                    display = "z"
-                else:
-                    # 'f' fuerza formato de punto fijo, sin exponenciales
-                    display = f"{format(var_tot, 'f')} %"
-                self.var_total_str.set(display)
+                # nunca devuelve None, así que directamente:
+                display_var = format(var_tot, 'f') + " %"
+                self.var_total_str.set(display_var)
 
-                hold_usdt = self.bot.hold_usdt(self.bot.precio_actual)
-                self.hold_usdt_var.set(f"$ {hold_usdt}" if hold_usdt is not None else "z")
+                # Hold USDT (ya no recibe argumento)
+                hold_usdt = self.bot.hold_usdt()
+                # formateo fijo, sin exponenciales
+                display_hold_usdt = format(hold_usdt, 'f')
+                self.hold_usdt_var.set(f"$ {display_hold_usdt}")
 
+                # Hold BTC
                 hold_btc = self.bot.hold_btc()
-                self.hold_btc_var.set(f"₿ {hold_btc}" if hold_btc is not None else "z")
+                display_hold_btc = format(hold_btc, 'f')
+                self.hold_btc_var.set(f"₿ {display_hold_btc}")
+
              
         except Exception as e:
             print("Error al actualizar la UI:", e)

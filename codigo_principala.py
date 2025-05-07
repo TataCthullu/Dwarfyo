@@ -26,8 +26,8 @@ class TradingBot:
         self.sound_enabled = True
         self.start_time = None
 
-        self.usdt = Decimal("5000")
-        self.inv_inic = self.usdt
+        self.inv_inic = Decimal('5000')
+        self.usdt = self.inv_inic
         self.btc = Decimal("0")        
         self.btc_comprado = Decimal("0")
         self.min_btc_to_sell = Decimal("0")
@@ -68,8 +68,8 @@ class TradingBot:
         self.contador_compras_fantasma = 0
         self.contador_ventas_fantasma = 0
         self.parametro_compra_fantasma = None
-        self.total_ganancia = 0
-        self.ganancia_neta = 0
+        self.total_ganancia = Decimal("0")
+        self.ganancia_neta = Decimal("0")
         self.reportado_trabajando = False 
         
         self.contador_compras_reales = 0
@@ -319,6 +319,9 @@ class TradingBot:
     def venta_fantasma(self) -> bool:       
         if not self.transacciones or self.precio_ult_venta is None:
             return False  
+        
+        self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
+
         min_btc_to_sell = self.transacciones[-1]['btc']
             # Comprueba si la variación (%) supera el umbral
         if self.btc < min_btc_to_sell and self.varVenta >= self.porc_desde_venta:
@@ -336,37 +339,21 @@ class TradingBot:
             return True    
 
     def variacion_total(self) -> Decimal:
-        """
-        Porcentaje de ganancia/perdida total desde la inversión inicial.
-        Calcula (balance_actual - inversión_inicial) / inversión_inicial * 100.
-        """
-        try:
-            # Usa capital inicial vs balance actual
-            actual = self.usdt + (self.btc * self.precio_ingreso or Decimal('0'))
-            delta = (actual - self.inv_inic) / self.inv_inic * Decimal('100')
-            # Evita notación exponencial y ceros sobrantes
-            if delta == 0:
-                return Decimal('0')
-            return delta.normalize()
-        except Exception as e:
-            self.log(f"❌ Error variacion_total: {e}")
+        if not self.precio_ingreso:
             return Decimal('0')
+        actual = self.usdt + (self.btc * (self.precio_ingreso or Decimal("0")))
+        delta  = (actual - self.inv_inic) / self.inv_inic * Decimal('100')
+        return delta
 
-
-    def hold_usdt(self, precio_actual: Decimal) -> Decimal:
-        if self.inv_inic is None or precio_actual is None:
-            return Decimal("0")
-        inicial = Decimal(str(self.inv_inic))
-        ingreso = Decimal(str(self.precio_ingreso))
-        precio  = Decimal(str(precio_actual))
-        return (inicial / ingreso) * precio
+    def hold_usdt(self) -> Decimal:
+        if self.precio_ingreso is None or self.precio_actual is None:
+            return Decimal('0')
+        return (self.inv_inic / self.precio_ingreso * self.precio_actual)
 
     def hold_btc(self) -> Decimal:
-        if self.precio_ingreso is None:
-            return Decimal("0")
-        inicial = Decimal(str(self.inv_inic))
-        ingreso = Decimal(str(self.precio_ingreso))
-        return inicial / ingreso
+        if not self.precio_ingreso:
+            return Decimal('0')
+        return (self.inv_inic / self.precio_ingreso)
                              
                    
     def calcular_ghost_ratio(self) -> Decimal:
