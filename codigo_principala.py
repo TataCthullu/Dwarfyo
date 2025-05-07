@@ -30,6 +30,7 @@ class TradingBot:
         self.inv_inic = self.usdt
         self.btc = Decimal("0")        
         self.btc_comprado = Decimal("0")
+        self.min_btc_to_sell = Decimal("0")
 
         self.precio_actual = self._fetch_precio()
         self.btc_usdt = Decimal("0")
@@ -55,15 +56,15 @@ class TradingBot:
         self.ventas_fantasma = []
         self.compras_fantasma = []
         self.transacciones = []
-        self.kant_usdt_vendido = 0       
+        self.kant_usdt_vendido = Decimal("0")       
         self.varCompra = Decimal("0")
         self.varVenta = Decimal("0")       
-        self.btc_vendido = 0
+        self.btc_vendido = Decimal("0")
         self.precio_objetivo_venta = None
         self.precio_ingreso = None
         self.var_inicio = Decimal("0")
         self.log_fn = None
-        self.usdt_obtenido = 0
+        self.usdt_obtenido = Decimal("0")
         self.contador_compras_fantasma = 0
         self.contador_ventas_fantasma = 0
         self.parametro_compra_fantasma = None
@@ -315,23 +316,24 @@ class TradingBot:
 
          
 
-    def venta_fantasma(self) -> bool:  
-        # Verifica: no hay BTC y ya existe un precio de referencia
-        if self.btc == Decimal("0") and self.precio_ult_venta is not None:
+    def venta_fantasma(self) -> bool:       
+        if not self.transacciones or self.precio_ult_venta is None:
+            return False  
+        min_btc_to_sell = self.transacciones[-1]['btc']
             # Comprueba si la variación (%) supera el umbral
-            if self.varVenta >= self.porc_desde_venta:
-                id_f = token_hex(2)
-                self.contador_ventas_fantasma += 1
+        if self.btc < min_btc_to_sell and self.varVenta >= self.porc_desde_venta:
+            id_f = token_hex(2)
+            self.contador_ventas_fantasma += 1
                 # Actualiza el punto de referencia para el próximo umbral
-                self.precio_ult_venta = self.precio_actual
-                self.ventas_fantasma.append({
-                    'id': id_f,
-                    'precio': self.precio_actual
-                })
-                self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a $ {self.precio_actual}")
-                if self.sound_enabled:
-                    reproducir_sonido("Sounds/ghostven.wav")
-                
+            self.precio_ult_venta = self.precio_actual
+            self.ventas_fantasma.append({
+                'id': id_f,
+                'precio': self.precio_actual
+            })
+            self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a $ {self.precio_actual}")
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/ghostven.wav")
+            return True    
 
     def variacion_total(self) -> Decimal:
         """
