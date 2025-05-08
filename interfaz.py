@@ -122,12 +122,12 @@ class BotInterfaz(AnimationMixin):
         
 
     def _create_frames(self):
-        self.main_frame = Frame(self.root, bg="DarkGoldenrod")
+        self.main_frame = Frame(self.root, bg="Goldenrod")
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        for i in range(3):
-            self.main_frame.grid_columnconfigure(i, weight=0 if i<2 else 2)
+        for i in range(4):
+            self.main_frame.grid_columnconfigure(i, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(1, weight=0)
 
