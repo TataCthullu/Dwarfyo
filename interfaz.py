@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
 
-class BotInterface(AnimationMixin):
+class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
          # Main window setup
         self.root = Tk()

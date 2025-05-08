@@ -101,18 +101,42 @@ class TradingBot:
         return None
         
     def actualizar_balance(self):
-        
-        """Actualiza BTC valorado en USDT y balance total."""
-        if isinstance(self.precio_actual, Decimal):
-            self.btc_usdt     = self.btc * self.precio_actual
-            self.usdt_mas_btc = self.usdt + self.btc_usdt
-        else:
-            # en caso de error, no modificar balances
-            pass
+        """
+        Actualiza BTC valorado en USDT y balance total usando Decimal.
+        Si btc o precio_actual no son válidos, pone ambos balances a Decimal('0').
+        """
+        try:
+            # Convertir btc y usdt a Decimal si no lo son ya
+            btc = self.btc if isinstance(self.btc, Decimal) else Decimal(self.btc)
+            usdt = self.usdt if isinstance(self.usdt, Decimal) else Decimal(self.usdt)
+            
+            # precio_actual puede ser None o float/int; lo convertimos o damos cero
+            if self.precio_actual is None:
+                precio = Decimal('0')
+            else:
+                precio = self.precio_actual if isinstance(self.precio_actual, Decimal) else Decimal(self.precio_actual)
+            
+            # Cálculo principal
+            self.btc_usdt     = btc * precio
+            self.usdt_mas_btc = usdt + self.btc_usdt
 
-    def cant_inv(self):
-     
-        return self.inv_inic * self.porc_inv_por_compra / Decimal('100')       
+        except (InvalidOperation, TypeError, ValueError):
+            # En caso de cualquier error de conversión, reiniciamos a cero
+            self.btc_usdt     = Decimal('0')
+            self.usdt_mas_btc = Decimal('0')
+
+    def cant_inv(self) -> Decimal:
+        """
+        Calcula cuánto invertir (inv_inic * porc_inv_por_compra / 100),
+        devolviendo 0 en Decimal si hay cualquier problema.
+        """
+        try:
+            inv = self.inv_inic if isinstance(self.inv_inic, Decimal) else Decimal(self.inv_inic)
+            pct = self.porc_inv_por_compra if isinstance(self.porc_inv_por_compra, Decimal) \
+                else Decimal(self.porc_inv_por_compra)
+            return inv * pct / Decimal('100')
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal('0')       
 
     def varpor_compra(self, precio_ult_comp: Decimal, precio_act_btc: Decimal) -> Decimal:
         """Variación porcentual desde la última compra, o 0 si no aplicable."""
@@ -339,21 +363,40 @@ class TradingBot:
             return True    
 
     def variacion_total(self) -> Decimal:
-        if not self.precio_ingreso:
+        """
+        % de variación sobre la inversión inicial.
+        Si no hay precio de ingreso o inv_inic es cero, devolvemos 0.
+        """
+        # validaciones iniciales
+        if not self.precio_ingreso or self.inv_inic == Decimal('0'):
             return Decimal('0')
-        actual = self.usdt + (self.btc * (self.precio_ingreso or Decimal("0")))
-        delta  = (actual - self.inv_inic) / self.inv_inic * Decimal('100')
-        return delta
+        # calculamos el valor actual de la cartera en USDT
+        actual = self.usdt + (self.btc * self.precio_actual)
+        # porcentaje
+        delta = (actual - self.inv_inic) * Decimal('100') / self.inv_inic
+        # si por redondeo diera 0, devolvemos explícitamente Decimal('0')
+        return delta if delta != 0 else Decimal('0')
 
     def hold_usdt(self) -> Decimal:
-        if self.precio_ingreso is None or self.precio_actual is None:
+        """
+        Cuánto USDT tendrías haciendo HODL vs inversión activa.
+        Si falta precio de ingreso o actual, devolvemos 0.
+        """
+        if not self.precio_ingreso or not self.precio_actual:
             return Decimal('0')
-        return (self.inv_inic / self.precio_ingreso * self.precio_actual)
+        # inv_inic / precio_ingreso * precio_actual
+        resultado = (self.inv_inic / self.precio_ingreso) * self.precio_actual
+        return resultado if resultado != 0 else Decimal('0')
 
     def hold_btc(self) -> Decimal:
-        if not self.precio_ingreso:
+        """
+        Cuánto BTC (en sats) tendrías haciendo HODL.
+        Si falta precio de ingreso o inv_inic es cero, devolvemos 0.
+        """
+        if not self.precio_ingreso or self.inv_inic == Decimal('0'):
             return Decimal('0')
-        return (self.inv_inic / self.precio_ingreso)
+        resultado = self.inv_inic / self.precio_ingreso
+        return resultado if resultado != 0 else Decimal('0')
                              
                    
     def calcular_ghost_ratio(self) -> Decimal:
@@ -384,7 +427,7 @@ class TradingBot:
 
     def get_start_time_str(self) -> str:    
         if not self.start_time:
-            return "z"
+            return 
         return self.start_time.strftime("%Y-%m-%d %H:%M:%S")
 
     def get_runtime_str(self) -> str:
@@ -393,7 +436,7 @@ class TradingBot:
         días, horas y minutos transcurridos desde start_time.
         """
         if not self.start_time:
-            return "z"
+            return 
         delta = datetime.datetime.now() - self.start_time
         days = delta.days
         hours, rem = divmod(delta.seconds, 3600)

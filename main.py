@@ -2,10 +2,10 @@
 # Todos los derechos reservados.
 
 from codigo_principala import TradingBot
-from interfaz import BotInterface
+from interfaz import BotInterfaz
 
 if __name__ == "__main__":
     bot = TradingBot()
-    app = BotInterface(bot)
+    app = BotInterfaz(bot)
     app.run()
 
