@@ -276,7 +276,7 @@ class TradingBot:
                     "venta": self.precio_actual,
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
-                    "inverstido_usdt": invertido_usdt,
+                    "invertido_usdt": invertido_usdt,
                     "venta_numero": self.contador_ventas_reales,
                     "timestamp": self.timestamp,
                     "id_compra": id_compra

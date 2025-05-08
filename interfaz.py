@@ -50,7 +50,7 @@ class BotInterface(AnimationMixin):
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
-        #self.reset_stringvars()
+        self.reset_stringvars()
         self.actualizar_ui()
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
@@ -247,8 +247,9 @@ class BotInterface(AnimationMixin):
         for attr, val in self.__dict__.items():
             if isinstance(val, StringVar):
                 val.set("z")
+               
         for var, lbl in self.nd_labels:
-            lbl.configure(font=self._font_nd)
+                lbl.configure(font=self._font_nd)    
     
 
     def abrir_configuracion_subventana(self):
@@ -293,7 +294,7 @@ class BotInterface(AnimationMixin):
                 txt_profit  = entries[2].get().strip()
                 txt_porc_inv = entries[3].get().strip()
                 txt_usdt_inic = entries[4].get().strip()
-                txt_fixed_buyer = entries[4].get().strip()
+                
 
                 # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
                 porc_compra = Decimal(txt_compra)
@@ -301,7 +302,7 @@ class BotInterface(AnimationMixin):
                 porc_profit  = Decimal(txt_profit)
                 porc_inv = Decimal(txt_porc_inv)
                 usdtinit = Decimal(txt_usdt_inic)
-                fixed_b = Decimal(txt_fixed_buyer)
+                
 
 
                 # 3) Asignamos al bot (para los cálculos internos)
@@ -310,21 +311,25 @@ class BotInterface(AnimationMixin):
                 self.bot.porc_profit_x_venta = porc_profit
                 self.bot.porc_inv_por_compra = porc_inv
                 self.bot.inv_inic = usdtinit
-                self.bot.fixed_buyer = fixed_b   
 
-                self.porc_desde_compra_str.set(f"% {txt_compra}")
+                self.bot.fixed_buyer = (
+                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
+                )
+   
+
+                """self.porc_desde_compra_str.set(f"% {txt_compra}")
                 self.porc_desde_venta_str.set(f"% {txt_venta}")
                 self.porc_objetivo_venta_str.set(f"% {txt_profit}")
                 self.inv_por_compra_str.set(f"% {txt_porc_inv}")
                 self.cant_usdt_str.set(f"% {txt_usdt_inic}")
-                self.fixed_buyer_str.set(f"% {txt_fixed_buyer}")
+                self.fixed_buyer_str.set(f"% {txt_fixed_buyer}")"""
              
 
                 self.log_en_consola("Configuracion actualizada")
                 self.log_en_consola("-------------------------")
                 cerrar_config()
 
-            except InvalidOperation:
+            except (InvalidOperation, IndexError):
                 self.log_en_consola("Error: ingresa valores numericos validos.")
 
         Button(self.config_ventana, text="Guardar",
@@ -439,8 +444,11 @@ class BotInterface(AnimationMixin):
                 if prev_price is None and new_price is not None:
                     self.log_en_consola("🔄 Conexion restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
+
+                   
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
+                
                 precio = self.bot.precio_actual
                 self.precio_act_var.set(f"$ {precio}" if precio else "z")
                 self.cant_btc_str.set(f"₿ {self.bot.btc}" if self.bot.btc else "z")
@@ -465,11 +473,7 @@ class BotInterface(AnimationMixin):
                 self.start_time_str.set(self.bot.get_start_time_str())
                 self.runtime_str.set(self.bot.get_runtime_str())
 
-                for var, lbl in self.nd_labels:
-                    if var.get() == "z":
-                        lbl.configure(font=self._font_nd)
-                    else:
-                        lbl.configure(font=self._font_normal)
+                
 
                 self.actualizar_historial_consola()                
                 self.actualizar_color("precio_actual", self.bot.precio_actual)
@@ -477,12 +481,14 @@ class BotInterface(AnimationMixin):
                 self.actualizar_color("desde_ult_comp", self.bot.varCompra)
                 self.actualizar_color("ult_vent", self.bot.varVenta)
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
+
+                
                 
                 # Variación total
                 var_tot = self.bot.variacion_total()
                 # nunca devuelve None, así que directamente:
-                display_var = format(var_tot, 'f') + " %"
-                self.var_total_str.set(display_var)
+                
+                self.var_total_str.set(var_tot)
 
                 # Hold USDT (ya no recibe argumento)
                 hold_usdt = self.bot.hold_usdt()
@@ -494,6 +500,12 @@ class BotInterface(AnimationMixin):
                 hold_btc = self.bot.hold_btc()
                 display_hold_btc = format(hold_btc, 'f')
                 self.hold_btc_var.set(f"₿ {display_hold_btc}")
+
+                for var, lbl in self.nd_labels:
+                    if var.get() == "z":
+                        lbl.configure(font=self._font_nd)
+                    else:
+                        lbl.configure(font=self._font_normal) 
 
              
         except Exception as e:
