@@ -271,7 +271,7 @@ class BotInterface(AnimationMixin):
             ("% Desde venta, para compra: %", self.bot.porc_desde_venta),
             ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
-            ("Total Usdt: $", self.bot.usdt),
+            ("Total Usdt: $", self.bot.inv_inic)
         ]
         entries = []
 
@@ -292,7 +292,7 @@ class BotInterface(AnimationMixin):
                 txt_venta  = entries[1].get().strip()
                 txt_profit  = entries[2].get().strip()
                 txt_porc_inv = entries[3].get().strip()
-                txt_usdt = entries[4].get().strip()
+                txt_usdt_inic = entries[4].get().strip()
                 txt_fixed_buyer = entries[4].get().strip()
 
                 # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
@@ -300,7 +300,7 @@ class BotInterface(AnimationMixin):
                 porc_venta  = Decimal(txt_venta)
                 porc_profit  = Decimal(txt_profit)
                 porc_inv = Decimal(txt_porc_inv)
-                usdtinit = Decimal(txt_usdt)
+                usdtinit = Decimal(txt_usdt_inic)
                 fixed_b = Decimal(txt_fixed_buyer)
 
 
@@ -309,14 +309,14 @@ class BotInterface(AnimationMixin):
                 self.bot.porc_desde_venta = porc_venta
                 self.bot.porc_profit_x_venta = porc_profit
                 self.bot.porc_inv_por_compra = porc_inv
-                self.bot.usdt = usdtinit
+                self.bot.inv_inic = usdtinit
                 self.bot.fixed_buyer = fixed_b   
 
                 self.porc_desde_compra_str.set(f"% {txt_compra}")
                 self.porc_desde_venta_str.set(f"% {txt_venta}")
                 self.porc_objetivo_venta_str.set(f"% {txt_profit}")
                 self.inv_por_compra_str.set(f"% {txt_porc_inv}")
-                self.cant_usdt_str.set(f"% {txt_usdt}")
+                self.cant_usdt_str.set(f"% {txt_usdt_inic}")
                 self.fixed_buyer_str.set(f"% {txt_fixed_buyer}")
              
 
@@ -443,18 +443,18 @@ class BotInterface(AnimationMixin):
                 self.bot.actualizar_balance()
                 precio = self.bot.precio_actual
                 self.precio_act_var.set(f"$ {precio}" if precio else "z")
-                self.cant_btc_str.set(f"₿ {self.bot.btc}")
-                self.cant_usdt_str.set(f"$ {self.bot.usdt}")
+                self.cant_btc_str.set(f"₿ {self.bot.btc}" if self.bot.btc else "z")
+                self.cant_usdt_str.set(f"$ {self.bot.usdt}" if self.bot.usdt else "z")
                 self.balance_var.set(f"$ {self.bot.usdt_mas_btc}" if self.bot.precio_actual else "z")
                 self.btc_en_usdt.set(f"$ {self.bot.btc_usdt}" if self.bot.precio_actual else "z")
                 self.precio_de_ingreso_str.set(f"$ {self.bot.precio_ingreso}" if self.bot.precio_ingreso else "z")
-                self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra}")
+                self.inv_por_compra_str.set(f"% {self.bot.porc_inv_por_compra}" if self.bot.porc_inv_por_compra else "z")
                 self.varpor_set_compra_str.set(f"% {self.bot.varCompra}" if self.bot.varCompra else "z")
                 self.varpor_set_venta_str.set(f"% {self.bot.varVenta}" if self.bot.varVenta else "z")
-                self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra}")
-                self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta}")
+                self.porc_desde_compra_str.set(f"% {self.bot.porc_desde_compra}" if self.bot.porc_desde_compra else "z")
+                self.porc_desde_venta_str.set(f"% {self.bot.porc_desde_venta}" if self.bot.porc_desde_venta else "z")
                 self.var_inicio_str.set(f"% {self.bot.var_inicio}" if self.bot.var_inicio else "z")
-                self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer}")
+                self.fixed_buyer_str.set(f"$ {self.bot.fixed_buyer}" if self.bot.fixed_buyer else "z")
                 self.ganancia_total_str.set(f"$ {self.bot.total_ganancia}" if self.bot.total_ganancia else "z")
                 self.cont_compras_fantasma_str.set(str(self.bot.contador_compras_fantasma) if self.bot.contador_compras_fantasma else "z")
                 self.cont_ventas_fantasma_str.set(str(self.bot.contador_ventas_fantasma) if self.bot.contador_ventas_fantasma else "z")

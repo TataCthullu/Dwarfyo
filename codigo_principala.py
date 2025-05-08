@@ -282,14 +282,14 @@ class TradingBot:
                     "id_compra": id_compra
                 })
                 
-                
+                precio_compra = transaccion.get('compra', Decimal('0'))
                 transaccion["ejecutado"] = True
 
                 
                                 
                 self.log(f"✅ Venta realizada.")
                 self.log(f"Fecha y hora: {self.timestamp}")
-                self.log(f"🕒 Compra original: {self.precio_ult_comp}")
+                self.log(f"🕒 Compra original: {precio_compra}")
                 self.log(f"🆔 Id: {id_compra}")
                 self.log(f"📈 Precio de venta: $ {self.precio_actual}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
@@ -333,6 +333,7 @@ class TradingBot:
                 'precio': self.precio_actual
             })
             self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a $ {self.precio_actual}")
+            self.log(f"---------------------------------------------------------")
             if self.sound_enabled:
                 reproducir_sonido("Sounds/ghostven.wav")
             return True    
