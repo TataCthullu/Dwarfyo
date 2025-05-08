@@ -246,6 +246,8 @@ class TradingBot:
        
         
         for transaccion in self.transacciones:
+            if self.btc < transaccion["btc"]:
+                    continue  # Evita vender más BTC del disponible  
             venta_obj = transaccion.get('venta_obj')
             # Saltar transacciones sin objetivo válido
             if not isinstance(venta_obj, Decimal):
@@ -253,10 +255,7 @@ class TradingBot:
             if self.precio_actual >= venta_obj:
                                
                 btc_vender = transaccion["btc"]
-                if btc_vender > self.btc:
-                    self.log(f"⚠️ No hay suficiente BTC para vender {btc_vender}, tienes {self.btc}")
-                    continue
-
+                
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
                 id_compra = transaccion["id"]     
@@ -317,14 +316,14 @@ class TradingBot:
          
 
     def venta_fantasma(self) -> bool:       
-        if not self.transacciones or self.precio_ult_venta is None:
+        if self.precio_ult_venta is None:
             return False  
         
         self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
 
-        min_btc_to_sell = self.transacciones[-1]['btc']
+       
             # Comprueba si la variación (%) supera el umbral
-        if self.btc < min_btc_to_sell and self.varVenta >= self.porc_desde_venta:
+        if self.varVenta >= self.porc_desde_venta:
             id_f = token_hex(2)
             self.contador_ventas_fantasma += 1
                 # Actualiza el punto de referencia para el próximo umbral
