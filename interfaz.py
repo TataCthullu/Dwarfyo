@@ -187,25 +187,18 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def _create_right_panel(self):
-        self.right_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.right_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
-
-        # Dividimos right_frame en 2 filas iguales
-        self.right_frame.grid_rowconfigure(0, weight=1)
-        self.right_frame.grid_rowconfigure(1, weight=1)
-        self.right_frame.grid_columnconfigure(0, weight=1)
-
+        
         # Historial arriba
-        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
-        self.historial.grid(row=0, column=0, sticky="e", padx=2, pady=2)
+        self.historial = ScrolledText(self.main_frame, bg="Goldenrod", font=self._font_normal)
+        self.historial.grid(row=0, column=2, sticky="nsew", padx=2, pady=2)
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
-        self.consola.grid (row=1, column=0, sticky="e", padx=2, pady=2)
+        self.consola = ScrolledText(self.main_frame, bg="Goldenrod", font=self._font_normal)
+        self.consola.grid (row=1, column=2, sticky="nsew", padx=2, pady=2)
 
     def _create_buttons(self):
         self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=5)
+        self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=2)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
         self.buttons_frame.grid_columnconfigure(1, weight=1)
         self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
