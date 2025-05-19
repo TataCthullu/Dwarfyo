@@ -126,14 +126,14 @@ class BotInterfaz(AnimationMixin):
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        for i in range(3):
-            self.main_frame.grid_columnconfigure(i, weight=1)
-        self.main_frame.grid_rowconfigure(0, weight=1)
-        self.main_frame.grid_rowconfigure(1, weight=1)
+        for i in range(6):
+            self.main_frame.grid_columnconfigure(i, weight=1, uniform="col")
+        for i in range(3):  # para asegurarte que ambas filas sean iguales
+            self.main_frame.grid_rowconfigure(i, weight=1, uniform="row")
 
     def _create_info_panel(self):
         self.info_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.info_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self.info_frame.grid(row=0, rowspan=2, column=0, columnspan=1, sticky="nsew", padx=2, pady=2)
         self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
@@ -168,7 +168,7 @@ class BotInterfaz(AnimationMixin):
             
     def _create_center_panel(self):
         self.center_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.center_frame.grid(row=0, column=1, sticky="nsew")
+        self.center_frame.grid(row=0, rowspan=1, column=2, columnspan=3, sticky="nsew")
 
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
@@ -190,15 +190,15 @@ class BotInterfaz(AnimationMixin):
         
         # Historial arriba
         self.historial = ScrolledText(self.main_frame, bg="Goldenrod", font=self._font_normal)
-        self.historial.grid(row=0, column=2, sticky="nsew", padx=2, pady=2)
+        self.historial.grid(row=0, column=4, columnspan=6, sticky="nsew", padx=2, pady=2)
 
         # Consola abajo
         self.consola = ScrolledText(self.main_frame, bg="Goldenrod", font=self._font_normal)
-        self.consola.grid (row=1, column=2, sticky="nsew", padx=2, pady=2)
+        self.consola.grid (row=1, column=4, columnspan=6, sticky="nsew", padx=2, pady=2)
 
     def _create_buttons(self):
         self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.buttons_frame.grid(row=1, column=0, columnspan=3, sticky="ew", pady=2)
+        self.buttons_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=2)
         self.buttons_frame.grid_columnconfigure(0, weight=1)
         self.buttons_frame.grid_columnconfigure(1, weight=1)
         self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
