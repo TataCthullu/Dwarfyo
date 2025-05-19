@@ -126,14 +126,14 @@ class BotInterfaz(AnimationMixin):
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        for i in range(4):
+        for i in range(3):
             self.main_frame.grid_columnconfigure(i, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
-        self.main_frame.grid_rowconfigure(1, weight=0)
+        self.main_frame.grid_rowconfigure(1, weight=1)
 
     def _create_info_panel(self):
         self.info_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.info_frame.grid(row=0, column=0, sticky="nw", padx=5, pady=5)
+        self.info_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
         self.info_labels = {}
         def add(label, var, key=None):
             row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w", pady=2)
