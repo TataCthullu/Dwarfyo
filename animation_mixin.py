@@ -59,7 +59,7 @@ class AnimationMixin:
                 except Exception as e:
                     print(f"Error cargando pile {path}: {e}")
         # Creamos etiqueta en center_frame
-        self.sales_label = Label(self.center_frame, bg="DarkGoldenrod")
+        self.sales_label = Label(self.animation_frame, bg="DarkGoldenrod")
         self.sales_label.pack()
 
         # --- Hidra (ventas fantasma) ---
@@ -84,8 +84,8 @@ class AnimationMixin:
                 print(f"Error cargando hidra top {path}: {e}")
                 break
         # Labels de hidra
-        self.hydra_top_label = Label(self.center_frame, bg="DarkGoldenrod", bd=0)
-        self.hydra_bottom_label = Label(self.center_frame, bg="DarkGoldenrod", bd=0)
+        self.hydra_top_label = Label(self.animation_frame, bg="DarkGoldenrod", bd=0)
+        self.hydra_bottom_label = Label(self.animation_frame, bg="DarkGoldenrod", bd=0)
         self.hydra_top_label.pack()
         self.hydra_bottom_label.pack()
 
@@ -173,7 +173,7 @@ class AnimationMixin:
     def _animate_guard(self):
         if not hasattr(self, 'guard_label') or self.guard_label is None:
             # lo creamos una sola vez en info_frame
-            self.guard_label = Label(self.info_frame,
+            self.guard_label = Label(self.animation_frame,
                                      image=(self.guard_closed_frames[0] if self.guard_closed_frames else None),
                                      bg="DarkGoldenrod")
             self.guard_label.pack(side="left", anchor="e", padx=5, pady=5)

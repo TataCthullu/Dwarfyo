@@ -47,6 +47,7 @@ class BotInterfaz(AnimationMixin):
         
         self.center_panel()
         self.right_panel()
+        self.animation_panel()
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
@@ -158,7 +159,7 @@ class BotInterfaz(AnimationMixin):
         
             
     def center_panel(self):
-        self.center_frame = Frame(self.root, bg="lightgreen", width=500).pack()
+        self.center_frame = Frame(self.root, bg="lightgreen", width=500).pack(side="left")
         
 
         def add(label, var, key=None):
@@ -178,7 +179,7 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def right_panel(self):
-        self.right_frame = Frame(self.root, bg="lightgray",width=200).pack()
+        self.right_frame = Frame(self.root, bg="lightgray",width=200).pack(side=LEFT)
         
         # Historial arriba
         self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
@@ -188,15 +189,24 @@ class BotInterfaz(AnimationMixin):
         # Consola abajo
         self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.consola.pack()
+
+
+    def animation_panel(self):
+        self.animation_frame=Frame(self.root, bg="lightblue", width=200).pack()    
        
 
     def _create_buttons(self):
-        self.buttons_frame = Frame(self.root, bg="DarkGoldenrod").pack()
+        self.buttons_frame = Frame(self.root, bg="DarkGoldenrod")
+        self.buttons_frame.pack()
        
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod").pack()
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_inicio.pack()
         
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod").pack()
-        self.btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod").pack()
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_limpiar.pack()
+
+        self.btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_calc.pack()
         
         self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
         self.btn_confi.pack()
