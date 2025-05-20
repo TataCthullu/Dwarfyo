@@ -42,11 +42,11 @@ class BotInterfaz(AnimationMixin):
         self.limpiar_visible = False
                 
         # Layout
-        self._create_frames()
-        self._create_info_panel()
         
-        self._create_center_panel()
-        self._create_right_panel()
+        self.left_panel()
+        
+        self.center_panel()
+        self.right_panel()
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
@@ -121,22 +121,13 @@ class BotInterfaz(AnimationMixin):
         
         
 
-    def _create_frames(self):
-        self.main_frame = Frame(self.root, bg="Goldenrod")
-        self.main_frame.grid(row=0, column=0, sticky="nsew")
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
-        for i in range(8):
-            self.main_frame.grid_columnconfigure(i, weight=1, uniform="col")
-        for i in range(4):  # para asegurarte que ambas filas sean iguales
-            self.main_frame.grid_rowconfigure(i, weight=1, uniform="row")
+    
 
-    def _create_info_panel(self):
-        self.info_frame = Frame(self.main_frame, bg="lightblue")
-        self.info_frame.grid(row=0, rowspan=4, column=0, columnspan=2, sticky="nsew")
+    def left_panel(self):
+        self.left_frame = Frame(self.root, bg="lightblue", width=500).pack()
         self.info_labels = {}
         def add(label, var, key=None):
-            row = Frame(self.info_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
+            row = Frame(self.left_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
             Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
             # guardamos el par para pintar runas más tarde
@@ -166,9 +157,9 @@ class BotInterfaz(AnimationMixin):
 
         
             
-    def _create_center_panel(self):
-        self.center_frame = Frame(self.main_frame, bg="lightgreen")
-        self.center_frame.grid(row=0, rowspan=3, column=2, columnspan=5, sticky="nsew")
+    def center_panel(self):
+        self.center_frame = Frame(self.root, bg="lightgreen", width=500).pack()
+        
 
         def add(label, var, key=None):
             row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
@@ -186,33 +177,31 @@ class BotInterfaz(AnimationMixin):
         add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
-    def _create_right_panel(self):
-        self.right_panel = Frame(self.main_frame, bg="lightgray")
-        self.right_panel.grid(row=0, rowspan=5, column=7, columnspan=9)
+    def right_panel(self):
+        self.right_frame = Frame(self.root, bg="lightgray",width=200).pack()
+        
         # Historial arriba
-        self.historial = ScrolledText(self.right_panel, bg="Goldenrod", font=self._font_normal)
+        self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.historial.pack()
-        #self.historial.grid(row=0, rowspan=2, column=6, columnspan=8)
+       
 
         # Consola abajo
-        self.consola = ScrolledText(self.right_panel, bg="Goldenrod", font=self._font_normal)
+        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.consola.pack()
-        #self.consola.grid (row=3, rowspan=4, column=8, columnspan=8)
+       
 
     def _create_buttons(self):
-        self.buttons_frame = Frame(self.main_frame, bg="DarkGoldenrod")
-        self.buttons_frame.grid(row=4,column=0, columnspan=2, sticky="ew")
-        self.buttons_frame.grid_columnconfigure(0, weight=1)
-        self.buttons_frame.grid_columnconfigure(1, weight=1)
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_inicio.grid(row=0, column=0, sticky="ew")
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        btn_calc.grid(row=0, column=2, sticky="e")
+        self.buttons_frame = Frame(self.root, bg="DarkGoldenrod").pack()
+       
+        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod").pack()
+        
+        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod").pack()
+        self.btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod").pack()
+        
         self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
         self.btn_confi.pack()
-        self.btn_limpiar.grid(row=0, column=1, sticky="ew")
-        self.btn_limpiar.grid_remove()
+        
+        self.btn_limpiar.pack_forget()
 
     def _thread_callback(self, future):
         if future.cancelled():
@@ -338,7 +327,7 @@ class BotInterfaz(AnimationMixin):
                 if self.sound_enabled:
                    reproducir_sonido("Sounds/detner.wav")
                 
-                self.btn_inicio.grid_remove()  # Oculta el botón de estado               
+                self.btn_inicio.pack_forget()  # Oculta el botón de estado               
                 self.btn_limpiar.grid()        # Muestra el botón limpiar
                 self.btn_confi.pack_forget()
 
@@ -351,7 +340,7 @@ class BotInterfaz(AnimationMixin):
                 self.guard_label.configure(image=self.guard_open_frames[0])
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
-                self.btn_limpiar.grid_remove()
+                self.btn_limpiar.pack_forget()
                 self.btn_confi.pack()
                 self._loop()
 
@@ -375,11 +364,11 @@ class BotInterfaz(AnimationMixin):
             
             # Restaurar botones
             self.btn_confi.pack()
-            self.btn_limpiar.grid_remove()
+            self.btn_limpiar.pack_forget()
             self.btn_inicio.grid(row=0, column=0, sticky="ew")
             self.btn_inicio.config(text="Iniciar")
         else:
-            self.btn_limpiar.grid_remove()
+            self.btn_limpiar.pack_forget()
 
     def _on_close(self):
         # 1) cancelar el after programado
