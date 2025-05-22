@@ -114,7 +114,7 @@ class AnimationMixin:
             idx += 1
 
         # Crear labels en el panel de controles, justo tras el botón de configuración
-        parent = getattr(self, 'controls_frame', None) or getattr(self, 'center_frame')
+        parent = getattr(self, 'various_frame', None) or getattr(self, 'various_frame')
         self.skel_purchase_label = Label(parent, bg="DarkGoldenrod")
         self.skel_sale_label     = Label(parent, bg="DarkGoldenrod")
         # Ocultarlos inicialmente

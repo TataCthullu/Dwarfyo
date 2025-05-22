@@ -18,8 +18,8 @@ class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
          # Main window setup
         self.root = Tk()
-        self.root.title("Khazâd")
-        self.root.configure(bg="DarkGoldenrod")
+        self.root.title("Dungeon Market")
+        self.root.configure(bg="red")
         self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
@@ -47,7 +47,9 @@ class BotInterfaz(AnimationMixin):
         
         self.center_panel()
         self.right_panel()
+        self.right_panel_b()
         self.animation_panel()
+        self.various_panel()
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         self._create_buttons()
@@ -125,16 +127,28 @@ class BotInterfaz(AnimationMixin):
     
 
     def left_panel(self):
-        self.left_frame = Frame(self.root, bg="lightblue", width=500).pack()
+        self.left_frame = Frame(self.root, bg="lightblue")
+        self.left_frame.place(x=0, y=0, width=550, height=900)
+        y_offset = 0
+        row_height = 35
         self.info_labels = {}
+
         def add(label, var, key=None):
-            row = Frame(self.left_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
-            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
-            # guardamos el par para pintar runas más tarde
+            nonlocal y_offset
+            row = Frame(self.left_frame, bg="DarkGoldenrod")
+            row.place(x=0, y=y_offset, width=550, height=row_height)
+
+            lbl_label = Label(row, text=label, bg="blue", font=self._font_normal, fg="DarkSlateGray")
+            lbl_label.pack(side=LEFT)
+
+            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold")
+            lbl.pack(side=LEFT)
+
             self.nd_labels.append((var, lbl))
             if key:
                 self.info_labels[key] = lbl
+
+            y_offset += row_height  # subimos para la próxima fila
 
         add("Usdt + Btc:", self.balance_var, "balance") 
         add("% Variación Total:", self.var_total_str, "variacion_total") 
@@ -159,17 +173,29 @@ class BotInterfaz(AnimationMixin):
         
             
     def center_panel(self):
-        self.center_frame = Frame(self.root, bg="lightgreen", width=500).pack(side="left")
+        self.center_frame = Frame(self.root, bg="lightgreen")
+        self.center_frame.place(x=550, y=0, width=550, height=450)
+        y_offset = 0
+        row_height = 35
         
 
         def add(label, var, key=None):
-            row = Frame(self.center_frame, bg="DarkGoldenrod"); row.pack(anchor="w")
-            Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlategray").pack(side=LEFT)
-            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold"); lbl.pack(side=LEFT)
-            # guardamos el par para pintar runas más tarde
+            nonlocal y_offset
+            row = Frame(self.center_frame, bg="DarkGoldenrod")
+            row.place(x=0, y=y_offset, width=550, height=row_height)
+
+            lbl_label = Label(row, text=label, bg="blue", font=self._font_normal, fg="DarkSlateGray")
+            lbl_label.pack(side=LEFT)
+
+            lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold")
+            lbl.pack(side=LEFT)
+
             self.nd_labels.append((var, lbl))
             if key:
                 self.info_labels[key] = lbl
+
+            y_offset += row_height  # subimos para la próxima fila
+
 
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
         add("Usdt:", self.cant_usdt_str, "usdt")
@@ -179,37 +205,43 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def right_panel(self):
-        self.right_frame = Frame(self.root, bg="lightgray",width=200).pack(side=LEFT)
+        self.right_frame = Frame(self.root, bg="lightgreen")
+        self.right_frame.place(x=1100, y=0, width=900, height=450)
         
         # Historial arriba
         self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.historial.pack()
        
 
-        # Consola abajo
-        self.consola = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
+    def right_panel_b(self):
+        self.right_frame_b = Frame(self.root, bg="yellow")
+        self.right_frame_b.place(x=1100, y=450, width=900, height=450)
+
+        self.consola = ScrolledText(self.right_frame_b, bg="Goldenrod", font=self._font_normal)
         self.consola.pack()
 
 
     def animation_panel(self):
-        self.animation_frame=Frame(self.root, bg="lightblue", width=200).pack()    
-       
+        self.animation_frame=Frame(self.root, bg="green")
+        self.animation_frame.place(x=550, y=450, width=550, height=450)
+
+    def various_panel(self):
+        self.various_frame = Frame(self.root, bg="blue")
+        self.various_frame.place(x=0, y=900, width=2000, height=150)
 
     def _create_buttons(self):
-        self.buttons_frame = Frame(self.root, bg="DarkGoldenrod")
-        self.buttons_frame.pack()
-       
-        self.btn_inicio = Button(self.buttons_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_inicio.pack()
         
-        self.btn_limpiar = Button(self.buttons_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_limpiar.pack()
+        self.btn_inicio = Button(self.various_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_inicio.pack(side=LEFT)
+        
+        self.btn_limpiar = Button(self.various_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_limpiar.pack(side=LEFT)
 
-        self.btn_calc = Button(self.buttons_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_calc.pack()
+        self.btn_calc = Button(self.various_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_calc.pack(side=LEFT)
         
-        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_confi.pack()
+        self.btn_confi = Button(self.various_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_confi.pack(side=LEFT)
         
         self.btn_limpiar.pack_forget()
 
@@ -338,7 +370,7 @@ class BotInterfaz(AnimationMixin):
                    reproducir_sonido("Sounds/detner.wav")
                 
                 self.btn_inicio.pack_forget()  # Oculta el botón de estado               
-                self.btn_limpiar.grid()        # Muestra el botón limpiar
+                self.btn_limpiar.pack()        # Muestra el botón limpiar
                 self.btn_confi.pack_forget()
 
             else:
