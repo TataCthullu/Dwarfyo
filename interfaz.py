@@ -1,4 +1,4 @@
-# © 2025 Khazâd Trading Bot
+# © 2025 Dungeon Market Trading Bot
 # Todos los derechos reservados.
 
 from tkinter import *
@@ -9,8 +9,6 @@ from calculador import CalculatorWindow
 from PIL import ImageGrab
 from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
-#from tkinter import TclError
-#import os
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
 
@@ -19,7 +17,7 @@ class BotInterfaz(AnimationMixin):
          # Main window setup
         self.root = Tk()
         self.root.title("Dungeon Market")
-        self.root.configure(bg="red")
+        self.root.configure(bg="white")
         self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
@@ -29,22 +27,16 @@ class BotInterfaz(AnimationMixin):
         self.config_ventana = None
         self._font_normal = ("Artford", 12)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
-        
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-       
         # Lista de (StringVar, Label) para los No Data
         self.nd_labels = []
-
         # UI variables and clear initial values
         self._create_stringvars()         
         self.valores_iniciales = {}
         self.limpiar_visible = False
-                
-        # Layout
-        
+        # Frames
         self.left_panel()
-        
         self.center_panel()
         self.right_panel()
         self.right_panel_b()
@@ -58,10 +50,8 @@ class BotInterfaz(AnimationMixin):
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
         self.init_animation()
-               
         self.sound_enabled = True
         self.bot.sound_enabled = True
-
         # BARRA DE MENÚ
         menubar = Menu(self.root)
         self.config_menu = Menu(menubar, tearoff=0)
@@ -73,10 +63,8 @@ class BotInterfaz(AnimationMixin):
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
-
         estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
         self.log_en_consola(estado)
-
         # Actualizamos también el texto del menú:
         nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
         # entryconfig(0, ...) actúa sobre la primera entrada que creamos en config_menu
@@ -122,12 +110,9 @@ class BotInterfaz(AnimationMixin):
         self.hold_btc_var = StringVar()
         self.var_total_str = StringVar() 
         
-        
-
-    
-
+    #Frames
     def left_panel(self):
-        self.left_frame = Frame(self.root, bg="lightblue")
+        self.left_frame = Frame(self.root, bg="DarkGoldenrod")
         self.left_frame.place(x=0, y=0, width=550, height=900)
         y_offset = 0
         row_height = 35
@@ -137,17 +122,14 @@ class BotInterfaz(AnimationMixin):
             nonlocal y_offset
             row = Frame(self.left_frame, bg="DarkGoldenrod")
             row.place(x=0, y=y_offset, width=550, height=row_height)
-
-            lbl_label = Label(row, text=label, bg="blue", font=self._font_normal, fg="DarkSlateGray")
+            lbl_label = Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray")
             lbl_label.pack(side=LEFT)
-
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold")
             lbl.pack(side=LEFT)
-
             self.nd_labels.append((var, lbl))
+
             if key:
                 self.info_labels[key] = lbl
-
             y_offset += row_height  # subimos para la próxima fila
 
         add("Usdt + Btc:", self.balance_var, "balance") 
@@ -169,22 +151,20 @@ class BotInterfaz(AnimationMixin):
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
-
-        
-            
+  
     def center_panel(self):
-        self.center_frame = Frame(self.root, bg="lightgreen")
+        self.center_frame = Frame(self.root, bg="DarkGoldenrod")
         self.center_frame.place(x=550, y=0, width=550, height=450)
         y_offset = 0
         row_height = 35
-        
 
         def add(label, var, key=None):
             nonlocal y_offset
+
             row = Frame(self.center_frame, bg="DarkGoldenrod")
             row.place(x=0, y=y_offset, width=550, height=row_height)
 
-            lbl_label = Label(row, text=label, bg="blue", font=self._font_normal, fg="DarkSlateGray")
+            lbl_label = Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray")
             lbl_label.pack(side=LEFT)
 
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold")
@@ -193,9 +173,7 @@ class BotInterfaz(AnimationMixin):
             self.nd_labels.append((var, lbl))
             if key:
                 self.info_labels[key] = lbl
-
             y_offset += row_height  # subimos para la próxima fila
-
 
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
         add("Usdt:", self.cant_usdt_str, "usdt")
@@ -205,21 +183,18 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         
     def right_panel(self):
-        self.right_frame = Frame(self.root, bg="lightgreen")
+        self.right_frame = Frame(self.root, bg="DarkGoldenrod")
         self.right_frame.place(x=1100, y=0, width=900, height=450)
-        
-        # Historial arriba
+    
         self.historial = ScrolledText(self.right_frame, bg="Goldenrod", font=self._font_normal)
         self.historial.pack()
        
-
     def right_panel_b(self):
-        self.right_frame_b = Frame(self.root, bg="yellow")
+        self.right_frame_b = Frame(self.root, bg="DarkGoldenrod")
         self.right_frame_b.place(x=1100, y=450, width=900, height=450)
 
         self.consola = ScrolledText(self.right_frame_b, bg="Goldenrod", font=self._font_normal)
         self.consola.pack()
-
 
     def animation_panel(self):
         self.animation_frame=Frame(self.root, bg="green")
@@ -230,7 +205,6 @@ class BotInterfaz(AnimationMixin):
         self.various_frame.place(x=0, y=900, width=2000, height=150)
 
     def _create_buttons(self):
-        
         self.btn_inicio = Button(self.various_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         self.btn_inicio.pack(side=LEFT)
         
@@ -240,8 +214,8 @@ class BotInterfaz(AnimationMixin):
         self.btn_calc = Button(self.various_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         self.btn_calc.pack(side=LEFT)
         
-        self.btn_confi = Button(self.various_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_confi.pack(side=LEFT)
+        self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_confi.place(x=50, y=210)
         
         self.btn_limpiar.pack_forget()
 
@@ -371,11 +345,12 @@ class BotInterfaz(AnimationMixin):
                 
                 self.btn_inicio.pack_forget()  # Oculta el botón de estado               
                 self.btn_limpiar.pack()        # Muestra el botón limpiar
-                self.btn_confi.pack_forget()
+                self.btn_confi.place_forget()
 
             else:
-                self.btn_confi.pack_forget()
+                self.btn_confi.place_forget()
                 self.bot.iniciar()   
+                
                 if self.sound_enabled:             
                     reproducir_sonido("Sounds/soundinicio.wav")
                 
@@ -383,7 +358,6 @@ class BotInterfaz(AnimationMixin):
                 self.inicializar_valores_iniciales()
                 self.btn_inicio.config(text="Detener")
                 self.btn_limpiar.pack_forget()
-                self.btn_confi.pack()
                 self._loop()
 
     def clear_bot(self):
@@ -405,9 +379,9 @@ class BotInterfaz(AnimationMixin):
             self.actualizar_ui()
             
             # Restaurar botones
-            self.btn_confi.pack()
+            self.btn_confi.place(x=0, y=200)
             self.btn_limpiar.pack_forget()
-            self.btn_inicio.grid(row=0, column=0, sticky="ew")
+            self.btn_inicio.pack()
             self.btn_inicio.config(text="Iniciar")
         else:
             self.btn_limpiar.pack_forget()

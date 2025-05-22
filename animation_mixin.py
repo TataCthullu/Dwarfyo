@@ -1,4 +1,4 @@
-from tkinter import Label, PhotoImage, TclError, Frame, LEFT, RIGHT
+from tkinter import Label, PhotoImage, TclError, LEFT, RIGHT
 import os
 
 class AnimationMixin:
@@ -113,10 +113,9 @@ class AnimationMixin:
                 self.skel_sale_frames.append(PhotoImage(file=old_path).zoom(2,2))
             idx += 1
 
-        # Crear labels en el panel de controles, justo tras el botón de configuración
-        parent = getattr(self, 'various_frame', None) or getattr(self, 'various_frame')
-        self.skel_purchase_label = Label(parent, bg="DarkGoldenrod")
-        self.skel_sale_label     = Label(parent, bg="DarkGoldenrod")
+        
+        self.skel_purchase_label = Label(self.various_frame, bg="DarkGoldenrod")
+        self.skel_sale_label     = Label(self.various_frame, bg="DarkGoldenrod")
         # Ocultarlos inicialmente
         self.skel_purchase_label.pack_forget()
         self.skel_sale_label.pack_forget()
@@ -174,9 +173,8 @@ class AnimationMixin:
         if not hasattr(self, 'guard_label') or self.guard_label is None:
             # lo creamos una sola vez en info_frame
             self.guard_label = Label(self.animation_frame,
-                                     image=(self.guard_closed_frames[0] if self.guard_closed_frames else None),
-                                     bg="DarkGoldenrod")
-            self.guard_label.pack(side="left", anchor="e", padx=5, pady=5)
+                                     image=(self.guard_closed_frames[0] if self.guard_closed_frames else None))
+            self.guard_label.pack()
         running = getattr(self, 'bot', None) and self.bot.running
         frames = self.guard_open_frames if running and self.guard_open_frames else self.guard_closed_frames
         if frames:

@@ -211,7 +211,6 @@ class TradingBot:
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta}")
-            self.log("- - - - - - - - - -")
              
             if self.sound_enabled:          
                 reproducir_sonido("Sounds/soundcompra.wav")            
