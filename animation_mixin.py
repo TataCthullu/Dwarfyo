@@ -114,8 +114,8 @@ class AnimationMixin:
             idx += 1
 
         
-        self.skel_purchase_label = Label(self.various_frame, bg="DarkGoldenrod")
-        self.skel_sale_label     = Label(self.various_frame, bg="DarkGoldenrod")
+        self.skel_purchase_label = Label(self.animation_frame, bg="DarkGoldenrod")
+        self.skel_sale_label     = Label(self.animation_frame, bg="DarkGoldenrod")
         # Ocultarlos inicialmente
         self.skel_purchase_label.pack_forget()
         self.skel_sale_label.pack_forget()

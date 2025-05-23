@@ -17,6 +17,7 @@ class BotInterfaz(AnimationMixin):
          # Main window setup
         self.root = Tk()
         self.root.title("Dungeon Market")
+        
         self.root.configure(bg="white")
         self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
@@ -113,7 +114,7 @@ class BotInterfaz(AnimationMixin):
     #Frames
     def left_panel(self):
         self.left_frame = Frame(self.root, bg="DarkGoldenrod")
-        self.left_frame.place(x=0, y=0, width=550, height=900)
+        self.left_frame.place(x=0, y=0, width=600, height=900)
         y_offset = 0
         row_height = 35
         self.info_labels = {}
@@ -121,7 +122,7 @@ class BotInterfaz(AnimationMixin):
         def add(label, var, key=None):
             nonlocal y_offset
             row = Frame(self.left_frame, bg="DarkGoldenrod")
-            row.place(x=0, y=y_offset, width=550, height=row_height)
+            row.place(x=0, y=y_offset, width=600, height=row_height)
             lbl_label = Label(row, text=label, bg="DarkGoldenrod", font=self._font_normal, fg="DarkSlateGray")
             lbl_label.pack(side=LEFT)
             lbl = Label(row, textvariable=var, bg="DarkGoldenrod", font=self._font_normal, fg="Gold")
@@ -154,7 +155,7 @@ class BotInterfaz(AnimationMixin):
   
     def center_panel(self):
         self.center_frame = Frame(self.root, bg="DarkGoldenrod")
-        self.center_frame.place(x=550, y=0, width=550, height=450)
+        self.center_frame.place(x=600, y=0, width=500, height=450)
         y_offset = 0
         row_height = 35
 
@@ -191,33 +192,35 @@ class BotInterfaz(AnimationMixin):
        
     def right_panel_b(self):
         self.right_frame_b = Frame(self.root, bg="DarkGoldenrod")
-        self.right_frame_b.place(x=1100, y=450, width=900, height=450)
+        self.right_frame_b.place(x=1300, y=450, width=700, height=450)
 
         self.consola = ScrolledText(self.right_frame_b, bg="Goldenrod", font=self._font_normal)
         self.consola.pack()
 
     def animation_panel(self):
         self.animation_frame=Frame(self.root, bg="green")
-        self.animation_frame.place(x=550, y=450, width=550, height=450)
+        self.animation_frame.place(x=600, y=450, width=700, height=450)
 
     def various_panel(self):
         self.various_frame = Frame(self.root, bg="blue")
-        self.various_frame.place(x=0, y=900, width=2000, height=150)
+        self.various_frame.place(x=0, y=900, width=2000, height=100)
 
     def _create_buttons(self):
         self.btn_inicio = Button(self.various_frame, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         self.btn_inicio.pack(side=LEFT)
         
         self.btn_limpiar = Button(self.various_frame, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
-        self.btn_limpiar.pack(side=LEFT)
+        self.btn_limpiar.pack_forget()
 
         self.btn_calc = Button(self.various_frame, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         self.btn_calc.pack(side=LEFT)
         
         self.btn_confi = Button(self.center_frame, text="Configurar Operativa", bg="Goldenrod", command=self.abrir_configuracion_subventana, font=self._font_normal, fg="PaleGoldenRod")
         self.btn_confi.place(x=50, y=210)
+
         
-        self.btn_limpiar.pack_forget()
+        
+       
 
     def _thread_callback(self, future):
         if future.cancelled():
@@ -338,53 +341,50 @@ class BotInterfaz(AnimationMixin):
             font=self._font_normal, fg="PaleGoldenRod").pack(pady=8)
 
     def toggle_bot(self):            
-            if self.bot.running:
-                self.bot.detener()
-                if self.sound_enabled:
-                   reproducir_sonido("Sounds/detner.wav")
-                
-                self.btn_inicio.pack_forget()  # Oculta el botón de estado               
-                self.btn_limpiar.pack()        # Muestra el botón limpiar
-                self.btn_confi.place_forget()
+        if self.bot.running:
+            self.bot.detener()
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/detner.wav")
+            
+            self.btn_inicio.pack_forget()
+            self.btn_limpiar.pack(side=LEFT)
+            self.btn_confi.place_forget() 
+        else:
+            self.bot.iniciar()   
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/soundinicio.wav")
 
-            else:
-                self.btn_confi.place_forget()
-                self.bot.iniciar()   
-                
-                if self.sound_enabled:             
-                    reproducir_sonido("Sounds/soundinicio.wav")
-                
-                self.guard_label.configure(image=self.guard_open_frames[0])
-                self.inicializar_valores_iniciales()
-                self.btn_inicio.config(text="Detener")
-                self.btn_limpiar.pack_forget()
-                self._loop()
+            self.guard_label.configure(image=self.guard_open_frames[0])
+            self.inicializar_valores_iniciales()
+
+            self.btn_inicio.config(text="Detener")
+            self.btn_inicio.pack(side=LEFT)
+            self.btn_limpiar.pack_forget()
+            
+            self._loop()
+
 
     def clear_bot(self):
         if not self.bot.running:
             if self.sound_enabled:
                 reproducir_sonido("Sounds/limpiar.wav")
+            
             # Limpiar UI
             self.consola.delete('1.0', END)
             self.historial.delete('1.0', END)
-            
-            # Reiniciar lógica del bot
             self.bot.reiniciar()
-            self.inicializar_valores_iniciales() 
-
+            self.inicializar_valores_iniciales()
             self.reset_stringvars()
-
             self.reset_colores()
             self.init_animation()
             self.actualizar_ui()
-            
+
             # Restaurar botones
-            self.btn_confi.place(x=0, y=200)
-            self.btn_limpiar.pack_forget()
-            self.btn_inicio.pack()
             self.btn_inicio.config(text="Iniciar")
-        else:
+            self.btn_inicio.pack(side=LEFT)
             self.btn_limpiar.pack_forget()
+            self.btn_confi.place(x=50, y=210)
+
 
     def _on_close(self):
         # 1) cancelar el after programado
