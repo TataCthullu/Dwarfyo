@@ -36,7 +36,7 @@ class BotInterfaz(AnimationMixin):
         self._create_stringvars()         
         self.valores_iniciales = {}
         self.limpiar_visible = False
-        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/deco/rune_tomb.png").resize((28, 28), Image.ANTIALIAS))
+        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((28, 28), Image.ANTIALIAS))
 
 
         # Frames
