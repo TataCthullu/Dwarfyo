@@ -238,26 +238,26 @@ class BotInterfaz(AnimationMixin):
 
     def right_panel(self):
         self.right_frame = Frame(self.root)
-        self.right_frame.place(x=1100, y=0, width=900, height=450)
+        self.right_frame.place(x=1100, y=0, width=850, height=450)
 
-        self.canvas_right = Canvas(self.right_frame, width=900, height=450, highlightthickness=0)
+        self.canvas_right = Canvas(self.right_frame, width=850, height=450, highlightthickness=0)
         self.canvas_right.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
 
-        self.historial = ScrolledText(self.canvas_right, bg="goldenrod", relief="flat", bd=0, font=self._font_normal)
+        self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_normal)
 
-        self.historial.place(x=20, y=20, width=860, height=410)
+        self.historial.place(x=50, y=50, width=750, height=350)
 
     def right_panel_b(self):
         self.right_frame_b = Frame(self.root)
-        self.right_frame_b.place(x=1300, y=450, width=700, height=450)
+        self.right_frame_b.place(x=1300, y=450, width=650, height=650)
 
-        self.canvas_right_b = Canvas(self.right_frame_b, width=700, height=450, highlightthickness=0)
+        self.canvas_right_b = Canvas(self.right_frame_b, width=650, height=650, highlightthickness=0)
         self.canvas_right_b.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/grass_full_new.png", escala=2)
 
-        self.consola = ScrolledText(self.canvas_right_b, bg="goldenrod", relief="flat", bd=0, font=self._font_normal)
-        self.consola.place(x=20, y=20, width=660, height=410)
+        self.consola = ScrolledText(self.canvas_right_b, bg="DarkGoldenrod", relief="flat", bd=0, font=self._font_normal)
+        self.consola.place(x=20, y=20, width=560, height=370)
 
     def animation_panel(self):
         self.animation_frame = Frame(self.root)
