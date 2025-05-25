@@ -26,7 +26,7 @@ class BotInterfaz(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("Artford", 12)
+        self._font_normal = ("LondonBetween", 15)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -36,7 +36,7 @@ class BotInterfaz(AnimationMixin):
         self._create_stringvars()         
         self.valores_iniciales = {}
         self.limpiar_visible = False
-        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/deco/rune_tomb.png").resize((18, 18), Image.ANTIALIAS))
+        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/deco/rune_tomb.png").resize((28, 28), Image.ANTIALIAS))
 
 
         # Frames
@@ -159,7 +159,7 @@ class BotInterfaz(AnimationMixin):
             # 1) etiqueta fija
             lbl_id = self.canvas_uno.create_text(20, y_offset,
                                                  text=label_text,
-                                                 fill="gold",
+                                                 fill="White",
                                                  font=self._font_normal,
                                                  anchor="nw")
             # 2) medir y posicionar valor a la derecha
@@ -212,7 +212,7 @@ class BotInterfaz(AnimationMixin):
             # 1) etiqueta fija
             lbl_id = self.canvas_center.create_text(20, y_offset,
                                                     text=label_text,
-                                                    fill="gold",
+                                                    fill="White",
                                                     font=self._font_normal,
                                                     anchor="nw")
             # 2) medir y posicionar valor
