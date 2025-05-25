@@ -9,16 +9,15 @@ class AnimationMixin:
     MAX_CABEZAS = 9  # Ajustar según cantidad máxima de frames superiores de la hidra
 
     def init_animation(self):
-        # Si los labels ya existen, solo reiniciamos imágenes sin re-empaquetar
-        if hasattr(self, 'sales_label'):
-            # Ocultar decor inicial
-            self.sales_label.configure(image='')
-            self.hydra_top_label.configure(image='')
-            self.hydra_bottom_label.configure(image='')
-            # Reset índices de animación
+        # Placeholder para los skeleton frames
+        self.skel_purchase_frames = []
+        self.skel_sale_frames     = []
+
+        if hasattr(self, 'torch_item'):
             self.torch_frame_index = 0
             self.guard_frame_index = 0
             return
+
         # --- Antorcha ---
         self.torch_frames = []
         for i in range(1, 5):
@@ -58,9 +57,7 @@ class AnimationMixin:
                     self.sales_frames.append(PhotoImage(file=path).zoom(2,2))
                 except Exception as e:
                     print(f"Error cargando pile {path}: {e}")
-        # Creamos etiqueta en center_frame
-        self.sales_label = Label(self.animation_frame, bg="DarkGoldenrod")
-        self.sales_label.pack()
+        
 
         # --- Hidra (ventas fantasma) ---
         bottom_indices = [1,5,7,8,9]
@@ -83,20 +80,56 @@ class AnimationMixin:
             except Exception as e:
                 print(f"Error cargando hidra top {path}: {e}")
                 break
-        # Labels de hidra
-        self.hydra_top_label = Label(self.animation_frame, bg="DarkGoldenrod", bd=0)
-        self.hydra_bottom_label = Label(self.animation_frame, bg="DarkGoldenrod", bd=0)
-        self.hydra_top_label.pack()
-        self.hydra_bottom_label.pack()
+       
+        # Arrancar actualización periódica
+        self.root.after(500, self._update_skel_hydra)
 
 
-        # Inicia bucles de animación y de decor
+
+                # — Antorcha —
+        first_torch = self.torch_frames[0] if self.torch_frames else None
+        self.torch_item = self.canvas_animation.create_image(50, 50,
+            image=first_torch, anchor='nw'
+        )
+                
+        # — Guardián —
+        first_guard = self.guard_closed_frames[0] if self.guard_closed_frames else None
+        self.guard_item = self.canvas_animation.create_image(200, 50,
+            image=first_guard, anchor='nw'
+        )
+
+        # — Montones de oro (ventas reales) —
+        self.sales_item = self.canvas_animation.create_image(350, 50,
+            image='', anchor='nw'
+        )
+
+        # — Hidra fantasma: bottom & top —
+        self.hydra_bottom_item = self.canvas_animation.create_image(500, 200,
+            image='', anchor='nw'
+        )
+        self.hydra_top_item = self.canvas_animation.create_image(500, 150,
+            image='', anchor='nw'
+        )
+
+        # — Esqueletos hydra (compras/ventas reales) —
+        first_sk = self.skel_purchase_frames[0] if self.skel_purchase_frames else None
+        self.skel_purchase_item = self.canvas_animation.create_image(650,  50,
+            image=first_sk, anchor='ne'
+        )
+        self.skel_sale_item     = self.canvas_animation.create_image(650, 100,
+            image='',   anchor='ne'
+        )
+
+            # … después de crear torch_item, guard_item, sales_item, hydra_items …
         self.root.after(100, self._animate_torch)
         self.root.after(100, self._animate_guard)
         self.root.after(500, self._update_decor)
-        self.init_skeleton_hydra()
+        self.root.after(500, self._update_skel_hydra)
 
-        # --- Código de skeleton hydra integrado ---
+
+    
+
+
     def init_skeleton_hydra(self):
         # Cargar frames skeleton hydra compra (new) y venta (old)
         self.skel_purchase_frames = []
@@ -112,79 +145,72 @@ class AnimationMixin:
             if os.path.exists(old_path):
                 self.skel_sale_frames.append(PhotoImage(file=old_path).zoom(2,2))
             idx += 1
+        # Crea los items en el canvas
+        first_sk = self.skel_purchase_frames[0] if self.skel_purchase_frames else ''
+        self.skel_purchase_item = self.canvas_animation.create_image(650,  50, image=first_sk, anchor='ne')
+        self.skel_sale_item     = self.canvas_animation.create_image(650, 100, image='',     anchor='ne')
 
-        
-        self.skel_purchase_label = Label(self.animation_frame, bg="DarkGoldenrod")
-        self.skel_sale_label     = Label(self.animation_frame, bg="DarkGoldenrod")
-        # Ocultarlos inicialmente
-        self.skel_purchase_label.pack_forget()
-        self.skel_sale_label.pack_forget()
+    def _sales_index(self, cnt):
+        thresholds = list(range(1,11)) + [16,19,23,25]
+        idx = 0
+        for i, th in enumerate(thresholds):
+            if cnt >= th: idx = i
+        return min(idx, len(self.sales_frames)-1)
 
-        # Arrancar actualización periódica
-        self.root.after(500, self._update_skel_hydra)
-
-    def _update_skel_hydra(self):
-        # Compras reales
-        pur_count = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
-        if pur_count > 0 and self.skel_purchase_frames:
-            ix = min(pur_count-1, len(self.skel_purchase_frames)-1)
-            self.skel_purchase_label.configure(image=self.skel_purchase_frames[ix])
-            
-            try:
-                self.skel_purchase_label.pack(side=RIGHT)
-            except TclError:
-                self.skel_purchase_label.pack(side=RIGHT)
-        else:
-            self.skel_purchase_label.pack_forget()
-
-        # Ventas reales
-        sale_count = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
-        if sale_count > 0 and self.skel_sale_frames:
-            ix = min(sale_count-1, len(self.skel_sale_frames)-1)
-            self.skel_sale_label.configure(image=self.skel_sale_frames[ix])
-            try:
-                self.skel_sale_label.pack(side=LEFT)
-            except TclError:
-                self.skel_sale_label.pack(side=LEFT)
-        else:
-            self.skel_sale_label.pack_forget()
-
-        # Replanificar
-        self.root.after(500, self._update_skel_hydra)    
+    def _hydra_bottom_key(self, cnt):
+        keys = sorted(self.hydra_bottom_frames)
+        lower = [k for k in keys if k <= cnt]
+        return lower[-1] if lower else keys[0]
 
     def _animate_torch(self):
-        if getattr(self, 'config_ventana', None) and self.config_ventana and self.config_ventana.winfo_exists():
-            # Crear label si no existe o fue destruido
-            if not hasattr(self, 'torch_label') or not getattr(self.torch_label, 'winfo_exists', lambda: False)():
-                self.torch_label = Label(self.config_ventana, bg="DarkGoldenrod")
-                self.torch_label.pack()
-            # Actualizar imagen si aún existe
-            if self.torch_frames and getattr(self.torch_label, 'winfo_exists', lambda: False)():
-                frame = self.torch_frames[self.torch_frame_index]
-                try:
-                    self.torch_label.configure(image=frame)
-                except Exception:
-                    # Ignorar si el widget fue destruido
-                    pass
-                self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
+        if not self.torch_frames: return
+        self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
+        img = self.torch_frames[self.torch_frame_index]
+        self.canvas_animation.itemconfig(self.torch_item, image=img)
         self.root.after(100, self._animate_torch)
 
     def _animate_guard(self):
-        if not hasattr(self, 'guard_label') or self.guard_label is None:
-            # lo creamos una sola vez en info_frame
-            self.guard_label = Label(self.animation_frame,
-                                     image=(self.guard_closed_frames[0] if self.guard_closed_frames else None))
-            self.guard_label.pack()
-        running = getattr(self, 'bot', None) and self.bot.running
-        frames = self.guard_open_frames if running and self.guard_open_frames else self.guard_closed_frames
+        frames = (self.bot.running and self.guard_open_frames) or self.guard_closed_frames
         if frames:
-            frame = frames[self.guard_frame_index % len(frames)]
-            self.guard_label.configure(image=frame)
             self.guard_frame_index = (self.guard_frame_index + 1) % len(frames)
+            self.canvas_animation.itemconfig(self.guard_item, image=frames[self.guard_frame_index])
         self.root.after(100, self._animate_guard)
 
+    def _update_sales_image(self):
+        cnt = getattr(self.bot, 'contador_ventas_reales', 0)
+        img = '' if cnt < 1 else self.sales_frames[self._sales_index(cnt)]
+        self.canvas_animation.itemconfig(self.sales_item, image=img)
+
+    def _update_hydra_image(self):
+        cnt = getattr(self.bot, 'contador_ventas_fantasma', 0)
+        if cnt < 1:
+            top = bottom = ''
+        else:
+            bottom = self.hydra_bottom_frames[self._hydra_bottom_key(cnt)]
+            top_idx = min(cnt-1, len(self.hydra_top_frames)-1)
+            top    = self.hydra_top_frames[top_idx]
+        self.canvas_animation.itemconfig(self.hydra_bottom_item, image=bottom)
+        self.canvas_animation.itemconfig(self.hydra_top_item,    image=top)
+
+    def _update_skel_hydra(self):
+        pur = getattr(self.bot, 'contador_compras_reales', 0)
+        if pur > 0 and self.skel_purchase_frames:
+            idx = min(pur-1, len(self.skel_purchase_frames)-1)
+            img = self.skel_purchase_frames[idx]
+        else:
+            img = ''
+        self.canvas_animation.itemconfig(self.skel_purchase_item, image=img)
+
+        sel = getattr(self.bot, 'contador_ventas_reales', 0)
+        if sel > 0 and self.skel_sale_frames:
+            idx2 = min(sel-1, len(self.skel_sale_frames)-1)
+            img2 = self.skel_sale_frames[idx2]
+        else:
+            img2 = ''
+        self.canvas_animation.itemconfig(self.skel_sale_item, image=img2)
+        self.root.after(500, self._update_skel_hydra)
+
     def _update_decor(self):
-        # refresca oro e hidra tras cada compra/venta
         try:
             self._update_sales_image()
             self._update_hydra_image()
@@ -193,28 +219,6 @@ class AnimationMixin:
         finally:
             self.root.after(500, self._update_decor)
 
-    def _update_sales_image(self):
-        count = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
-        if count < 1:
-            self.sales_label.configure(image='')
-            return
-        thresholds = list(range(1,11)) + [16,19,23,25]
-        idx = 0
-        for i, th in enumerate(thresholds):
-            if count >= th:
-                idx = i
-        idx = min(idx, len(self.sales_frames) - 1)
-        self.sales_label.configure(image=self.sales_frames[idx])
 
-    def _update_hydra_image(self):
-        count = getattr(self, 'bot', None) and self.bot.contador_ventas_fantasma or 0
-        if count < 1:
-            self.hydra_bottom_label.configure(image='')
-            self.hydra_top_label.configure(image='')
-            return
-        available = sorted(self.hydra_bottom_frames.keys())
-        lower = [n for n in available if n <= count]
-        chosen_bottom = lower[-1] if lower else available[0]
-        idx_top = min(count-1, len(self.hydra_top_frames)-1)
-        self.hydra_top_label.configure(image=self.hydra_top_frames[idx_top])
-        self.hydra_bottom_label.configure(image=self.hydra_bottom_frames[chosen_bottom])
+
+

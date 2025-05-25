@@ -303,7 +303,13 @@ class BotInterfaz(AnimationMixin):
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundinicio.wav")
 
-            self.guard_label.configure(image=self.guard_open_frames[0])
+            # reinicia la animación del guardián en el canvas:
+            if hasattr(self, 'guard_item') and self.guard_closed_frames:
+                # arrancamos siempre cerrado
+                self.canvas_animation.itemconfig(
+                    self.guard_item,
+                    image=self.guard_closed_frames[0]
+                )
             self.inicializar_valores_iniciales()
 
             self.btn_inicio.config(text="Detener")
