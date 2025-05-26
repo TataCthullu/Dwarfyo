@@ -2,17 +2,25 @@ from tkinter import Label, PhotoImage, TclError, LEFT, RIGHT
 import os
 
 class AnimationMixin:
-    """
-    Mixin para manejar animaciones de antorcha, guardián, montones de oro e hidra.
-    Debe mezclarse en BotInterface después de definir root, info_frame y center_frame.
-    """
+   
     MAX_CABEZAS = 9  # Ajustar según cantidad máxima de frames superiores de la hidra
 
     def init_animation(self):
-        # Placeholder para los skeleton frames
-        self.skel_purchase_frames = []
-        self.skel_sale_frames     = []
-
+        self.skeleton_images = []
+        self.skel_purchase_tiles = []
+        self.skel_sale_tiles = []
+        idx = 1
+        while True:
+            path_c = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
+            path_v = f"imagenes/deco/skeleton_hydra_{idx}_old.png"
+            if not os.path.exists(path_c) and not os.path.exists(path_v):
+                break
+            if os.path.exists(path_c):
+                self.skel_purchase_tiles.append(PhotoImage(file=path_c).zoom(2,2))
+            if os.path.exists(path_v):
+                self.skel_sale_tiles.append(PhotoImage(file=path_v).zoom(2,2))
+            idx += 1
+        
         if hasattr(self, 'torch_item'):
             self.torch_frame_index = 0
             self.guard_frame_index = 0
@@ -81,8 +89,7 @@ class AnimationMixin:
                 print(f"Error cargando hidra top {path}: {e}")
                 break
        
-        # Arrancar actualización periódica
-        self.root.after(500, self._update_skel_hydra)
+       
 
 
 
@@ -111,44 +118,20 @@ class AnimationMixin:
             image='', anchor='nw'
         )
 
-        # — Esqueletos hydra (compras/ventas reales) —
-        first_sk = self.skel_purchase_frames[0] if self.skel_purchase_frames else None
-        self.skel_purchase_item = self.canvas_animation.create_image(650,  50,
-            image=first_sk, anchor='ne'
-        )
-        self.skel_sale_item     = self.canvas_animation.create_image(650, 100,
-            image='',   anchor='ne'
-        )
+        self.skel_purchase_item = self.canvas_animation.create_image(50, 270, image='', anchor='nw')
+        self.skel_sale_item = self.canvas_animation.create_image(50, 340, image='', anchor='nw')
+        self.imagen_actual_compra = ''
+        self.imagen_actual_venta = ''
+
+        self.root.after(500, self._update_skeleton_tiles)
+
 
             # … después de crear torch_item, guard_item, sales_item, hydra_items …
         self.root.after(100, self._animate_torch)
         self.root.after(100, self._animate_guard)
-        self.root.after(500, self._update_decor)
-        self.root.after(500, self._update_skel_hydra)
+        
+        self.root.after(500, self._update_hydra_image)
 
-
-    
-
-
-    def init_skeleton_hydra(self):
-        # Cargar frames skeleton hydra compra (new) y venta (old)
-        self.skel_purchase_frames = []
-        self.skel_sale_frames = []
-        idx = 1
-        while True:
-            new_path = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
-            old_path = f"imagenes/deco/skeleton_hydra_{idx}_old.png"
-            if not os.path.exists(new_path) and not os.path.exists(old_path):
-                break
-            if os.path.exists(new_path):
-                self.skel_purchase_frames.append(PhotoImage(file=new_path).zoom(2,2))
-            if os.path.exists(old_path):
-                self.skel_sale_frames.append(PhotoImage(file=old_path).zoom(2,2))
-            idx += 1
-        # Crea los items en el canvas
-        first_sk = self.skel_purchase_frames[0] if self.skel_purchase_frames else ''
-        self.skel_purchase_item = self.canvas_animation.create_image(650,  50, image=first_sk, anchor='ne')
-        self.skel_sale_item     = self.canvas_animation.create_image(650, 100, image='',     anchor='ne')
 
     def _sales_index(self, cnt):
         thresholds = list(range(1,11)) + [16,19,23,25]
@@ -183,42 +166,53 @@ class AnimationMixin:
 
     def _update_hydra_image(self):
         cnt = getattr(self.bot, 'contador_ventas_fantasma', 0)
+
         if cnt < 1:
             top = bottom = ''
         else:
-            bottom = self.hydra_bottom_frames[self._hydra_bottom_key(cnt)]
-            top_idx = min(cnt-1, len(self.hydra_top_frames)-1)
-            top    = self.hydra_top_frames[top_idx]
+            # bottom dinámico por clave
+            if self.hydra_bottom_frames:
+                key = self._hydra_bottom_key(cnt)
+                bottom = self.hydra_bottom_frames.get(key, '')
+            else:
+                bottom = ''
+
+            # top: lista indexada
+            if self.hydra_top_frames:
+                top_idx = min(cnt-1, len(self.hydra_top_frames)-1)
+                top = self.hydra_top_frames[top_idx]
+            else:
+                top = ''
+
+        # Actualizar imágenes (incluso si están vacías)
         self.canvas_animation.itemconfig(self.hydra_bottom_item, image=bottom)
-        self.canvas_animation.itemconfig(self.hydra_top_item,    image=top)
+        self.canvas_animation.itemconfig(self.hydra_top_item, image=top)
 
-    def _update_skel_hydra(self):
-        pur = getattr(self.bot, 'contador_compras_reales', 0)
-        if pur > 0 and self.skel_purchase_frames:
-            idx = min(pur-1, len(self.skel_purchase_frames)-1)
-            img = self.skel_purchase_frames[idx]
+        self.root.after(500, self._update_hydra_image)
+
+    def _update_skeleton_tiles(self):
+        compra_real = getattr(self.bot, 'contador_compras_reales', 0) > 0
+        venta_real = getattr(self.bot, 'contador_ventas_reales', 0) > 0
+
+        if self.skel_purchase_tiles and compra_real:
+            self.imagen_actual_compra = self.skel_purchase_tiles[0]
         else:
-            img = ''
-        self.canvas_animation.itemconfig(self.skel_purchase_item, image=img)
+            self.imagen_actual_compra = ''  # mantener la referencia vacía
 
-        sel = getattr(self.bot, 'contador_ventas_reales', 0)
-        if sel > 0 and self.skel_sale_frames:
-            idx2 = min(sel-1, len(self.skel_sale_frames)-1)
-            img2 = self.skel_sale_frames[idx2]
+        if self.skel_sale_tiles and venta_real:
+            self.imagen_actual_venta = self.skel_sale_tiles[0]
         else:
-            img2 = ''
-        self.canvas_animation.itemconfig(self.skel_sale_item, image=img2)
-        self.root.after(500, self._update_skel_hydra)
+            self.imagen_actual_venta = ''
 
-    def _update_decor(self):
-        try:
-            self._update_sales_image()
-            self._update_hydra_image()
-        except Exception as e:
-            print("Error actualizando decor:", e)
-        finally:
-            self.root.after(500, self._update_decor)
+        self.canvas_animation.itemconfig(self.skel_purchase_item, image=self.imagen_actual_compra)
+        self.canvas_animation.itemconfig(self.skel_sale_item, image=self.imagen_actual_venta)
+
+        self.root.after(500, self._update_skeleton_tiles)
+
+    
 
 
+
+    
 
 

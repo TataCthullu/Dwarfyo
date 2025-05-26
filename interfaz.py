@@ -53,7 +53,7 @@ class BotInterfaz(AnimationMixin):
         self.actualizar_ui()
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
-        self.init_animation()
+        
         self.sound_enabled = True
         self.bot.sound_enabled = True
         # BARRA DE MENÚ
@@ -144,7 +144,7 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_uno = Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/snake_1.png", escala=2)
+        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/zot_blue_2_new.png", escala=2)
 
         y_offset = 10
         row_height = 30
@@ -267,6 +267,11 @@ class BotInterfaz(AnimationMixin):
         self.canvas_animation.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=2)
 
+       
+
+
+        self.init_animation()
+
     def various_panel(self):
         self.various_frame = Frame(self.root)
         self.various_frame.place(x=0, y=900, width=2000, height=100)
@@ -303,13 +308,9 @@ class BotInterfaz(AnimationMixin):
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundinicio.wav")
 
-            # reinicia la animación del guardián en el canvas:
             if hasattr(self, 'guard_item') and self.guard_closed_frames:
-                # arrancamos siempre cerrado
-                self.canvas_animation.itemconfig(
-                    self.guard_item,
-                    image=self.guard_closed_frames[0]
-                )
+                self.canvas_animation.itemconfig(self.guard_item, image=self.guard_closed_frames[0])
+
             self.inicializar_valores_iniciales()
 
             self.btn_inicio.config(text="Detener")
