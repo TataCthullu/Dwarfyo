@@ -1,4 +1,4 @@
-from tkinter import Label, PhotoImage, TclError, LEFT, RIGHT
+from tkinter import PhotoImage
 import os
 
 class AnimationMixin:
@@ -10,7 +10,7 @@ class AnimationMixin:
         self.skel_purchase_tiles = []
         self.skel_sale_tiles = []
         self.imagen_actual_oro = ''
-
+    
         idx = 1
         while True:
             path_c = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
@@ -22,11 +22,23 @@ class AnimationMixin:
             if os.path.exists(path_v):
                 self.skel_sale_tiles.append(PhotoImage(file=path_v).zoom(2,2))
             idx += 1
+
+        # --- Imagen antorcha apagada (torch_0.png) ---
         
+        path_off = "imagenes/deco/torch_0.png"
+        if os.path.exists(path_off):
+            try:
+                self.torch_off_image = PhotoImage(file=path_off).zoom(3, 3)
+            except Exception as e:
+                print(f"Error cargando antorcha apagada: {e}")
+
         if hasattr(self, 'torch_item'):
             self.torch_frame_index = 0
             self.guard_frame_index = 0
             return
+
+        
+
 
         # --- Antorcha ---
         self.torch_frames = []
@@ -38,6 +50,14 @@ class AnimationMixin:
                 except Exception as e:
                     print(f"Error cargando antorcha frame {path}: {e}")
         self.torch_frame_index = 0
+        self.torch_off_image = None
+        path_off = "imagenes/deco/torch_0.png"
+        if os.path.exists(path_off):
+            try:
+                self.torch_off_image = PhotoImage(file=path_off).zoom(3, 3)
+            except Exception as e:
+                print(f"Error cargando antorcha apagada: {e}")
+
 
         # --- Guardián ---
         self.guard_open_frames = []
@@ -98,7 +118,7 @@ class AnimationMixin:
 
                 # — Antorcha —
         first_torch = self.torch_frames[0] if self.torch_frames else None
-        self.torch_item = self.canvas_animation.create_image(50, 50,
+        self.torch_item = self.canvas_center.create_image(250, 250,
             image=first_torch, anchor='nw'
         )
                 
@@ -149,11 +169,25 @@ class AnimationMixin:
         return lower[-1] if lower else keys[0]
 
     def _animate_torch(self):
-        if not self.torch_frames: return
+        if not hasattr(self, 'canvas_center') or not hasattr(self, 'torch_item'):
+            self.root.after(500, self._animate_torch)
+            return
+
+        if not self.bot.running:
+            if self.torch_off_image:
+                self.canvas_center.itemconfig(self.torch_item, image=self.torch_off_image)
+            self.root.after(500, self._animate_torch)
+            return
+
+        if not self.torch_frames:
+            return
+
         self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
         img = self.torch_frames[self.torch_frame_index]
-        self.canvas_animation.itemconfig(self.torch_item, image=img)
+        self.canvas_center.itemconfig(self.torch_item, image=img)
         self.root.after(100, self._animate_torch)
+
+
 
     def _animate_guard(self):
         frames = (self.bot.running and self.guard_open_frames) or self.guard_closed_frames

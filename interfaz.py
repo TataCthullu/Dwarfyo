@@ -236,6 +236,7 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
 
 
+
     def right_panel(self):
         self.right_frame = Frame(self.root)
         self.right_frame.place(x=1100, y=0, width=850, height=450)
