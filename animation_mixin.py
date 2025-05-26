@@ -9,6 +9,8 @@ class AnimationMixin:
         self.skeleton_images = []
         self.skel_purchase_tiles = []
         self.skel_sale_tiles = []
+        self.imagen_actual_oro = ''
+
         idx = 1
         while True:
             path_c = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
@@ -59,6 +61,7 @@ class AnimationMixin:
         piles = list(range(1,11)) + [16,19,23,25]
         self.sales_frames = []
         for n in piles:
+            
             path = f"imagenes/deco/gold_pile_{n}.png"
             if os.path.exists(path):
                 try:
@@ -129,7 +132,7 @@ class AnimationMixin:
             # … después de crear torch_item, guard_item, sales_item, hydra_items …
         self.root.after(100, self._animate_torch)
         self.root.after(100, self._animate_guard)
-        
+        self.root.after(500, self._update_sales_image)
         self.root.after(500, self._update_hydra_image)
 
 
@@ -161,8 +164,15 @@ class AnimationMixin:
 
     def _update_sales_image(self):
         cnt = getattr(self.bot, 'contador_ventas_reales', 0)
-        img = '' if cnt < 1 else self.sales_frames[self._sales_index(cnt)]
-        self.canvas_animation.itemconfig(self.sales_item, image=img)
+        if cnt < 1 or not self.sales_frames:
+            self.imagen_actual_oro = ''
+        else:
+            idx = self._sales_index(cnt)
+            self.imagen_actual_oro = self.sales_frames[idx]
+        self.canvas_animation.itemconfig(self.sales_item, image=self.imagen_actual_oro)
+        self.root.after(500, self._update_sales_image)
+
+
 
     def _update_hydra_image(self):
         cnt = getattr(self.bot, 'contador_ventas_fantasma', 0)
@@ -191,16 +201,18 @@ class AnimationMixin:
         self.root.after(500, self._update_hydra_image)
 
     def _update_skeleton_tiles(self):
-        compra_real = getattr(self.bot, 'contador_compras_reales', 0) > 0
-        venta_real = getattr(self.bot, 'contador_ventas_reales', 0) > 0
+        comp_count = getattr(self.bot, 'contador_compras_reales', 0)
+        vent_count = getattr(self.bot, 'contador_ventas_reales', 0)
 
-        if self.skel_purchase_tiles and compra_real:
-            self.imagen_actual_compra = self.skel_purchase_tiles[0]
+        if self.skel_purchase_tiles and comp_count > 0:
+            idx = min(comp_count - 1, len(self.skel_purchase_tiles) - 1)
+            self.imagen_actual_compra = self.skel_purchase_tiles[idx]
         else:
-            self.imagen_actual_compra = ''  # mantener la referencia vacía
+            self.imagen_actual_compra = ''
 
-        if self.skel_sale_tiles and venta_real:
-            self.imagen_actual_venta = self.skel_sale_tiles[0]
+        if self.skel_sale_tiles and vent_count > 0:
+            idx = min(vent_count - 1, len(self.skel_sale_tiles) - 1)
+            self.imagen_actual_venta = self.skel_sale_tiles[idx]
         else:
             self.imagen_actual_venta = ''
 
@@ -208,6 +220,7 @@ class AnimationMixin:
         self.canvas_animation.itemconfig(self.skel_sale_item, image=self.imagen_actual_venta)
 
         self.root.after(500, self._update_skeleton_tiles)
+
 
     
 
