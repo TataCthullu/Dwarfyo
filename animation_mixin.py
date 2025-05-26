@@ -6,6 +6,10 @@ class AnimationMixin:
     MAX_CABEZAS = 9  # Ajustar según cantidad máxima de frames superiores de la hidra
 
     def init_animation(self):
+        # ✅ Salir si ya fueron cargados los elementos gráficos
+        if hasattr(self, 'torch_item') and hasattr(self, 'guard_open_frames'):
+            return
+        
         self.skeleton_images = []
         self.skel_purchase_tiles = []
         self.skel_sale_tiles = []
@@ -32,10 +36,7 @@ class AnimationMixin:
             except Exception as e:
                 print(f"Error cargando antorcha apagada: {e}")
 
-        if hasattr(self, 'torch_item'):
-            self.torch_frame_index = 0
-            self.guard_frame_index = 0
-            return
+        
 
         
 
@@ -50,32 +51,12 @@ class AnimationMixin:
                 except Exception as e:
                     print(f"Error cargando antorcha frame {path}: {e}")
         self.torch_frame_index = 0
-        self.torch_off_image = None
-        path_off = "imagenes/deco/torch_0.png"
-        if os.path.exists(path_off):
-            try:
-                self.torch_off_image = PhotoImage(file=path_off).zoom(3, 3)
-            except Exception as e:
-                print(f"Error cargando antorcha apagada: {e}")
+       
+        
 
 
-        # --- Guardián ---
-        self.guard_open_frames = []
-        self.guard_closed_frames = []
-        for i in range(1, 5):
-            open_path = f"imagenes/deco/guardian-eyeopen-flame_{i}.png"
-            closed_path = f"imagenes/deco/guardian-eyeclosed-flame_{i}.png"
-            if os.path.exists(open_path):
-                try:
-                    self.guard_open_frames.append(PhotoImage(file=open_path).zoom(2,2))
-                except Exception as e:
-                    print(f"Error cargando guardia open frame {open_path}: {e}")
-            if os.path.exists(closed_path):
-                try:
-                    self.guard_closed_frames.append(PhotoImage(file=closed_path).zoom(2,2))
-                except Exception as e:
-                    print(f"Error cargando guardia closed frame {closed_path}: {e}")
-        self.guard_frame_index = 0
+        
+
 
         # --- Montones de oro (ventas reales) ---
         piles = list(range(1,11)) + [16,19,23,25]
@@ -122,11 +103,32 @@ class AnimationMixin:
             image=first_torch, anchor='nw'
         )
                 
-        # — Guardián —
-        first_guard = self.guard_closed_frames[0] if self.guard_closed_frames else None
-        self.guard_item = self.canvas_animation.create_image(200, 50,
-            image=first_guard, anchor='nw'
-        )
+         # --- Guardián ---
+        self.guard_open_frames = []
+        self.guard_closed_frames = []
+        for i in range(1, 5):
+            open_path = f"imagenes/deco/guardian-eyeopen-flame_{i}.png"
+            closed_path = f"imagenes/deco/guardian-eyeclosed-flame_{i}.png"
+            if os.path.exists(open_path):
+                try:
+                    self.guard_open_frames.append(PhotoImage(file=open_path).zoom(2, 2))
+                except Exception as e:
+                    print(f"Error cargando guardia open frame {open_path}: {e}")
+            if os.path.exists(closed_path):
+                try:
+                    self.guard_closed_frames.append(PhotoImage(file=closed_path).zoom(2, 2))
+                except Exception as e:
+                    print(f"Error cargando guardia closed frame {closed_path}: {e}")
+        self.guard_frame_index = 0
+        # Guardián en canvas_uno
+        # ✅ Solo crear la imagen si hay frames cargados
+        if self.guard_closed_frames:
+            self.guard_image_actual = self.guard_closed_frames[0]
+            self.guard_item = self.canvas_uno.create_image(50, 250, image=self.guard_image_actual, anchor='nw')
+            self.guard_referencia_img = self.guard_image_actual
+
+
+
 
         # — Montones de oro (ventas reales) —
         self.sales_item = self.canvas_animation.create_image(350, 50,
@@ -156,6 +158,7 @@ class AnimationMixin:
         self.root.after(500, self._update_hydra_image)
 
 
+        
     def _sales_index(self, cnt):
         thresholds = list(range(1,11)) + [16,19,23,25]
         idx = 0
@@ -190,11 +193,23 @@ class AnimationMixin:
 
 
     def _animate_guard(self):
+        if not hasattr(self, 'canvas_uno') or not hasattr(self, 'guard_item'):
+            self.root.after(100, self._animate_guard)
+            return
+
         frames = (self.bot.running and self.guard_open_frames) or self.guard_closed_frames
         if frames:
             self.guard_frame_index = (self.guard_frame_index + 1) % len(frames)
-            self.canvas_animation.itemconfig(self.guard_item, image=frames[self.guard_frame_index])
+            img = frames[self.guard_frame_index]
+            self.guard_image_actual = img
+            self.guard_referencia_img = img  # mantener referencia viva
+            self.canvas_uno.itemconfig(self.guard_item, image=img)
+
+            
+        
         self.root.after(100, self._animate_guard)
+
+
 
     def _update_sales_image(self):
         cnt = getattr(self.bot, 'contador_ventas_reales', 0)
@@ -204,6 +219,7 @@ class AnimationMixin:
             idx = self._sales_index(cnt)
             self.imagen_actual_oro = self.sales_frames[idx]
         self.canvas_animation.itemconfig(self.sales_item, image=self.imagen_actual_oro)
+
         self.root.after(500, self._update_sales_image)
 
 
