@@ -144,7 +144,7 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_uno = Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/zot_blue_2_new.png", escala=2)
+        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
 
         y_offset = 10
         row_height = 30
@@ -255,10 +255,10 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_right_b = Canvas(self.right_frame_b, width=650, height=650, highlightthickness=0)
         self.canvas_right_b.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/grass_full_new.png", escala=2)
+        self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)
 
         self.consola = ScrolledText(self.canvas_right_b, bg="DarkGoldenrod", relief="flat", bd=0, font=self._font_normal)
-        self.consola.place(x=20, y=20, width=560, height=370)
+        self.consola.place(x=50, y=50, width=550, height=350)
 
     def animation_panel(self):
         self.animation_frame = Frame(self.root)

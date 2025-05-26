@@ -124,7 +124,7 @@ class AnimationMixin:
         # ✅ Solo crear la imagen si hay frames cargados
         if self.guard_closed_frames:
             self.guard_image_actual = self.guard_closed_frames[0]
-            self.guard_item = self.canvas_uno.create_image(50, 250, image=self.guard_image_actual, anchor='nw')
+            self.guard_item = self.canvas_uno.create_image(500, 750, image=self.guard_image_actual, anchor='nw')
             self.guard_referencia_img = self.guard_image_actual
 
 
