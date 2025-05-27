@@ -14,7 +14,16 @@ class AnimationMixin:
         self.skel_purchase_tiles = []
         self.skel_sale_tiles = []
         self.imagen_actual_oro = ''
-    
+
+        # En init_animation, antes de create_image:
+        self.torch_frame_index        = 0
+        self.guard_frame_index        = 0
+        self.sales_frame_index        = 0
+        self.hydra_frame_index        = 0
+        self.skel_purchase_frame_index= 0
+        self.skel_sale_frame_index    = 0
+
+
         idx = 1
         while True:
             path_c = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
@@ -270,6 +279,15 @@ class AnimationMixin:
         self.canvas_animation.itemconfig(self.skel_sale_item, image=self.imagen_actual_venta)
 
         self.root.after(500, self._update_skeleton_tiles)
+
+    def actualizador(self, frames, frame_indx):
+        frame_act = frame_indx
+        frame_indx += 1
+        if frame_indx >= len(frames):
+            frame_indx = 0
+
+
+
 
 
     
