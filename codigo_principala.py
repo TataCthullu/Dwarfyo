@@ -94,7 +94,7 @@ class TradingBot:
         except (ccxt.NetworkError, ccxt.RequestTimeout) as e:
             self.log(f"⚠️ Error de red al obtener precio: {e}")
         except ccxt.ExchangeError as e:
-            self.log(f"⚠️ Error del intercambio al obtener precio: {e}")
+            self.log(f"⚠️ Error del exchange al obtener precio: {e}")
         except Exception as e:
             self.log(f"❌ Error inesperado obteniendo el precio: {e}")
         reproducir_sonido("Sounds/error.wav")

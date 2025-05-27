@@ -11,6 +11,8 @@ from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
+import ccxt
+
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
@@ -18,15 +20,16 @@ class BotInterfaz(AnimationMixin):
         self.root = Tk()
         self.root.title("Dungeon Market")
         
-        self.root.configure(bg="white")
+        self.root.configure(bg="pink")
         self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
         self.bot = bot
+        self.was_offline = False
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("LondonBetween", 15)
+        self._font_normal = ("LondonBetween", 16)
         self._font_nd = ("Tolkien Dwarf Runes", 14) 
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -36,7 +39,7 @@ class BotInterfaz(AnimationMixin):
         self._create_stringvars()         
         self.valores_iniciales = {}
         self.limpiar_visible = False
-        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((28, 28), Image.ANTIALIAS))
+        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((30, 30), Image.ANTIALIAS))
 
 
         # Frames
@@ -268,9 +271,6 @@ class BotInterfaz(AnimationMixin):
         self.canvas_animation.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=2)
 
-       
-
-
         self.init_animation()
 
     def various_panel(self):
@@ -309,8 +309,8 @@ class BotInterfaz(AnimationMixin):
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundinicio.wav")
 
-            if hasattr(self, 'guard_item') and self.guard_closed_frames:
-                self.canvas_animation.itemconfig(self.guard_item, image=self.guard_closed_frames[0])
+            """if hasattr(self, 'guard_item') and self.guard_closed_frames:
+                self.canvas_animation.itemconfig(self.guard_item, image=self.guard_closed_frames[0])"""
 
             self.inicializar_valores_iniciales()
 
@@ -345,7 +345,7 @@ class BotInterfaz(AnimationMixin):
         # repintar runas y colores
         self.reset_stringvars()
         self.reset_colores()
-        self.init_animation()
+        
 
         # 6) Restaurar botones
         self.btn_inicio.config(text="Iniciar")
@@ -573,32 +573,36 @@ class BotInterfaz(AnimationMixin):
         # programamos la siguiente pasada
         self.loop_id = self.root.after(3000, self._loop)
         
-    def _on_price_fetched(self, price):
-        try:
-            if not self.root.winfo_exists():
-                return
-            # 1. Actualiza el precio en el bot
-            self.bot.precio_actual = price
-            # 2. Ejecuta la lógica de compra/venta
-            self.bot.loop()
-            # 3. Refresca la interfaz (también bajo try/except)
-            self.actualizar_ui()
-        except InvalidOperation:
-            # si la ventana ya fue destruida o hubo otro error, simplemente ignoramos
-            pass
-
     def _fetch_price_async(self):
         try:
-            # Intentamos recuperar el ticker en el hilo de fondo
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
             price = ticker['last']
-        except InvalidOperation as e:
-            # Re-lanzamos la excepción para que future.exception() la recoja
-            pass
+            # Si llegamos aquí, la red funciona de nuevo
+            if self.was_offline:
+                self.root.after(0, lambda:
+                    self.log_en_consola("🔄 Conexión restablecida, Khazâd reactivado.")
+                )
+                self.was_offline = False
+            # Pasamos el precio al hilo principal
+            if self.root.winfo_exists():
+                self.root.after(0, lambda: self._on_price_fetched(price))
+        except (ccxt.NetworkError, ccxt.RequestTimeout):
+            # Marcamos que estamos offline, pero no bloqueamos la UI
+            self.was_offline = True
+        except Exception as e:
+            # Otros errores: también los logueamos sin bloquear
+            self.was_offline = True
+            self.root.after(0, lambda:
+                self.log_en_consola(f"⚠️ Error de red al obtener precio: {e}")
+            )
 
-        # Si todo fue bien, pasamos el precio al hilo principal
-        if self.root.winfo_exists():
-            self.root.after(0, lambda: self._on_price_fetched(price))
+    def _on_price_fetched(self, price):
+        # 1) Actualiza el precio
+        self.bot.precio_actual = price
+        # 2) Ejecuta la lógica de trading
+        self.bot.loop()
+        # 3) Refresca la UI (ligeramente, sin nuevas llamadas de red)
+        self.actualizar_ui()
 
     def format_var(self, valor, simbolo=""):
         if valor is None:
@@ -614,13 +618,7 @@ class BotInterfaz(AnimationMixin):
     def actualizar_ui(self):
         try:
             if self.bot.running:
-                # ——— Detectar reconexión de Internet ———
-                prev_price = getattr(self.bot, 'precio_actual', None)
-                new_price  = self.bot._fetch_precio()
-                # Si antes no había precio y ahora sí, reiniciamos todo el loop
-                if prev_price is None and new_price is not None:
-                    self.log_en_consola("🔄 Conexion restablecida, Khazad reactivado.")
-                    self.log_en_consola("--------------------------------------------")
+                
 
                    
                 # Actualizamos el balance con el precio (que ya cargamos)
