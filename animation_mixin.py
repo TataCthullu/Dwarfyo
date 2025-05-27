@@ -18,6 +18,12 @@ class AnimationMixin:
         self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
         self.torch_frame_index = 0
 
+        # —————— (1) Carga de los iconos de sonido ——————
+        on_path  = "imagenes/deco/i-noise_new.png"
+        off_path = "imagenes/deco/i-noise_old.png"
+        self.noise_on  = PhotoImage(file=on_path)  if os.path.exists(on_path)  else None
+        self.noise_off = PhotoImage(file=off_path) if os.path.exists(off_path) else None
+
         # Guardián
         self.guard_open_frames = []
         self.guard_closed_frames = []
@@ -29,6 +35,14 @@ class AnimationMixin:
             if os.path.exists(pc):
                 self.guard_closed_frames.append(PhotoImage(file=pc).zoom(2,2))
         self.guard_frame_index = 0
+
+        
+        self.dithmenos_frames = []
+        for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png"):
+            path = os.path.join("imagenes", "deco", name)
+            if os.path.exists(path):
+                self.dithmenos_frames.append(PhotoImage(file=path).zoom(2,2))
+        self.dithmenos_index = 0
 
         # Montones de oro (ventas reales)
         piles = list(range(1,11)) + [16,19,23,25]
@@ -66,11 +80,32 @@ class AnimationMixin:
         # ─── CREACIÓN DE ITEMS ───
         # Antorcha en canvas_center
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
-        self.torch_item = self.canvas_center.create_image(250,250, image=first_torch, anchor='nw')
+        self.torch_item = self.canvas_center.create_image(350,250, image=first_torch, anchor='nw')
 
         # Guardián en canvas_uno
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
-        self.guard_item = self.canvas_uno.create_image(500,750, image=guard0, anchor='nw')
+        self.guard_item = self.canvas_uno.create_image(0,830, image=guard0, anchor='nw')
+
+         # 2) Crea el item en el canvas
+        if self.dithmenos_frames:
+            self.dithmenos_item = self.canvas_center.create_image(
+                0, 390,
+                image=self.dithmenos_frames[0],
+                anchor='nw'
+            )
+
+        # 3) Arranca tu bucle propio
+        #if hasattr(self, 'dithmenos_item'):
+        
+        # item sound
+        initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
+        self.noise_item = self.canvas_animation.create_image(
+            10, 10,
+            image=initial,
+            anchor='nw'
+        )
+
+            
 
         # Oro e hidra en canvas_animation
         self.sales_item       = self.canvas_animation.create_image(350,50,  image='', anchor='nw')
@@ -84,9 +119,11 @@ class AnimationMixin:
         # ─── BUQUES INDEPENDIENTES ───
         self.root.after(100,  self._animate_torch)
         self.root.after(100,  self._animate_guard)
+        self.root.after(250, self._animate_dithmenos)
         self.root.after(500,  self._update_sales)
         self.root.after(500,  self._update_hydra)
         self.root.after(500,  self._update_skeleton)
+        self.root.after(200, self._update_noise_icon)
 
     def _animate_torch(self):
         # Si bot.running: ciclo normal; si no: imagen apagada
@@ -97,6 +134,20 @@ class AnimationMixin:
             img = self.torch_off
         self.canvas_center.itemconfig(self.torch_item, image=img)
         self.root.after(100, self._animate_torch)
+
+    def _update_noise_icon(self):
+        # Elige imagen según bandera
+        if getattr(self, 'sound_enabled', True):
+            img = self.noise_on
+        else:
+            img = self.noise_off
+
+        # Actualiza sólo el image del canvas
+        if img:
+            self.canvas_animation.itemconfig(self.noise_item, image=img)
+
+        # Vuelve a revisarlo cada 200 ms (o el intervalo que prefieras)
+        self.root.after(200, self._update_noise_icon)    
 
     def _animate_guard(self):
         frames = (self.bot.running and self.guard_open_frames) or self.guard_closed_frames
@@ -143,4 +194,13 @@ class AnimationMixin:
         self.canvas_animation.itemconfig(self.skel_sell_it, image=img_s)
         self.root.after(500, self._update_skeleton)
 
-
+    def _animate_dithmenos(self):
+        # Avanza el frame
+        self.dithmenos_index = (self.dithmenos_index + 1) % len(self.dithmenos_frames)
+        # Actualiza la imagen
+        self.canvas_center.itemconfig(
+            self.dithmenos_item,
+            image=self.dithmenos_frames[self.dithmenos_index]
+        )
+        # Reprograma la siguiente actualización
+        self.root.after(250, self._animate_dithmenos)
