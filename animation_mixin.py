@@ -18,6 +18,55 @@ class AnimationMixin:
         self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
         self.torch_frame_index = 0
 
+        # ─── CARGA DE LÍANAS ───
+        deco_dir = os.path.join("imagenes", "deco")
+        files = [f for f in os.listdir(deco_dir)
+                 if f.startswith("vine_segment") and f.endswith(".png")]
+
+        # Bordes válidos
+        tokens   = ("north","south","east","west")
+        diag_map = {
+            "northeast": ("north","east"),
+            "northwest": ("north","west"),
+            "southeast": ("south","east"),
+            "southwest": ("south","west"),
+        }
+
+        # Prepara contenedores
+        segments = {t: [] for t in tokens}
+
+        # Clasifica cada imagen en uno o varios bordes
+        for fname in files:
+            keyname = fname[len("vine_segment_"):-4]  # e.g. "northeast_south"
+            parts   = keyname.split("_")              # ["northeast","south"]
+            path    = os.path.join(deco_dir, fname)
+            img     = PhotoImage(file=path).zoom(2,2)
+
+            for part in parts:
+                if part in diag_map:
+                    # e.g. "northeast" → añade a north y east
+                    for b in diag_map[part]:
+                        segments[b].append(img)
+                elif part in segments:
+                    segments[part].append(img)
+                # resto de combinaciones se ignoran
+
+        # ─── PREP PARA ANIMAR ───
+        self.vine_sequence = segments
+        self.vine_items    = []  # (borde, item_id)
+        self.vine_indices  = {b: 0 for b in segments}
+
+        # dimensiones del canvas de la consola (right_panel_b)
+        W = int(self.canvas_right_b["width"])
+        H = int(self.canvas_right_b["height"])
+
+        # ancho de tile para top/bottom (toma del primer frame disponible)
+        width_top    = segments["north"][0].width()  if segments["north"] else 0
+        width_bottom = segments["south"][0].width()  if segments["south"] else 0
+        # alto de tile para left/right
+        height_left  = segments["west"][0].height()  if segments["west"] else 0
+        height_right = segments["east"][0].height()  if segments["east"] else 0
+
         # —————— (1) Carga de los iconos de sonido ——————
         on_path  = "imagenes/deco/i-noise_new.png"
         off_path = "imagenes/deco/i-noise_old.png"
@@ -82,6 +131,41 @@ class AnimationMixin:
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
         self.torch_item = self.canvas_center.create_image(350,250, image=first_torch, anchor='nw')
 
+        # ─── ÍTEMS liana ───
+        # Norte
+        if width_top:
+            for x in range(0, W, width_top):
+                img0 = segments["north"][0]
+                iid  = self.canvas_right_b.create_image(x, 0, image=img0, anchor="nw")
+                self.vine_items.append(("north", iid))
+
+        # Sur
+        if width_bottom:
+            y0 = H - (segments["south"][0].height())
+            for x in range(0, W, width_bottom):
+                img0 = segments["south"][0]
+                iid  = self.canvas_right_b.create_image(x, y0, image=img0, anchor="nw")
+                self.vine_items.append(("south", iid))
+
+        # Oeste
+        if height_left:
+            for y in range(0, H, height_left):
+                img0 = segments["west"][0]
+                iid  = self.canvas_right_b.create_image(0, y, image=img0, anchor="nw")
+                self.vine_items.append(("west", iid))
+
+        # Este
+        if height_right:
+            x0 = W - (segments["east"][0].width())
+            for y in range(0, H, height_right):
+                img0 = segments["east"][0]
+                iid  = self.canvas_right_b.create_image(x0, y, image=img0, anchor="nw")
+                self.vine_items.append(("east", iid))
+
+        
+
+
+
         # Guardián en canvas_uno
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
         self.guard_item = self.canvas_uno.create_image(0,830, image=guard0, anchor='nw')
@@ -124,6 +208,10 @@ class AnimationMixin:
         self.root.after(500,  self._update_hydra)
         self.root.after(500,  self._update_skeleton)
         self.root.after(200, self._update_noise_icon)
+       
+        self.root.after(3000, self._animate_vines)
+
+        
 
     def _animate_torch(self):
         # Si bot.running: ciclo normal; si no: imagen apagada
@@ -204,3 +292,13 @@ class AnimationMixin:
         )
         # Reprograma la siguiente actualización
         self.root.after(250, self._animate_dithmenos)
+
+    def _animate_vines(self):
+        for border, iid in self.vine_items:
+            seq = self.vine_sequence.get(border, [])
+            if not seq: 
+                continue
+            idx = (self.vine_indices[border] + 1) % len(seq)
+            self.vine_indices[border] = idx
+            self.canvas_right_b.itemconfig(iid, image=seq[idx])
+        self.root.after(3000, self._animate_vines)
