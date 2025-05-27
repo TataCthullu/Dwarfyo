@@ -1,5 +1,4 @@
 
-
 from tkinter import PhotoImage
 import os
 
@@ -7,7 +6,7 @@ class AnimationMixin:
     MAX_CABEZAS = 9
 
     def init_animation(self):
-        # ─────────────── CARGA DE FRAMES ───────────────
+        # ─── CARGA DE FRAMES ───
         # Antorcha
         self.torch_frames = []
         for i in range(1, 5):
@@ -31,7 +30,7 @@ class AnimationMixin:
                 self.guard_closed_frames.append(PhotoImage(file=pc).zoom(2,2))
         self.guard_frame_index = 0
 
-        # Ventas reales
+        # Montones de oro (ventas reales)
         piles = list(range(1,11)) + [16,19,23,25]
         self.sales_frames = []
         for n in piles:
@@ -39,7 +38,7 @@ class AnimationMixin:
             if os.path.exists(p):
                 self.sales_frames.append(PhotoImage(file=p).zoom(2,2))
 
-        # Ventas fantasma (hidra)
+        # Hidra (ventas fantasma)
         bottom_idxs = [1,5,7,8,9]
         self.hydra_bottom = {}
         for n in bottom_idxs:
@@ -53,39 +52,36 @@ class AnimationMixin:
             self.hydra_top.append(PhotoImage(file=p).zoom(2,2))
 
         # Esqueleto hidra (compras/ventas)
-        self.skel_buy = []
+        self.skel_buy  = []
         self.skel_sell = []
         idx = 1
         while True:
             nb = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
             ns = f"imagenes/deco/skeleton_hydra_{idx}_old.png"
-            if not os.path.exists(nb) and not os.path.exists(ns):
-                break
-            if os.path.exists(nb):
-                self.skel_buy.append(PhotoImage(file=nb).zoom(2,2))
-            if os.path.exists(ns):
-                self.skel_sell.append(PhotoImage(file=ns).zoom(2,2))
+            if not os.path.exists(nb) and not os.path.exists(ns): break
+            if os.path.exists(nb): self.skel_buy.append(PhotoImage(file=nb).zoom(2,2))
+            if os.path.exists(ns): self.skel_sell.append(PhotoImage(file=ns).zoom(2,2))
             idx += 1
 
-        # ─────────── CREACIÓN DE ITEMS EN EL CANVAS ───────────
+        # ─── CREACIÓN DE ITEMS ───
         # Antorcha en canvas_center
-        first = self.torch_frames[0] if self.torch_frames else self.torch_off
-        self.torch_item = self.canvas_center.create_image(250,250, image=first, anchor='nw')
+        first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
+        self.torch_item = self.canvas_center.create_image(250,250, image=first_torch, anchor='nw')
 
         # Guardián en canvas_uno
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
         self.guard_item = self.canvas_uno.create_image(500,750, image=guard0, anchor='nw')
 
-        # Montones de oro e hidra en canvas_animation
-        self.sales_item       = self.canvas_animation.create_image(350,50,  image='',    anchor='nw')
-        self.hydra_bottom_it  = self.canvas_animation.create_image(500,200, image='',    anchor='nw')
-        self.hydra_top_it     = self.canvas_animation.create_image(500,150, image='',    anchor='nw')
+        # Oro e hidra en canvas_animation
+        self.sales_item       = self.canvas_animation.create_image(350,50,  image='', anchor='nw')
+        self.hydra_bottom_it  = self.canvas_animation.create_image(500,200, image='', anchor='nw')
+        self.hydra_top_it     = self.canvas_animation.create_image(500,150, image='', anchor='nw')
 
         # Esqueleto hidra en canvas_animation
         self.skel_buy_it  = self.canvas_animation.create_image(50,270, image='', anchor='nw')
         self.skel_sell_it = self.canvas_animation.create_image(50,340, image='', anchor='nw')
 
-        # ───────────── INICIA BUCLES INDEPENDIENTES ─────────────
+        # ─── BUQUES INDEPENDIENTES ───
         self.root.after(100,  self._animate_torch)
         self.root.after(100,  self._animate_guard)
         self.root.after(500,  self._update_sales)
@@ -93,7 +89,7 @@ class AnimationMixin:
         self.root.after(500,  self._update_skeleton)
 
     def _animate_torch(self):
-        # Si el bot corre, cicla frames; si no, muestra off
+        # Si bot.running: ciclo normal; si no: imagen apagada
         if getattr(self, 'bot', None) and self.bot.running and self.torch_frames:
             self.torch_frame_index = (self.torch_frame_index + 1) % len(self.torch_frames)
             img = self.torch_frames[self.torch_frame_index]
@@ -103,8 +99,7 @@ class AnimationMixin:
         self.root.after(100, self._animate_torch)
 
     def _animate_guard(self):
-        # Elige ojo abierto o cerrado según estado
-        frames = self.guard_open_frames if getattr(self, 'bot', None) and self.bot.running else self.guard_closed_frames
+        frames = (self.bot.running and self.guard_open_frames) or self.guard_closed_frames
         if frames:
             self.guard_frame_index = (self.guard_frame_index + 1) % len(frames)
             self.canvas_uno.itemconfig(self.guard_item, image=frames[self.guard_frame_index])
@@ -140,13 +135,12 @@ class AnimationMixin:
         self.root.after(500, self._update_hydra)
 
     def _update_skeleton(self):
-        buy = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
-        sell= getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
-
+        buy  = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
+        sell = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
         img_b = self.skel_buy[min(buy-1, len(self.skel_buy)-1)] if buy>0 else ''
         img_s = self.skel_sell[min(sell-1, len(self.skel_sell)-1)] if sell>0 else ''
-
         self.canvas_animation.itemconfig(self.skel_buy_it,  image=img_b)
         self.canvas_animation.itemconfig(self.skel_sell_it, image=img_s)
         self.root.after(500, self._update_skeleton)
+
 

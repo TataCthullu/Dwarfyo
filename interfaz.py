@@ -48,6 +48,7 @@ class BotInterfaz(AnimationMixin):
         self.right_panel()
         self.right_panel_b()
         self.animation_panel()
+        self.init_animation()
         self.various_panel()
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
@@ -57,6 +58,9 @@ class BotInterfaz(AnimationMixin):
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
         
+        
+
+
         self.sound_enabled = True
         self.bot.sound_enabled = True
         # BARRA DE MENÚ
@@ -271,7 +275,7 @@ class BotInterfaz(AnimationMixin):
         self.canvas_animation.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=2)
 
-        self.init_animation()
+        
 
     def various_panel(self):
         self.various_frame = Frame(self.root)
@@ -566,43 +570,26 @@ class BotInterfaz(AnimationMixin):
     def _loop(self):
         if not self.bot.running:
             return
-        # lanzamos la petición en background  
-        future = self.executor.submit(self._fetch_price_async)
-        future.add_done_callback(self._thread_callback)
+        # 1) Ejecuta TODO el ciclo de red + trading en un hilo
+        future = self.executor.submit(self._run_trading_cycle)
+        # 2) Cuando acabe, reprograma la próxima llamada dentro de 3000 ms
+        future.add_done_callback(lambda _: self.root.after(3000, self._loop))
 
-        # programamos la siguiente pasada
-        self.loop_id = self.root.after(3000, self._loop)
-        
-    def _fetch_price_async(self):
+    def _run_trading_cycle(self):
         try:
+            # A) Fetch en background
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
-            price = ticker['last']
-            # Si llegamos aquí, la red funciona de nuevo
-            if self.was_offline:
-                self.root.after(0, lambda:
-                    self.log_en_consola("🔄 Conexión restablecida, Khazâd reactivado.")
-                )
-                self.was_offline = False
-            # Pasamos el precio al hilo principal
-            if self.root.winfo_exists():
-                self.root.after(0, lambda: self._on_price_fetched(price))
-        except (ccxt.NetworkError, ccxt.RequestTimeout):
-            # Marcamos que estamos offline, pero no bloqueamos la UI
-            self.was_offline = True
+            price  = ticker['last']
+            # B) Lógica de trading (compras/ventas) también en background
+            self.bot.precio_actual = price
+            self.bot.loop()
         except Exception as e:
-            # Otros errores: también los logueamos sin bloquear
-            self.was_offline = True
-            self.root.after(0, lambda:
-                self.log_en_consola(f"⚠️ Error de red al obtener precio: {e}")
-            )
+            # If something blows up, lo logueamos sin bloquear UI
+            self.root.after(0, lambda: self.log_en_consola(f"⚠️ Error de trading: {e}"))
+        finally:
+            # C) Sólo actualizar la UI en el hilo principal
+            self.root.after(0, self.actualizar_ui)
 
-    def _on_price_fetched(self, price):
-        # 1) Actualiza el precio
-        self.bot.precio_actual = price
-        # 2) Ejecuta la lógica de trading
-        self.bot.loop()
-        # 3) Refresca la UI (ligeramente, sin nuevas llamadas de red)
-        self.actualizar_ui()
 
     def format_var(self, valor, simbolo=""):
         if valor is None:
@@ -619,12 +606,14 @@ class BotInterfaz(AnimationMixin):
         try:
             if self.bot.running:
                 
-
+                precio = self.bot.precio_actual  # actualizado en background
+                if precio is None:
+                    return
                    
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
                 
-                precio = self.bot.precio_actual
+                
                 self.precio_act_var.set(self.format_var(precio, "$"))
                 self.cant_btc_str.set(self.format_var(self.bot.btc, "₿"))
                 self.cant_usdt_str.set(self.format_var(self.bot.usdt, "$"))
