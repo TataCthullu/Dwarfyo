@@ -48,8 +48,9 @@ class BotInterfaz(AnimationMixin):
         self.right_panel()
         self.right_panel_b()
         self.animation_panel()
-        self.init_animation()
         self.various_panel()
+        self.init_animation()
+        
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         

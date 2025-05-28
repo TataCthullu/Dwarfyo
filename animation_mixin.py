@@ -221,8 +221,8 @@ class AnimationMixin:
         
         # item sound
         initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
-        self.noise_item = self.canvas_right_b.create_image(
-            45, 365,
+        self.noise_item = self.canvas_various.create_image(
+            1500, 10,
             image=initial,
             anchor='nw'
         )
@@ -269,7 +269,7 @@ class AnimationMixin:
 
         # Actualiza sólo el image del canvas
         if img:
-            self.canvas_right_b.itemconfig(self.noise_item, image=img)
+            self.canvas_various.itemconfig(self.noise_item, image=img)
 
         # Vuelve a revisarlo cada 200 ms (o el intervalo que prefieras)
         self.root.after(200, self._update_noise_icon)    
