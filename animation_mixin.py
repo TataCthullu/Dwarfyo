@@ -246,7 +246,7 @@ class AnimationMixin:
         self.root.after(500,  self._update_hydra)
         self.root.after(500,  self._update_skeleton)
         self.root.after(200, self._update_noise_icon)
-        self.root.after(3000, self._animate_vines)
+        self.root.after(250, self._animate_vines)
 
         
 
@@ -350,5 +350,5 @@ class AnimationMixin:
                 img = frames[idx]
             self.canvas_right_b.itemconfig(iid, image=img)
 
-        self.root.after(3000, self._animate_vines)
+        self.root.after(12000, self._animate_vines)
 
