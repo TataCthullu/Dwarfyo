@@ -260,14 +260,14 @@ class BotInterfaz(AnimationMixin):
         self.right_frame_b = Frame(self.root)
         self.right_frame_b.place(x=1300, y=450, width=650, height=450)
 
-        self.canvas_right_b = Canvas(self.right_frame_b, width=650, height=450, highlightthickness=0)
+        self.canvas_right_b = Canvas(self.right_frame_b, width=620, height=450, highlightthickness=0)
         self.canvas_right_b.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)
 
         # Creamos la consola, pero la añadimos al canvas con create_window
         self.consola = ScrolledText(
             self.canvas_right_b,
-            bg="goldenrod",
+            bg="DarkGoldenRod",
             relief="flat",
             bd=0,
             font=self._font_normal

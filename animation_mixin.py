@@ -18,14 +18,12 @@ class AnimationMixin:
         self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
         self.torch_frame_index = 0
 
-        # ─── CARGA DE LÍANAS ───
-        deco_dir = os.path.join("imagenes", "deco")
-        files = [f for f in os.listdir(deco_dir)
-                 if f.startswith("vine_segment") and f.endswith(".png")]
-
-
-
-        # Bordes válidos
+        # ─── CARGA DE LÍANAS VERDES Y ROJAS ───
+        base_dir = os.path.join("imagenes", "deco", "lianas")
+        dirs = {
+            "green": os.path.join(base_dir, "verdes"),
+            "red":   os.path.join(base_dir, "rojas")
+        }
         tokens   = ("north","south","east","west")
         diag_map = {
             "northeast": ("north","east"),
@@ -34,47 +32,105 @@ class AnimationMixin:
             "southwest": ("south","west"),
         }
 
-        # Prepara contenedores
-        segments = {t: [] for t in tokens}
+        self.vine_sequence_green = {t: [] for t in tokens}
+        self.vine_sequence_red   = {t: [] for t in tokens}
 
-        # Clasifica cada imagen en uno o varios bordes
-        for fname in files:
-            keyname = fname[len("vine_segment_"):-4]  # e.g. "northeast_south"
-            parts   = keyname.split("_")              # ["northeast","south"]
-            path    = os.path.join(deco_dir, fname)
-            img     = PhotoImage(file=path).zoom(2,2)
+        for color, folder in dirs.items():
+            seq_map = self.vine_sequence_green if color=="green" else self.vine_sequence_red
+            for fname in os.listdir(folder):
+                if not fname.lower().endswith(".png"):
+                    continue
 
-            for part in parts:
-                if part in diag_map:
-                    # e.g. "northeast" → añade a north y east
-                    for b in diag_map[part]:
-                        segments[b].append(img)
-                elif part in segments:
-                    segments[part].append(img)
-                # resto de combinaciones se ignoran
+                if color=="red":
+                    if not fname.startswith("starspawn_"):
+                        continue
+                    name = fname[len("starspawn_"):-4]
+                else:
+                    if not fname.startswith("vine_"):
+                        continue
+                    name = fname[len("vine_"):-4]
 
-        # ─── PREP PARA ANIMAR ───
-        self.vine_sequence = segments
-        self.vine_items    = []  # (borde, item_id)
-        self.vine_indices  = {b: 0 for b in segments}
+                parts = name.split("_")
 
-        
-        # dimensiones del canvas de la consola (right_panel_b)
+                if parts[0]=="corner" and len(parts)==2:
+                    direcciones = [parts[1]]
+                elif parts[0]=="tentacle" and len(parts)==2:
+                    direcciones = [parts[1]]
+                elif parts[0]=="tentacle" and len(parts)==4 and parts[1]=="segment":
+                    direcciones = parts[2:4]
+                elif parts[0]=="segment" and len(parts)==3:
+                    direcciones = parts[1:3]
+                else:
+                    continue
+
+                bordes = []
+                for d in direcciones:
+                    if d in diag_map:
+                        bordes += diag_map[d]
+                    elif d in tokens:
+                        bordes.append(d)
+
+                img = PhotoImage(file=os.path.join(folder, fname)).zoom(2,2)
+                for b in set(bordes):
+                    seq_map[b].append(img)
+
+
+#items
+        self.vine_items   = []                # (borde, item_id)
+        self.vine_indices = {t: 0 for t in tokens}
+
+        # dimensiones del canvas
         W = int(self.canvas_right_b["width"])
         H = int(self.canvas_right_b["height"])
 
-        if not segments["south"]:
-            segments["south"] = (
-                segments.get("southeast", []) +
-                segments.get("southwest", [])
-            )
+        # calculamos anchuras y altos (usamos uno de los mapas, da igual)
+        width_top    = self.vine_sequence_green["north"][0].width()  if self.vine_sequence_green["north"] else 0
+        width_bottom = self.vine_sequence_green["south"][0].width()  if self.vine_sequence_green["south"] else 0
+        height_left  = self.vine_sequence_green["west"][0].height()  if self.vine_sequence_green["west"] else 0
+        height_right = self.vine_sequence_green["east"][0].height()  if self.vine_sequence_green["east"] else 0
+        width_right  = self.vine_sequence_green["east"][0].width()   if self.vine_sequence_green["east"] else 0
 
-        # ancho de tile para top/bottom (toma del primer frame disponible)
-        width_top    = segments["north"][0].width()  if segments["north"] else 0
-        width_bottom = segments["south"][0].width()  if segments["south"] else 0
-        # alto de tile para left/right
-        height_left  = segments["west"][0].height()  if segments["west"] else 0
-        height_right = segments["east"][0].height()  if segments["east"] else 0
+        print("DEBUG green:", {k: len(v) for k,v in self.vine_sequence_green.items()})
+        print("DEBUG red:  ", {k: len(v) for k,v in self.vine_sequence_red.items()})
+
+
+        if width_top > 0:
+            for x in range(0, W, width_top):
+                iid = self.canvas_right_b.create_image(
+                    x, 0,
+                    image='',     # arranca vacío
+                    anchor="nw"
+                )
+                self.vine_items.append(("north", iid))
+
+        if width_bottom > 0:
+            for x in range(0, W, width_bottom):
+                iid = self.canvas_right_b.create_image(
+                    x, H,
+                    image='',     # arranca vacío
+                    anchor="sw"
+                )
+                self.vine_items.append(("south", iid))
+
+        if height_left > 0:
+            for y in range(0, H, height_left):
+                iid = self.canvas_right_b.create_image(
+                    0, y,
+                    image='',     # arranca vacío
+                    anchor="nw"
+                )
+                self.vine_items.append(("west", iid))
+
+        if width_right > 0:
+            x0 = W - width_right
+            for y in range(0, H, height_right):
+                iid = self.canvas_right_b.create_image(
+                    x0, y,
+                    image='',     # arranca vacío
+                    anchor="nw"
+                )
+                self.vine_items.append(("east", iid))
+
 
         
         # —————— (1) Carga de los iconos de sonido ——————
@@ -141,38 +197,8 @@ class AnimationMixin:
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
         self.torch_item = self.canvas_center.create_image(350,250, image=first_torch, anchor='nw')
 
-        # ─── ÍTEMS liana ───
-        # Norte
-        if width_top:
-            for x in range(0, W, width_top):
-                img0 = segments["north"][0]
-                iid  = self.canvas_right_b.create_image(x, 0, image=img0, anchor="nw")
-                self.vine_items.append(("north", iid))
-
-        # ─── PINTA LÍANAS SUR ───
-        if segments['south']:
-            for x in range(0, W, width_bottom):
-                it = self.canvas_right_b.create_image(
-                    x, H,
-                    image=segments['south'][0],
-                    anchor='sw'   # Southwest: pone la esquina inferior izquierda del tile en (x,H)
-                )
-                self.vine_items.append(('south', it))
-
-        # Oeste
-        if height_left:
-            for y in range(0, H, height_left):
-                img0 = segments["west"][0]
-                iid  = self.canvas_right_b.create_image(0, y, image=img0, anchor="nw")
-                self.vine_items.append(("west", iid))
-
-        # Este
-        if height_right:
-            x0 = W - (segments["east"][0].width())
-            for y in range(0, H, height_right):
-                img0 = segments["east"][0]
-                iid  = self.canvas_right_b.create_image(x0, y, image=img0, anchor="nw")
-                self.vine_items.append(("east", iid))
+        
+        
 
         
 
@@ -305,11 +331,24 @@ class AnimationMixin:
         self.root.after(250, self._animate_dithmenos)
 
     def _animate_vines(self):
+        # calculo de profit/loss
+        delta = self.bot.usdt_mas_btc - self.bot.inv_inic
+        if   delta > 0:
+            seq_map = self.vine_sequence_green   # profit → verdes
+        elif delta < 0:
+            seq_map = self.vine_sequence_red     # loss   → rojas
+        else:
+            seq_map = None                       # igual  → ninguna
+
         for border, iid in self.vine_items:
-            seq = self.vine_sequence.get(border, [])
-            if not seq: 
-                continue
-            idx = (self.vine_indices[border] + 1) % len(seq)
-            self.vine_indices[border] = idx
-            self.canvas_right_b.itemconfig(iid, image=seq[idx])
+            if seq_map is None or not seq_map.get(border):
+                img = ''    # oculta
+            else:
+                frames = seq_map[border]
+                idx    = (self.vine_indices[border] + 1) % len(frames)
+                self.vine_indices[border] = idx
+                img = frames[idx]
+            self.canvas_right_b.itemconfig(iid, image=img)
+
         self.root.after(3000, self._animate_vines)
+
