@@ -39,7 +39,7 @@ class BotInterfaz(AnimationMixin):
         self._create_stringvars()         
         self.valores_iniciales = {}
         self.limpiar_visible = False
-        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((30, 30), Image.ANTIALIAS))
+        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
 
 
         # Frames
@@ -264,8 +264,21 @@ class BotInterfaz(AnimationMixin):
         self.canvas_right_b.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)
 
-        self.consola = ScrolledText(self.canvas_right_b, bg="DarkGoldenrod", relief="flat", bd=0, font=self._font_normal)
-        self.consola.place(x=50, y=50, width=550, height=350)
+        # Creamos la consola, pero la añadimos al canvas con create_window
+        self.consola = ScrolledText(
+            self.canvas_right_b,
+            bg="goldenrod",
+            relief="flat",
+            bd=0,
+            font=self._font_normal
+        )
+        self.consola_window = self.canvas_right_b.create_window(
+            70, 70,
+            anchor="nw",
+            window=self.consola,
+            width=500,   # ojo: que quepa dentro de los 650px
+            height=310
+        )
 
     def animation_panel(self):
         self.animation_frame = Frame(self.root)

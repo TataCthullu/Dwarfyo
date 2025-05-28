@@ -23,6 +23,8 @@ class AnimationMixin:
         files = [f for f in os.listdir(deco_dir)
                  if f.startswith("vine_segment") and f.endswith(".png")]
 
+
+
         # Bordes válidos
         tokens   = ("north","south","east","west")
         diag_map = {
@@ -56,9 +58,16 @@ class AnimationMixin:
         self.vine_items    = []  # (borde, item_id)
         self.vine_indices  = {b: 0 for b in segments}
 
+        
         # dimensiones del canvas de la consola (right_panel_b)
         W = int(self.canvas_right_b["width"])
         H = int(self.canvas_right_b["height"])
+
+        if not segments["south"]:
+            segments["south"] = (
+                segments.get("southeast", []) +
+                segments.get("southwest", [])
+            )
 
         # ancho de tile para top/bottom (toma del primer frame disponible)
         width_top    = segments["north"][0].width()  if segments["north"] else 0
@@ -67,11 +76,12 @@ class AnimationMixin:
         height_left  = segments["west"][0].height()  if segments["west"] else 0
         height_right = segments["east"][0].height()  if segments["east"] else 0
 
+        
         # —————— (1) Carga de los iconos de sonido ——————
         on_path  = "imagenes/deco/i-noise_new.png"
         off_path = "imagenes/deco/i-noise_old.png"
-        self.noise_on  = PhotoImage(file=on_path)  if os.path.exists(on_path)  else None
-        self.noise_off = PhotoImage(file=off_path) if os.path.exists(off_path) else None
+        self.noise_on  = PhotoImage(file=on_path).zoom(2,2)  if os.path.exists(on_path)  else None
+        self.noise_off = PhotoImage(file=off_path).zoom(2,2) if os.path.exists(off_path) else None
 
         # Guardián
         self.guard_open_frames = []
@@ -139,13 +149,15 @@ class AnimationMixin:
                 iid  = self.canvas_right_b.create_image(x, 0, image=img0, anchor="nw")
                 self.vine_items.append(("north", iid))
 
-        # Sur
-        if width_bottom:
-            y0 = H - (segments["south"][0].height())
+        # ─── PINTA LÍANAS SUR ───
+        if segments['south']:
             for x in range(0, W, width_bottom):
-                img0 = segments["south"][0]
-                iid  = self.canvas_right_b.create_image(x, y0, image=img0, anchor="nw")
-                self.vine_items.append(("south", iid))
+                it = self.canvas_right_b.create_image(
+                    x, H,
+                    image=segments['south'][0],
+                    anchor='sw'   # Southwest: pone la esquina inferior izquierda del tile en (x,H)
+                )
+                self.vine_items.append(('south', it))
 
         # Oeste
         if height_left:
@@ -183,8 +195,8 @@ class AnimationMixin:
         
         # item sound
         initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
-        self.noise_item = self.canvas_animation.create_image(
-            10, 10,
+        self.noise_item = self.canvas_right_b.create_image(
+            45, 365,
             image=initial,
             anchor='nw'
         )
@@ -208,7 +220,6 @@ class AnimationMixin:
         self.root.after(500,  self._update_hydra)
         self.root.after(500,  self._update_skeleton)
         self.root.after(200, self._update_noise_icon)
-       
         self.root.after(3000, self._animate_vines)
 
         
@@ -232,7 +243,7 @@ class AnimationMixin:
 
         # Actualiza sólo el image del canvas
         if img:
-            self.canvas_animation.itemconfig(self.noise_item, image=img)
+            self.canvas_right_b.itemconfig(self.noise_item, image=img)
 
         # Vuelve a revisarlo cada 200 ms (o el intervalo que prefieras)
         self.root.after(200, self._update_noise_icon)    
