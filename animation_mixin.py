@@ -238,9 +238,9 @@ class AnimationMixin:
         self.hydra_bottom_it  = self.canvas_center.create_image(230,400, image='', anchor='nw')
         self.hydra_top_it     = self.canvas_center.create_image(230,350, image='', anchor='nw')
 
-        # Esqueleto hidra en canvas_animation
-        self.skel_buy_it  = self.canvas_animation.create_image(50,270, image='', anchor='nw')
-        self.skel_sell_it = self.canvas_animation.create_image(50,340, image='', anchor='nw')
+        # Esqueleto hidra en canvas_center
+        self.skel_buy_it  = self.canvas_center.create_image(360,385, image='', anchor='nw')
+        self.skel_sell_it = self.canvas_center.create_image(100,385, image='', anchor='nw')
 
         # ─── BUQUES INDEPENDIENTES ───
         self.root.after(100,  self._animate_torch)
@@ -319,8 +319,8 @@ class AnimationMixin:
         sell = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
         img_b = self.skel_buy[min(buy-1, len(self.skel_buy)-1)] if buy>0 else ''
         img_s = self.skel_sell[min(sell-1, len(self.skel_sell)-1)] if sell>0 else ''
-        self.canvas_animation.itemconfig(self.skel_buy_it,  image=img_b)
-        self.canvas_animation.itemconfig(self.skel_sell_it, image=img_s)
+        self.canvas_center.itemconfig(self.skel_buy_it,  image=img_b)
+        self.canvas_center.itemconfig(self.skel_sell_it, image=img_s)
         self.root.after(500, self._update_skeleton)
 
     def _animate_dithmenos(self):
