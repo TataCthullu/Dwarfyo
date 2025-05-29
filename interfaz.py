@@ -297,7 +297,7 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_various = Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
         self.canvas_various.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_various, "imagenes/decoa/wall/mesh_3_old.png", escala=2)
+        self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=2)
 
         # Crear botones pero solo mostrar "Iniciar" al principio
         self.btn_inicio = Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")

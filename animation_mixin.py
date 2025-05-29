@@ -209,7 +209,7 @@ class AnimationMixin:
 
         # Guardián en canvas_uno
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
-        self.guard_item = self.canvas_uno.create_image(0,830, image=guard0, anchor='nw')
+        self.guard_item = self.canvas_uno.create_image(0,835, image=guard0, anchor='nw')
 
          # 2) Crea el item en el canvas
         if self.dithmenos_frames:
@@ -245,7 +245,7 @@ class AnimationMixin:
         # ─── BUQUES INDEPENDIENTES ───
         self.root.after(100,  self._animate_torch)
         self.root.after(100,  self._animate_guard)
-        self.root.after(250, self._animate_dithmenos)
+        self.root.after(1000, self._animate_dithmenos)
         self.root.after(500,  self._update_sales)
         self.root.after(500,  self._update_hydra)
         self.root.after(500,  self._update_skeleton)
@@ -332,7 +332,7 @@ class AnimationMixin:
             image=self.dithmenos_frames[self.dithmenos_index]
         )
         # Reprograma la siguiente actualización
-        self.root.after(250, self._animate_dithmenos)
+        self.root.after(1000, self._animate_dithmenos)
 
     def _animate_vines(self):
         # calculo de profit/loss
