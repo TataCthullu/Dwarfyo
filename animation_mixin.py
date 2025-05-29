@@ -234,8 +234,9 @@ class AnimationMixin:
 
         # Oro e hidra en canvas_animation
         self.sales_item       = self.canvas_animation.create_image(350,50,  image='', anchor='nw')
-        self.hydra_bottom_it  = self.canvas_animation.create_image(500,200, image='', anchor='nw')
-        self.hydra_top_it     = self.canvas_animation.create_image(500,150, image='', anchor='nw')
+
+        self.hydra_bottom_it  = self.canvas_center.create_image(230,400, image='', anchor='nw')
+        self.hydra_top_it     = self.canvas_center.create_image(230,350, image='', anchor='nw')
 
         # Esqueleto hidra en canvas_animation
         self.skel_buy_it  = self.canvas_animation.create_image(50,270, image='', anchor='nw')
@@ -309,8 +310,8 @@ class AnimationMixin:
             top_img = self.hydra_top[min(cnt-1, len(self.hydra_top)-1)]
         else:
             bot_img = top_img = ''
-        self.canvas_animation.itemconfig(self.hydra_bottom_it, image=bot_img)
-        self.canvas_animation.itemconfig(self.hydra_top_it,    image=top_img)
+        self.canvas_center.itemconfig(self.hydra_bottom_it, image=bot_img)
+        self.canvas_center.itemconfig(self.hydra_top_it, image=top_img)
         self.root.after(500, self._update_hydra)
 
     def _update_skeleton(self):
