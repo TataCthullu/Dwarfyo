@@ -21,6 +21,11 @@ class BotInterfaz(AnimationMixin):
         self.root.title("Dungeon Market")
         
         self.root.configure(bg="pink")
+
+        self.last_mouse_x = 0
+        self.last_mouse_y = 0
+        
+
         self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
@@ -50,6 +55,7 @@ class BotInterfaz(AnimationMixin):
         self.animation_panel()
         self.various_panel()
         self.init_animation()
+       
         
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
@@ -71,6 +77,44 @@ class BotInterfaz(AnimationMixin):
         self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
         menubar.add_cascade(label="Opciones", menu=self.config_menu)
         self.root.config(menu=menubar)
+
+    #Cursor
+        self.root.config(cursor="none")
+        self.custom_cursor = PhotoImage(file="imagenes/deco/cursor/stone_arrow_7.png").zoom(2,2)
+        
+        #canvas_center
+        self.cursor_center_id = self.canvas_center.create_image(0, 0, image=self.custom_cursor, anchor='nw')
+        # oculto inicialmente
+        self.canvas_center.itemconfig(self.cursor_center_id, state='hidden')
+        #bind canvas_center
+        self.canvas_center.bind("<Motion>", self._on_motion_center)
+        self.canvas_center.bind("<Enter>", lambda e: self.canvas_center.itemconfig(self.cursor_center_id, state='normal'))
+        #self.canvas_center.bind("<Leave>", lambda e: self.canvas_center.itemconfig(self.cursor_center_id, state='hidden'))
+
+        # canvas_uno
+        self.cursor_uno_id = self.canvas_uno.create_image(0, 0, image=self.custom_cursor, anchor='nw')
+        # oculto inicialmente
+        self.canvas_uno.itemconfig(self.cursor_uno_id, state='hidden')
+        # bind canvas_uno
+        self.canvas_uno.bind("<Motion>", self._on_motion_uno)
+        self.canvas_uno.bind("<Enter>", lambda e: self.canvas_uno.itemconfig(self.cursor_uno_id, state='normal'))
+        #self.canvas_uno.bind("<Leave>", lambda e: self.canvas_uno.itemconfig(self.cursor_uno_id, state='hidden'))
+
+        self.canvas_center.tag_raise(self.cursor_center_id)
+        self.canvas_uno.tag_raise(self.cursor_uno_id)
+
+    def _on_motion_uno(self, event):
+        # event.x, event.y son coordenadas en canvas_uno
+        self.canvas_uno.coords(self.cursor_uno_id, event.x, event.y)
+
+    def _on_motion_center(self, event):
+        # event.x, event.y son coordenadas en canvas_center
+        self.canvas_center.coords(self.cursor_center_id, event.x, event.y)
+
+
+
+   
+        
   
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -81,6 +125,10 @@ class BotInterfaz(AnimationMixin):
         nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
         # entryconfig(0, ...) actúa sobre la primera entrada que creamos en config_menu
         self.config_menu.entryconfig(0, label=nuevo_label)
+
+    
+           
+      
        
     def save_screenshot(self):
         x = self.root.winfo_rootx()
