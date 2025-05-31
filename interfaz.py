@@ -11,21 +11,14 @@ from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
-import ccxt
-
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
          # Main window setup
         self.root = Tk()
         self.root.title("Dungeon Market")
-        
+        self.root.config(cursor="@imagenes/deco/cursor/stone_arrow.cur")
         self.root.configure(bg="pink")
-
-        self.last_mouse_x = 0
-        self.last_mouse_y = 0
-        
-
         self.root.iconbitmap("imagenes/icokhazad.ico")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
@@ -55,7 +48,7 @@ class BotInterfaz(AnimationMixin):
         self.animation_panel()
         self.various_panel()
         self.init_animation()
-       
+        
         
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
@@ -66,8 +59,11 @@ class BotInterfaz(AnimationMixin):
         self.inicializar_valores_iniciales()
         
         
+        
+         
 
-
+        
+        
         self.sound_enabled = True
         self.bot.sound_enabled = True
         # BARRA DE MENÚ
@@ -78,43 +74,9 @@ class BotInterfaz(AnimationMixin):
         menubar.add_cascade(label="Opciones", menu=self.config_menu)
         self.root.config(menu=menubar)
 
-    #Cursor
-        self.root.config(cursor="none")
-        self.custom_cursor = PhotoImage(file="imagenes/deco/cursor/stone_arrow_7.png").zoom(2,2)
-        
-        #canvas_center
-        self.cursor_center_id = self.canvas_center.create_image(0, 0, image=self.custom_cursor, anchor='nw')
-        # oculto inicialmente
-        self.canvas_center.itemconfig(self.cursor_center_id, state='hidden')
-        #bind canvas_center
-        self.canvas_center.bind("<Motion>", self._on_motion_center)
-        self.canvas_center.bind("<Enter>", lambda e: self.canvas_center.itemconfig(self.cursor_center_id, state='normal'))
-        #self.canvas_center.bind("<Leave>", lambda e: self.canvas_center.itemconfig(self.cursor_center_id, state='hidden'))
-
-        # canvas_uno
-        self.cursor_uno_id = self.canvas_uno.create_image(0, 0, image=self.custom_cursor, anchor='nw')
-        # oculto inicialmente
-        self.canvas_uno.itemconfig(self.cursor_uno_id, state='hidden')
-        # bind canvas_uno
-        self.canvas_uno.bind("<Motion>", self._on_motion_uno)
-        self.canvas_uno.bind("<Enter>", lambda e: self.canvas_uno.itemconfig(self.cursor_uno_id, state='normal'))
-        #self.canvas_uno.bind("<Leave>", lambda e: self.canvas_uno.itemconfig(self.cursor_uno_id, state='hidden'))
-
-        self.canvas_center.tag_raise(self.cursor_center_id)
-        self.canvas_uno.tag_raise(self.cursor_uno_id)
-
-    def _on_motion_uno(self, event):
-        # event.x, event.y son coordenadas en canvas_uno
-        self.canvas_uno.coords(self.cursor_uno_id, event.x, event.y)
-
-    def _on_motion_center(self, event):
-        # event.x, event.y son coordenadas en canvas_center
-        self.canvas_center.coords(self.cursor_center_id, event.x, event.y)
-
-
-
-   
-        
+    
+    
+    
   
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -195,13 +157,15 @@ class BotInterfaz(AnimationMixin):
         
     #Frames
     def left_panel(self):
-        self.left_frame = Frame(self.root)
+        self.left_frame = Frame(self.root, bd=0,                 # sin borde
+    highlightthickness=0, # sin “resaltado” al enfoque
+    relief='flat')
         self.left_frame.place(x=0, y=0, width=600, height=900)
 
         self.canvas_uno = Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
-
+        
         y_offset = 10
         row_height = 30
 
@@ -213,14 +177,14 @@ class BotInterfaz(AnimationMixin):
         def add(label_text, var, key=None):
             nonlocal y_offset
             # 1) etiqueta fija
-            lbl_id = self.canvas_uno.create_text(20, y_offset,
+            lbl_id = self.canvas_uno.create_text(10, y_offset,
                                                  text=label_text,
                                                  fill="White",
                                                  font=self._font_normal,
                                                  anchor="nw")
             # 2) medir y posicionar valor a la derecha
             bbox = self.canvas_uno.bbox(lbl_id)
-            x_val = bbox[2] + 8
+            x_val = bbox[2] 
             txt_id = self.canvas_uno.create_text(x_val, y_offset,
                                                  text=var.get(),
                                                  fill="gold",
@@ -251,14 +215,16 @@ class BotInterfaz(AnimationMixin):
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
 
+        
   
     def center_panel(self):
-        self.center_frame = Frame(self.root)
+        self.center_frame = Frame(self.root, bd=0, relief='flat')
         self.center_frame.place(x=600, y=0, width=500, height=450)
 
-        self.canvas_center = Canvas(self.center_frame, width=500, height=450, highlightthickness=0)
+        self.canvas_center = Canvas(self.center_frame, width=500, height=450, highlightthickness=0, bd=0, relief='flat')
         self.canvas_center.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_center, "imagenes/decoa/wall/wall_vines_1.png", escala=2)
+        
 
         y_offset = 10
         row_height = 30
@@ -266,14 +232,14 @@ class BotInterfaz(AnimationMixin):
         def add(label_text, var, key=None):
             nonlocal y_offset
             # 1) etiqueta fija
-            lbl_id = self.canvas_center.create_text(20, y_offset,
+            lbl_id = self.canvas_center.create_text(10, y_offset,
                                                     text=label_text,
                                                     fill="White",
                                                     font=self._font_normal,
                                                     anchor="nw")
             # 2) medir y posicionar valor
             bbox = self.canvas_center.bbox(lbl_id)
-            x_val = bbox[2] + 8
+            x_val = bbox[2] 
             txt_id = self.canvas_center.create_text(x_val, y_offset,
                                                     text=var.get(),
                                                     fill="gold",
@@ -291,19 +257,24 @@ class BotInterfaz(AnimationMixin):
         add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
 
-
+        
 
     def right_panel(self):
-        self.right_frame = Frame(self.root)
+        self.right_frame = Frame(self.root, bd=0, # sin “resaltado” al enfoque
+    relief='flat')
         self.right_frame.place(x=1100, y=0, width=850, height=450)
 
         self.canvas_right = Canvas(self.right_frame, width=850, height=450, highlightthickness=0)
         self.canvas_right.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
+        
 
         self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_normal)
 
         self.historial.place(x=50, y=50, width=750, height=350)
+
+
+   
 
     def right_panel_b(self):
         self.right_frame_b = Frame(self.root)
@@ -312,6 +283,7 @@ class BotInterfaz(AnimationMixin):
         self.canvas_right_b = Canvas(self.right_frame_b, width=640, height=450, highlightthickness=0)
         self.canvas_right_b.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)
+        
 
         # Creamos la consola, pero la añadimos al canvas con create_window
         self.consola = ScrolledText(
@@ -329,6 +301,9 @@ class BotInterfaz(AnimationMixin):
             height=310
         )
 
+        
+        
+
     def animation_panel(self):
         self.animation_frame = Frame(self.root)
         self.animation_frame.place(x=600, y=450, width=700, height=450)
@@ -345,8 +320,8 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_various = Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
         self.canvas_various.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=2)
-
+        self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=3)
+        
         # Crear botones pero solo mostrar "Iniciar" al principio
         self.btn_inicio = Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
@@ -420,9 +395,6 @@ class BotInterfaz(AnimationMixin):
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
 
 
-        
-       
-
     def _thread_callback(self, future):
         if future.cancelled():
             return
@@ -462,8 +434,6 @@ class BotInterfaz(AnimationMixin):
 
                if canvas.type(item_id) == "image":
                     continue
-
-
 
                canvas.delete(item_id)
                image_id = canvas.create_image(x_pos, y_pos, image=self.runa_image, anchor='nw')

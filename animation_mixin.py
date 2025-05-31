@@ -90,8 +90,8 @@ class AnimationMixin:
         height_right = self.vine_sequence_green["east"][0].height()  if self.vine_sequence_green["east"] else 0
         width_right  = self.vine_sequence_green["east"][0].width()   if self.vine_sequence_green["east"] else 0
 
-        print("DEBUG green:", {k: len(v) for k,v in self.vine_sequence_green.items()})
-        print("DEBUG red:  ", {k: len(v) for k,v in self.vine_sequence_red.items()})
+        """print("DEBUG green:", {k: len(v) for k,v in self.vine_sequence_green.items()})
+        print("DEBUG red:  ", {k: len(v) for k,v in self.vine_sequence_red.items()})"""
 
 
         if width_top > 0:
