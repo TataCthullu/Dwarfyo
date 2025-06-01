@@ -310,7 +310,7 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_animation = Canvas(self.animation_frame, width=700, height=450, highlightthickness=0)
         self.canvas_animation.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=2)
+        self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=3)
 
         
 
@@ -615,9 +615,9 @@ class BotInterfaz(AnimationMixin):
             # B) Lógica de trading (compras/ventas) también en background
             self.bot.precio_actual = price
             self.bot.loop()
-        except Exception as e:
-            # If something blows up, lo logueamos sin bloquear UI
-            self.root.after(0, lambda: self.log_en_consola(f"⚠️ Error de trading: {e}"))
+        except Exception as exc:
+            # Capturamos exc como variable por defecto al crear el lambda:
+            self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading: {exc}"))
         finally:
             # C) Sólo actualizar la UI en el hilo principal
             self.root.after(0, self.actualizar_ui)
@@ -636,17 +636,29 @@ class BotInterfaz(AnimationMixin):
 
     def actualizar_ui(self):
         try:
+            # Si el bot está corriendo, procedemos
             if self.bot.running:
-                
-                precio = self.bot.precio_actual  # actualizado en background
-                if precio is None:
+                # 1) Guardamos el precio anterior antes de fetchear uno nuevo
+                prev_price = self.bot.precio_actual
+
+                # 2) Intentamos recuperar el nuevo precio
+                new_price = self.bot._fetch_precio()
+                # Si prev_price era None y ahora new_price NO es None, se reestableció la conexión
+                if prev_price is None and new_price is not None:
+                    self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
+                    self.log_en_consola("--------------------------------------------")
+
+                # 3) Asignamos el precio recién obtenido (puede seguir siendo None si falló)
+                self.bot.precio_actual = new_price
+
+                # 4) Si no hay precio válido, salimos
+                if self.bot.precio_actual is None:
                     return
-                   
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
                 
                 
-                self.precio_act_var.set(self.format_var(precio, "$"))
+                self.precio_act_var.set(self.format_var(self.bot.precio_actual, "$"))
                 self.cant_btc_str.set(self.format_var(self.bot.btc, "₿"))
                 self.cant_usdt_str.set(self.format_var(self.bot.usdt, "$"))
                 self.balance_var.set(self.format_var(self.bot.usdt_mas_btc, "$"))
@@ -715,9 +727,9 @@ class BotInterfaz(AnimationMixin):
 
                 
                             
-        except Exception as e:
-            print("Error al actualizar la UI:", e)
-            pass
+        except Exception as exc_ui:
+            print("Error al actualizar la UI:", exc_ui)
+            self.log_en_consola(f"❌ Desconección. Error UI: {exc_ui}")
             
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)

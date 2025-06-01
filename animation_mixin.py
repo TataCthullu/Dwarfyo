@@ -233,7 +233,7 @@ class AnimationMixin:
             
 
         # Oro e hidra en canvas_animation
-        self.sales_item       = self.canvas_animation.create_image(350,50,  image='', anchor='nw')
+        self.sales_item       = self.canvas_various.create_image(1350,15,  image='', anchor='nw')
 
         self.hydra_bottom_it  = self.canvas_center.create_image(230,400, image='', anchor='nw')
         self.hydra_top_it     = self.canvas_center.create_image(230,350, image='', anchor='nw')
@@ -295,7 +295,7 @@ class AnimationMixin:
     def _update_sales(self):
         cnt = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
         img = self.sales_frames[self._sales_index(cnt)] if cnt>0 else ''
-        self.canvas_animation.itemconfig(self.sales_item, image=img)
+        self.canvas_various.itemconfig(self.sales_item, image=img)
         self.root.after(500, self._update_sales)
 
     def _hydra_key(self, cnt):

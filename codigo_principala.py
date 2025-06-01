@@ -35,10 +35,10 @@ class TradingBot:
         self.precio_actual = self._fetch_precio()
         self.btc_usdt = Decimal("0")
 
-        self.parametro_compra_desde_compra = None
-        self.parametro_compra_desde_venta = None
-        self.parametro_venta_fantasma = None
-        self.precio_ult_venta = None
+        self.parametro_compra_desde_compra = Decimal("0")
+        self.parametro_compra_desde_venta = Decimal("0")
+        self.parametro_venta_fantasma = Decimal("0")
+        self.precio_ult_venta = Decimal("0")
 
         self.porc_desde_compra = Decimal("0.005")
         self.porc_desde_venta = Decimal("0.005")
@@ -49,7 +49,7 @@ class TradingBot:
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.valores_iniciales = {}
-        self.precio_ult_comp = None
+        self.precio_ult_comp = Decimal("0")
         self.usdt_mas_btc = Decimal("0")
         
         self.precios_ventas = []
