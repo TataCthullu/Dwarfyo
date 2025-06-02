@@ -139,6 +139,8 @@ class AnimationMixin:
         self.noise_on  = PhotoImage(file=on_path).zoom(2,2)  if os.path.exists(on_path)  else None
         self.noise_off = PhotoImage(file=off_path).zoom(2,2) if os.path.exists(off_path) else None
 
+
+
         self._hydra_gate = "imagenes/deco/gates/enter_snake.png"
         self.hydra_gate = PhotoImage(file=self._hydra_gate).zoom(4,4) if os.path.exists(self._hydra_gate) else None
 
