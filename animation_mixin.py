@@ -6,6 +6,34 @@ class AnimationMixin:
     MAX_CABEZAS = 9
 
     def init_animation(self):
+        # ─── CARGA DE “ELEFANTES” ───
+        # 1) Ruta base de los elefantes
+        ruta_ele = os.path.join("imagenes", "deco", "elefants")
+
+        # 2) Carga de la estatua
+        stat_path = os.path.join(ruta_ele, "elephant_statue.png")
+        self.elephant_statue = PhotoImage(file=stat_path).zoom(2, 2) if os.path.exists(stat_path) else None
+
+        # 3) Carga de los elefantes numerados 0..5
+        self.elephants = []
+        for i in range(6):
+            p = os.path.join(ruta_ele, f"elephant_{i}.png")
+            if os.path.exists(p):
+                # Aumentamos de tamaño con zoom, si lo deseas
+                img = PhotoImage(file=p).zoom(2, 2)
+            else:
+                img = None
+            self.elephants.append(img)
+
+        # 4) Crear el ítem en el canvas_animation (inicialmente con la estatua)
+        #    Elegimos una posición fija dentro de canvas_animation; por ejemplo, esquina superior izquierda
+        x_ele = 500
+        y_ele = 200
+        initial_img = self.elephant_statue or (self.elephants[0] if self.elephants[0] else "")
+        self.elephant_item = self.canvas_animation.create_image(x_ele, y_ele, image=initial_img, anchor='nw')
+
+        # 5) Programamos la actualización periódica de los elefantes:
+        self.root.after(500, self._update_elephant)
 
 
         # ─── CARGA DE FRAMES ───
@@ -257,7 +285,30 @@ class AnimationMixin:
         self.root.after(200, self._update_noise_icon)
         self.root.after(250, self._animate_vines)
        
-    
+    def _update_elephant(self):
+        """
+        Cada 500 ms revisamos self.bot.contador_compras_fantasma y reemplazamos la imagen:
+        - Si contador == 0: mostramos elephant_statue.
+        - Si 1 <= contador <= 6: mostramos elephants[contador-1] (o clamp a max índice).
+        - Si contador > 6, mostramos siempre elephant_5.
+        """
+        cnt = getattr(self, 'bot', None) and self.bot.contador_compras_fantasma or 0
+
+        if cnt <= 0:
+            img = self.elephant_statue
+        elif 1 <= cnt <= 6:
+            # Mapeamos “1 compra fantasma” → elephants[0], “2” → elephants[1], … hasta elephants[5]
+            idx = min(cnt-1, len(self.elephants)-1)
+            img = self.elephants[idx]
+        else:
+            # Si hay más de 6 compras fantasma, mostramos siempre el último elefante
+            img = self.elephants[-1]
+
+        if img:
+            self.canvas_animation.itemconfig(self.elephant_item, image=img)
+
+        # Volver a programar dentro de 500 ms
+        self.root.after(500, self._update_elephant)
 
 
     def _animate_torch(self):
