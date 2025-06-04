@@ -164,7 +164,7 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_uno = Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
+        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=3)
         
         y_offset = 10
         row_height = 30
@@ -609,15 +609,18 @@ class BotInterfaz(AnimationMixin):
 
     def _run_trading_cycle(self):
         try:
+            # 1) Intentamos obtener el ticker
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
-            price  = ticker['last']
+            price = ticker['last']
+            # – Si salió bien, guardamos el precio y ejecutamos el ciclo de trading:
             self.bot.precio_actual = price
             self.bot.loop()
         except Exception as exc:
-            # Logueamos el error sin bloquear
-            self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading: {exc}"))
+            # Si falla, dejamos precio_actual en None para detectar desconexión
+            self.bot.precio_actual = None
+            self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading (sin precio): {exc}"))
         finally:
-            # ← Aquí: usamos after_idle en lugar de after(0,...)
+            # Solo aquí reprogramamos la actualización de la UI (una vez por ciclo)
             self.root.after_idle(self.actualizar_ui)
 
 
@@ -647,10 +650,9 @@ class BotInterfaz(AnimationMixin):
                 # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading
                 if actual is None:
                     return
+                
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
-                
-                
                 self.precio_act_var.set(self.format_var(self.bot.precio_actual, "$"))
                 self.cant_btc_str.set(self.format_var(self.bot.btc, "₿"))
                 self.cant_usdt_str.set(self.format_var(self.bot.usdt, "$"))
@@ -719,9 +721,11 @@ class BotInterfaz(AnimationMixin):
                             self.nd_canvas[idx] = (var, canvas, iid, x, y)
                    
         except Exception as exc_ui:
-            print("Error al actualizar la UI:", exc_ui)
-            self.log_en_consola(f"❌ Desconexión. Error UI: {exc_ui}")
-            
+            # Si algo falla en UI, lo marcamos y forzamos precio(None)
+            self.bot.precio_actual = None
+            self.root.after(0, lambda exc=exc_ui: self.log_en_consola(f"❌ Error UI: {exc_ui}"))
+        # ← IMPORTANTE: **Aquí NO agregamos ningún `after_idle(self.actualizar_ui)`**.
+
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
         for t in self.bot.transacciones:
