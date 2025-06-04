@@ -6,6 +6,8 @@ class AnimationMixin:
     MAX_CABEZAS = 9
 
     def init_animation(self):
+
+
         # ─── CARGA DE FRAMES ───
         # Antorcha
         self.torch_frames = []
@@ -17,6 +19,8 @@ class AnimationMixin:
         off = "imagenes/deco/torch_0.png"
         self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
         self.torch_frame_index = 0
+
+        
 
         # ─── CARGA DE LÍANAS VERDES Y ROJAS ───
         base_dir = os.path.join("imagenes", "deco", "lianas")
@@ -221,8 +225,7 @@ class AnimationMixin:
                 anchor='nw'
             )
 
-        # 3) Arranca tu bucle propio
-        #if hasattr(self, 'dithmenos_item'):
+        
         
         # item sound
         initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
@@ -253,8 +256,9 @@ class AnimationMixin:
         self.root.after(500,  self._update_skeleton)
         self.root.after(200, self._update_noise_icon)
         self.root.after(250, self._animate_vines)
+       
+    
 
-        
 
     def _animate_torch(self):
         # Si bot.running: ciclo normal; si no: imagen apagada

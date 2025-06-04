@@ -38,7 +38,7 @@ class BotInterfaz(AnimationMixin):
         self.valores_iniciales = {}
         self.limpiar_visible = False
         self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
-
+       
 
         # Frames
         self.left_panel()
@@ -602,25 +602,23 @@ class BotInterfaz(AnimationMixin):
     def _loop(self):
         if not self.bot.running:
             return
-        # 1) Ejecuta TODO el ciclo de red + trading en un hilo
         future = self.executor.submit(self._run_trading_cycle)
-        # 2) Cuando acabe, reprograma la próxima llamada dentro de 3000 ms
-        future.add_done_callback(lambda _: self.root.after(3000, self._loop))
+        future.add_done_callback(
+            lambda _: self.root.after(3000, self._loop)
+        )
 
     def _run_trading_cycle(self):
         try:
-            # A) Fetch en background
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
             price  = ticker['last']
-            # B) Lógica de trading (compras/ventas) también en background
             self.bot.precio_actual = price
             self.bot.loop()
         except Exception as exc:
-            # Capturamos exc como variable por defecto al crear el lambda:
+            # Logueamos el error sin bloquear
             self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading: {exc}"))
         finally:
-            # C) Sólo actualizar la UI en el hilo principal
-            self.root.after(0, self.actualizar_ui)
+            # ← Aquí: usamos after_idle en lugar de after(0,...)
+            self.root.after_idle(self.actualizar_ui)
 
 
     def format_var(self, valor, simbolo=""):
@@ -636,23 +634,18 @@ class BotInterfaz(AnimationMixin):
 
     def actualizar_ui(self):
         try:
-            # Si el bot está corriendo, procedemos
+            # Si el bot está corriendo, procedemos (no volvemos a fetchear en UI)
             if self.bot.running:
-                # 1) Guardamos el precio anterior antes de fetchear uno nuevo
-                prev_price = self.bot.precio_actual
-
-                # 2) Intentamos recuperar el nuevo precio
-                new_price = self.bot._fetch_precio()
-                # Si prev_price era None y ahora new_price NO es None, se reestableció la conexión
-                if prev_price is None and new_price is not None:
+                # Detectar reconexión basándose en que precio anterior era None
+                prev = getattr(self, "_prev_price_ui", None)
+                actual = self.bot.precio_actual
+                if prev is None and actual is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
+                self._prev_price_ui = actual
 
-                # 3) Asignamos el precio recién obtenido (puede seguir siendo None si falló)
-                self.bot.precio_actual = new_price
-
-                # 4) Si no hay precio válido, salimos
-                if self.bot.precio_actual is None:
+                # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading
+                if actual is None:
                     return
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
@@ -724,12 +717,10 @@ class BotInterfaz(AnimationMixin):
                             canvas.delete(item_id)
                             iid = canvas.create_image(x, y, image=self.runa_image, anchor="nw")
                             self.nd_canvas[idx] = (var, canvas, iid, x, y)
-
-                
-                            
+                   
         except Exception as exc_ui:
             print("Error al actualizar la UI:", exc_ui)
-            self.log_en_consola(f"❌ Desconección. Error UI: {exc_ui}")
+            self.log_en_consola(f"❌ Desconexión. Error UI: {exc_ui}")
             
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
