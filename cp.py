@@ -23,6 +23,7 @@ class TradingBot:
         self.parametro_compra_desde_compra = None
         self.parametro_compra_desde_venta = None
         self.parametro_venta_fantasma = None
+        self.inv_inic = self.usdt
         self.precio_ult_venta = 0
         self.porc_desde_compra = 0.5
         self.porc_desde_venta = 0.5
@@ -55,7 +56,7 @@ class TradingBot:
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
-        #self.bot_iniciado = False
+        self.ghost_purchase_enabled = False  
 
     def log(self, mensaje):
         if self.log_fn:
@@ -154,7 +155,7 @@ class TradingBot:
                 self.log("- - - - - - - - - -")
                 self.log("🔵 [Parametro B].")     
                 self.comprar()
-                #self.precio_ult_venta = self.precio_actual
+                
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
             else:  
@@ -230,7 +231,12 @@ class TradingBot:
             self.log(f"📌 Sin BTC para vender, nueva venta fantasma registrada a: $ {self.precio_actual:.2f}, Id: {self.contador_ventas_fantasma}.")
             self.log("- - - - - - - - - -")
             self.reportado_trabajando = False 
-            reproducir_sonido("Sounds/ghostven.wav")               
+            reproducir_sonido("Sounds/ghostven.wav")       
+        # ── Si está habilitada, ejecutamos compra automática tras venta fantasma
+        if self.ghost_purchase_enabled:
+            self.log("🔵 Ejecutando compra automática tras venta fantasma.")
+            self.comprar()
+       
                    
     def calcular_ghost_ratio(self):
         total_signals = (self.contador_compras_fantasma + self.contador_ventas_fantasma +

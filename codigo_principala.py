@@ -30,14 +30,14 @@ class TradingBot:
         self.usdt = self.inv_inic
         self.btc = Decimal("0")        
         self.btc_comprado = Decimal("0")
-        self.min_btc_to_sell = Decimal("0")
+        
 
         self.precio_actual = self._fetch_precio()
         self.btc_usdt = Decimal("0")
 
-        self.parametro_compra_desde_compra = Decimal("0")
-        self.parametro_compra_desde_venta = Decimal("0")
-        self.parametro_venta_fantasma = Decimal("0")
+        self.parametro_compra_desde_compra = False
+        self.parametro_compra_desde_venta = False
+        self.parametro_venta_fantasma = False
         self.precio_ult_venta = Decimal("0")
 
         self.porc_desde_compra = Decimal("0.005")
@@ -67,7 +67,7 @@ class TradingBot:
         self.usdt_obtenido = Decimal("0")
         self.contador_compras_fantasma = 0
         self.contador_ventas_fantasma = 0
-        self.parametro_compra_fantasma = None
+        self.parametro_compra_fantasma = False
         self.total_ganancia = Decimal("0")
         self.ganancia_neta = Decimal("0")
         self.reportado_trabajando = False 
@@ -76,6 +76,7 @@ class TradingBot:
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
         self.timestamp = None
+        self.ghost_purchase_enabled = False  
         
 
     def log(self, mensaje):
@@ -346,7 +347,7 @@ class TradingBot:
 
        
             # Comprueba si la variación (%) supera el umbral
-        if self.varVenta >= self.porc_desde_venta:
+        if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             id_f = token_hex(2)
             self.contador_ventas_fantasma += 1
                 # Actualiza el punto de referencia para el próximo umbral
@@ -359,7 +360,15 @@ class TradingBot:
             self.log(f"---------------------------------------------------------")
             if self.sound_enabled:
                 reproducir_sonido("Sounds/ghostven.wav")
-            return True    
+                
+            # ── Si está habilitada, ejecutamos compra automática tras venta fantasma
+            if getattr(self, 'ghost_purchase_enabled', False):
+                if self.usdt >= self.fixed_buyer:
+                    self.log("🔵 Ejecutando compra automática tras venta fantasma.")
+                    self.comprar()
+                else:
+                    self.log("⚠️ Fondos insuficientes para compra automática tras venta fantasma.")
+            return True
 
     def variacion_total(self) -> Decimal:
         """

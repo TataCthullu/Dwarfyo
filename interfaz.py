@@ -479,6 +479,18 @@ class BotInterfaz(AnimationMixin):
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.inv_inic)
         ]
+
+        # ── Check para activar compra tras venta fantasma
+        self.var_ghost = BooleanVar(value=self.bot.ghost_purchase_enabled)
+        cb_frame = Frame(self.config_ventana, bg="DarkGoldenRod")
+        cb_frame.pack(fill=X, pady=4, padx=8)
+        Checkbutton(cb_frame,
+                    text="Habilitar compra tras venta fantasma",
+                    variable=self.var_ghost,
+                    bg="DarkGoldenRod",
+                    font=self._font_normal,
+                    fg="DarkSlateGray").pack(side=LEFT)  
+
         entries = []
 
         for etiqueta, valor in campos:
@@ -520,16 +532,9 @@ class BotInterfaz(AnimationMixin):
                 self.bot.fixed_buyer = (
                     self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
                 )
+
+                self.bot.ghost_purchase_enabled = self.var_ghost.get()
    
-
-                """self.porc_desde_compra_str.set(f"% {txt_compra}")
-                self.porc_desde_venta_str.set(f"% {txt_venta}")
-                self.porc_objetivo_venta_str.set(f"% {txt_profit}")
-                self.inv_por_compra_str.set(f"% {txt_porc_inv}")
-                self.cant_usdt_str.set(f"% {txt_usdt_inic}")
-                self.fixed_buyer_str.set(f"% {txt_fixed_buyer}")"""
-             
-
                 self.log_en_consola("Configuracion actualizada")
                 self.log_en_consola("-------------------------")
                 cerrar_config()
