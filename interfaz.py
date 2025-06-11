@@ -19,7 +19,7 @@ class BotInterfaz(AnimationMixin):
         self.root.title("Dungeon Market")
         self.root.config(cursor="@imagenes/deco/cursor/stone_arrow.cur")
         self.root.configure(bg="pink")
-        self.root.iconbitmap("imagenes/icokhazad.ico")
+        self.root.iconbitmap("imagenes/deco/urand_eternal_torment.png")
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
         self.bot = bot
