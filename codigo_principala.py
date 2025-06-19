@@ -5,7 +5,7 @@ import ccxt
 from utils import reproducir_sonido
 import datetime
 #import uuid
-from decimal import Decimal, InvalidOperation, DivisionByZero, getcontext
+from decimal import Decimal, InvalidOperation, DivisionByZero
 from secrets import token_hex
 
 """Azul (\033[94m) para información general.
@@ -26,7 +26,7 @@ class TradingBot:
         self.sound_enabled = True
         self.start_time = None
 
-        self.inv_inic = Decimal('5000')
+        self.inv_inic = Decimal("0")
         self.usdt = self.inv_inic
         self.btc = Decimal("0")        
         self.btc_comprado = Decimal("0")
@@ -40,10 +40,10 @@ class TradingBot:
         self.parametro_venta_fantasma = False
         self.precio_ult_venta = Decimal("0")
 
-        self.porc_desde_compra = Decimal("0.005")
-        self.porc_desde_venta = Decimal("0.005")
+        self.porc_desde_compra = Decimal("0.5")
+        self.porc_desde_venta = Decimal("0.5")
         self.porc_inv_por_compra = Decimal("10")
-        self.porc_profit_x_venta = Decimal("0.005")
+        self.porc_profit_x_venta = Decimal("0.5")
 
 
         self.fixed_buyer = self.cant_inv()
@@ -89,8 +89,22 @@ class TradingBot:
     def _fetch_precio(self) -> Decimal:
         try:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
+            info = ticker.get('info', {}) or {}
+
+            raw = info.get('lastPrice')
             
-            return Decimal(str(ticker['last']))
+            if raw is None:
+                # No usamos str(ticker['last']) que es float, sino que fallamos.
+                self.log("⚠️ No se encontró lastPrice en la respuesta cruda; precio no actualizado.")
+                return None
+
+            # Convertimos directamente el string ("12345.67000000") a Decimal
+            try:
+                return Decimal(raw)
+            
+            except InvalidOperation as e:
+                self.log(f"⚠️ lastPrice no válido (‘{raw}’): {e}")
+                return None
         
         except (ccxt.NetworkError, ccxt.RequestTimeout) as e:
             self.log(f"⚠️ Error de red al obtener precio: {e}")
@@ -141,35 +155,47 @@ class TradingBot:
 
     def varpor_compra(self, precio_ult_comp: Decimal, precio_act_btc: Decimal) -> Decimal:
         """Variación porcentual desde la última compra, o 0 si no aplicable."""
-        try:
-            # Si alguno es None o cero, devolvemos 0
-            if precio_ult_comp is None or precio_act_btc is None or precio_ult_comp == Decimal("0"):
-                return Decimal("0")
-            # (nuevo − viejo) / viejo * 100
-            return (precio_act_btc - precio_ult_comp) / precio_ult_comp * Decimal("100")
-        except (InvalidOperation, DivisionByZero) as e:
-            self.log(f"❌ Error calculando varpor_compra: {e}")
+        if self.contador_compras_reales == 0:
             return Decimal("0")
+        else:
+            try:
+                # Si alguno es None o cero, devolvemos 0
+                if precio_ult_comp is None or precio_act_btc is None or precio_ult_comp == Decimal("0"):
+                    return Decimal("0")
+                # (nuevo − viejo) / viejo * 100
+                else:
+                    return (precio_act_btc - precio_ult_comp) / precio_ult_comp * Decimal("100")
+            except (InvalidOperation, DivisionByZero) as e:
+                self.log(f"❌ Error calculando varpor_compra: {e}")
+                return Decimal("0")
 
     def varpor_venta(self, precio_ult_venta: Decimal, precio_act_btc: Decimal) -> Decimal:
         """Variación porcentual desde la última venta, o 0 si no aplicable."""
-        try:
-            if precio_ult_venta is None or precio_act_btc is None or precio_ult_venta == Decimal("0"):
-                return Decimal("0")
-            return (precio_act_btc - precio_ult_venta) / precio_ult_venta * Decimal("100")
-        except (InvalidOperation, DivisionByZero) as e:
-            self.log(f"❌ Error calculando varpor_venta: {e}")
+        if self.contador_ventas_reales == 0:
             return Decimal("0")
+        else:
+            try:
+                if precio_ult_venta is None or precio_act_btc is None or precio_ult_venta == Decimal("0"):
+                    return Decimal("0")
+                else:
+                    return (precio_act_btc - precio_ult_venta) / precio_ult_venta * Decimal("100")
+            except (InvalidOperation, DivisionByZero) as e:
+                self.log(f"❌ Error calculando varpor_venta: {e}")
+                return Decimal("0")
 
     def varpor_ingreso(self) -> Decimal:
         """Variación porcentual desde el precio de ingreso, o 0 si no aplicable."""
-        try:
-            if self.precio_ingreso is None or self.precio_actual is None or self.precio_ingreso == Decimal("0"):
-                return Decimal("0")
-            return (self.precio_actual - self.precio_ingreso) / self.precio_ingreso * Decimal("100")
-        except (InvalidOperation, DivisionByZero) as e:
-            self.log(f"❌ Error calculando varpor_ingreso: {e}")
+        if self.contador_compras_reales == 0:
             return Decimal("0")
+        else:
+            try:
+                if self.precio_ingreso is None or self.precio_actual is None or self.precio_ingreso == Decimal("0"):
+                    return Decimal("0")
+                else:
+                    return (self.precio_actual - self.precio_ingreso) / self.precio_ingreso * Decimal("100")
+            except (InvalidOperation, DivisionByZero) as e:
+                self.log(f"❌ Error calculando varpor_ingreso: {e}")
+                return Decimal("0")
     
     def _new_id(self):
         # Genera 4 dígitos hex aleatorios
@@ -180,7 +206,9 @@ class TradingBot:
             if nuevo_precio is None:
                 return
             self.precio_actual = nuevo_precio
-
+            if self.fixed_buyer <= Decimal('0'):
+                self.log("Monto fijo invalido. No se realiza compra")
+                return
             if self.usdt < self.fixed_buyer:
                 self.log("⚠️ Usdt insuficiente para comprar.")
                 return
@@ -220,7 +248,7 @@ class TradingBot:
     def parametro_compra_A(self):
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_desde_compra:
-            if self.usdt >= self.fixed_buyer:  
+            if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:  
                                    
                 self.comprar()
                 self.log("🔵 [Parametro A].") 
@@ -243,7 +271,7 @@ class TradingBot:
         if not self.param_b_enabled:
             return
         if self.varVenta <= -self.porc_desde_venta:            
-            if self.usdt >= self.fixed_buyer:                     
+            if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:                     
                 self.comprar()
                 self.log("🔵 [Parametro B].")
                 self.log("- - - - - - - - - -")
@@ -363,7 +391,7 @@ class TradingBot:
                 
             # ── Si está habilitada, ejecutamos compra automática tras venta fantasma
             if getattr(self, 'ghost_purchase_enabled', False):
-                if self.usdt >= self.fixed_buyer:
+                if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:
                     self.log("🔵 Ejecutando compra automática tras venta fantasma.")
                     self.comprar()
                 else:
@@ -422,17 +450,24 @@ class TradingBot:
         self.precio_actual = self._fetch_precio()
         if self.precio_actual is None:
             return
-        self.precio_ingreso = self.precio_actual
-        self.precio_ult_comp = self.precio_actual
-        self.inv_inic = self.usdt
-        self.start_time = datetime.datetime.now()
+        if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:
+            
+            self.precio_ingreso = self.precio_actual
+            self.precio_ult_comp = self.precio_actual
+            self.inv_inic = self.usdt
+            self.start_time = datetime.datetime.now()
+            
+            self.running = True
+
+            self.log("🟡 Khazâd iniciado.")
+            self.log("- - - - - - - - - -")
+            self.realizar_primera_compra()
+
         
-        self.running = True
-
-        self.log("🟡 Khazâd iniciado.")
-        self.log("- - - - - - - - - -")
-        self.realizar_primera_compra()
-
+        else:
+            self.log("No se puede iniciar por montos invalidos")    
+            return
+        
     def get_start_time_str(self) -> str:    
         if not self.start_time:
             return 

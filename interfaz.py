@@ -1,6 +1,6 @@
 # © 2025 Dungeon Market Trading Bot
 # Todos los derechos reservados.
-
+import tkinter as tk
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
@@ -39,6 +39,9 @@ class BotInterfaz(AnimationMixin):
         self.limpiar_visible = False
         self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
        
+       
+
+        
 
         # Frames
         self.left_panel()
@@ -58,26 +61,75 @@ class BotInterfaz(AnimationMixin):
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
         
-        
-        
-         
-
-        
-        
         self.sound_enabled = True
         self.bot.sound_enabled = True
-        # BARRA DE MENÚ
-        menubar = Menu(self.root)
-        self.config_menu = Menu(menubar, tearoff=0)
+         # —————— Barra de menú unificada ——————
+        self.menubar       = tk.Menu(self.root)
+        # Estado de vista: 'decimal' o 'float'
+        self.display_mode  = tk.StringVar(value='decimal')
+        self.float_precision = 2
+        # 3) Submenú Vista
+        self._crear_menu_vista()
+        # Creamos submenu Opciones
+        self.config_menu   = tk.Menu(self.menubar, tearoff=0)
         self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
         self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
-        menubar.add_cascade(label="Opciones", menu=self.config_menu)
-        self.root.config(menu=menubar)
+        self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
+        # ¡Solo aquí configuramos el menú completo!
+        self.root.config(menu=self.menubar) 
+
+        
+        
+        """self.sound_enabled = True
+        self.bot.sound_enabled = True
+        # BARRA DE MENÚ
+        self.menubar = tk.Menu(self.root)
+        self.config_menu = Menu(self.menubar, tearoff=0)
+        self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
+        self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
+        self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
+        # submenú Vista
+        self.display_mode = tk.StringVar(value='decimal')
+        self.float_precision = 2
+        
+        # submenú Opciones
+        self.config_menu = tk.Menu(self.menubar, tearoff=0)
+        self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
+        self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
+        
+        self.root.config(menu=self.menubar)"""
 
     
     
     
-  
+    def _crear_menu_vista(self):
+        view_menu = tk.Menu(self.menubar, tearoff=0)
+        # Opción Decimal
+        view_menu.add_radiobutton(
+            label="Vista Decimal",
+            variable=self.display_mode, value='decimal',
+            command=self._on_cambio_vista
+        )
+        # Opción Float 2 decimales
+        view_menu.add_radiobutton(
+            label="Float (2 decimales)",
+            variable=self.display_mode, value='float',
+            command=lambda: self._on_cambio_vista(precision=2)
+        )
+        # Opción Float 4 decimales
+        view_menu.add_radiobutton(
+            label="Float (4 decimales)",
+            variable=self.display_mode, value='float',
+            command=lambda: self._on_cambio_vista(precision=4)
+        )
+
+        self.menubar.add_cascade(label="Vista", menu=view_menu)
+
+    def _on_cambio_vista(self, precision=None):
+        # Si viene precision, actualizamos también la precisión float
+        if precision is not None:
+            self.float_precision = precision
+        
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
@@ -87,11 +139,7 @@ class BotInterfaz(AnimationMixin):
         nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
         # entryconfig(0, ...) actúa sobre la primera entrada que creamos en config_menu
         self.config_menu.entryconfig(0, label=nuevo_label)
-
-    
-           
-      
-       
+  
     def save_screenshot(self):
         x = self.root.winfo_rootx()
         y = self.root.winfo_rooty()
@@ -520,6 +568,10 @@ class BotInterfaz(AnimationMixin):
                 porc_inv = Decimal(txt_porc_inv)
                 usdtinit = Decimal(txt_usdt_inic)
                 
+                #  ── Validar capital inicial
+                if usdtinit <= Decimal('0'):
+                    self.log_en_consola("⚠️ El capital inicial debe ser mayor que 0.")
+                    return
 
 
                 # 3) Asignamos al bot (para los cálculos internos)
@@ -533,6 +585,11 @@ class BotInterfaz(AnimationMixin):
                     self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
                 )
 
+                #  ── Validar monto de compra fijo
+                if self.bot.fixed_buyer <= Decimal('0'):
+                    self.log_en_consola("⚠️ El monto de compra fijo debe ser mayor que 0.")
+                    return
+                
                 self.bot.ghost_purchase_enabled = self.var_ghost.get()
    
                 self.log_en_consola("Configuracion actualizada")
@@ -632,13 +689,17 @@ class BotInterfaz(AnimationMixin):
     def format_var(self, valor, simbolo=""):
         if valor is None:
             return ""
-        try:
-            if isinstance(valor, (int, float, Decimal)) and valor == 0:
-                return ""
-            return f"{simbolo} {valor}"
-        except:
-            return ""
-        
+        if self.display_mode.get() == 'decimal':
+            # str() completo de Decimal
+            texto = format(valor, 'f')
+        else:
+            # float con los decimales definidos
+            fmt = f"{{0:.{self.float_precision}f}}"
+            texto = fmt.format(float(valor))
+        return f"{simbolo} {texto}"
+
+    
+ 
 
     def actualizar_ui(self):
         try:
