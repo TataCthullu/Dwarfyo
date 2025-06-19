@@ -395,6 +395,9 @@ class BotInterfaz(AnimationMixin):
             self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
         else:
             self.bot.iniciar()
+            if not self.bot.running:
+                self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa tu capital inicial.")
+                return
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundinicio.wav")
 
