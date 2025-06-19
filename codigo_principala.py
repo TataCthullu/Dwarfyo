@@ -71,7 +71,8 @@ class TradingBot:
         self.total_ganancia = Decimal("0")
         self.ganancia_neta = Decimal("0")
         self.reportado_trabajando = False 
-        
+        self.hold_btc_var = self.hold_btc()
+        self.hold_usdt_var = self.hold_usdt()
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
@@ -425,7 +426,7 @@ class TradingBot:
         """
         if not self.precio_ingreso or not self.precio_actual:
             return Decimal('0')
-        # inv_inic / precio_ingreso * precio_actual
+        
         resultado = (self.inv_inic / self.precio_ingreso) * self.precio_actual
         return resultado if resultado != 0 else Decimal('0')
 
@@ -509,6 +510,8 @@ class TradingBot:
                     self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual) 
                     self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual) 
                     self.actualizar_balance()
+                    self.hold_btc_var = self.hold_btc()
+                    self.hold_usdt_var = self.hold_usdt()
                     self.vender()                
                     self.parametro_compra_desde_compra = self.parametro_compra_A()                
                     self.parametro_compra_desde_venta = self.parametro_compra_B()  

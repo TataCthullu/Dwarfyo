@@ -154,8 +154,8 @@ class BotInterfaz(AnimationMixin):
 
     def _create_stringvars(self):
         # Display and config variables
-        self.precio_act_var = StringVar()
-        self.balance_var = StringVar()
+        self.precio_act_str = StringVar()
+        self.balance_str = StringVar()
         self.start_time_str = StringVar()
         self.runtime_str = StringVar()
         self.cant_btc_str = StringVar()
@@ -176,8 +176,8 @@ class BotInterfaz(AnimationMixin):
         self.porc_desde_venta_str = StringVar()
         self.inv_por_compra_str = StringVar()
         self.fixed_buyer_str = StringVar()
-        self.hold_usdt_var = StringVar()
-        self.hold_btc_var = StringVar()
+        self.hold_usdt_str = StringVar()
+        self.hold_btc_str = StringVar()
         self.var_total_str = StringVar() 
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
@@ -243,16 +243,16 @@ class BotInterfaz(AnimationMixin):
                 self.info_canvas[key] = (self.canvas_uno, txt_id)
                 y_offset += row_height
 
-        add("Usdt + Btc:", self.balance_var, "balance")
+        add("Usdt + Btc:", self.balance_str, "balance")
         add("% Variación Total:", self.var_total_str, "variacion_total")
         add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
-        add("Precio actual Btc/Usdt:", self.precio_act_var, "precio_actual")
+        add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
-        add("Hold Btc/Usdt Comparativo:", self.hold_usdt_var, "hold_usdt")
-        add("Hold Btc Comparativo:", self.hold_btc_var, "hold_btc")
+        add("Hold Btc/Usdt Comparativo:", self.hold_usdt_str, "hold_usdt")
+        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc")
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
@@ -691,10 +691,10 @@ class BotInterfaz(AnimationMixin):
                 
                 # Actualizamos el balance con el precio (que ya cargamos)
                 self.bot.actualizar_balance()
-                self.precio_act_var.set(self.format_var(self.bot.precio_actual, "$"))
+                self.precio_act_str.set(self.format_var(self.bot.precio_actual, "$"))
                 self.cant_btc_str.set(self.format_var(self.bot.btc, "₿"))
                 self.cant_usdt_str.set(self.format_var(self.bot.usdt, "$"))
-                self.balance_var.set(self.format_var(self.bot.usdt_mas_btc, "$"))
+                self.balance_str.set(self.format_var(self.bot.usdt_mas_btc, "$"))
                 self.btc_en_usdt.set(self.format_var(self.bot.btc_usdt, "$"))
                 self.precio_de_ingreso_str.set(self.format_var(self.bot.precio_ingreso, "$"))
                 self.inv_por_compra_str.set(self.format_var(self.bot.porc_inv_por_compra, "%"))
@@ -713,8 +713,8 @@ class BotInterfaz(AnimationMixin):
                 self.ventas_realizadas_str.set(self.format_var(self.bot.contador_ventas_reales))
                 self.start_time_str.set(self.bot.get_start_time_str() or "")
                 self.runtime_str.set(self.bot.get_runtime_str() or "")
-
-
+                self.hold_btc_str.set(self.format_var(self.bot.hold_btc_var, "%"))
+                self.hold_usdt_str.set(self.format_var(self.bot.hold_usdt_var, "%"))
                 
 
                 self.actualizar_historial_consola()                
@@ -729,16 +729,7 @@ class BotInterfaz(AnimationMixin):
                 self.actualizar_color("variacion_total", var_tot)
 
 
-                # Hold USDT (ya no recibe argumento)
-                hold_usdt = self.bot.hold_usdt()
-                # formateo fijo, sin exponenciales
-                display_hold_usdt = format(hold_usdt, 'f')
-                self.hold_usdt_var.set(f"$ {display_hold_usdt}")
-
-                # Hold BTC
-                hold_btc = self.bot.hold_btc()
-                display_hold_btc = format(hold_btc, 'f')
-                self.hold_btc_var.set(f"₿ {display_hold_btc}")
+                
 
                 for idx, (var, canvas, item_id, x, y) in enumerate(self.nd_canvas):
                     texto = var.get().strip()
