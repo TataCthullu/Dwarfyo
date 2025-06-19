@@ -392,14 +392,18 @@ class AnimationMixin:
         self.root.after(1000, self._animate_dithmenos)
 
     def _animate_vines(self):
-        # calculo de profit/loss
-        delta = self.bot.usdt_mas_btc - self.bot.inv_inic
-        if   delta > 0:
-            seq_map = self.vine_sequence_green   # profit → verdes
-        elif delta < 0:
-            seq_map = self.vine_sequence_red     # loss   → rojas
+        # ── basamos la animación en la variación % desde la compra inicial
+        #    y sólo si ya hubo una compra real:
+        if self.bot.contador_compras_reales == 0:
+            seq_map = None
         else:
-            seq_map = None                       # igual  → ninguna
+            delta_pct = self.bot.var_inicio   # porcentaje desde primera compra
+            if   delta_pct > 0:
+                seq_map = self.vine_sequence_green
+            elif delta_pct < 0:
+                seq_map = self.vine_sequence_red
+            else:
+                seq_map = None                      # igual  → ninguna
 
         for border, iid in self.vine_items:
             if seq_map is None or not seq_map.get(border):

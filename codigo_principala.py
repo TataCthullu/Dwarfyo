@@ -246,6 +246,8 @@ class TradingBot:
             self.reportado_trabajando = False
 
     def parametro_compra_A(self):
+        if self.porc_desde_compra <= Decimal('0'):
+            return False
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_desde_compra:
             if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:  
@@ -265,8 +267,10 @@ class TradingBot:
                 self.reportado_trabajando = False
                 if self.sound_enabled:
                     reproducir_sonido("Sounds/ghostcom.wav")
-              
+            return False 
     def parametro_compra_B(self):
+        if self.porc_desde_venta <= Decimal('0'):
+            return False
         #Compra con referencia a la ultima venta
         if not self.param_b_enabled:
             return
@@ -286,7 +290,8 @@ class TradingBot:
                 if self.sound_enabled:
                     reproducir_sonido("Sounds/ghostcom.wav")                                         
                 return      
-        
+        return False
+    
     def vender(self):
         # refrescar precio
         nuevo_precio = self._fetch_precio()

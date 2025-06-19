@@ -7,5 +7,8 @@ from interfaz import BotInterfaz
 if __name__ == "__main__":
     bot = TradingBot()
     app = BotInterfaz(bot)
-    app.run()
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        pass
 

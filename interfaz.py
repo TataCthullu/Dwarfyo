@@ -396,13 +396,12 @@ class BotInterfaz(AnimationMixin):
         else:
             self.bot.iniciar()
             if not self.bot.running:
-                self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa tu capital inicial.")
+                self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa configuración de operativa y coloca números válidos.")
                 return
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundinicio.wav")
 
-            """if hasattr(self, 'guard_item') and self.guard_closed_frames:
-                self.canvas_animation.itemconfig(self.guard_item, image=self.guard_closed_frames[0])"""
+         
 
             self.inicializar_valores_iniciales()
 
@@ -571,8 +570,20 @@ class BotInterfaz(AnimationMixin):
                 porc_inv = Decimal(txt_porc_inv)
                 usdtinit = Decimal(txt_usdt_inic)
                 
-                #  ── Validar capital inicial
-                if usdtinit <= Decimal('0'):
+                # 3) Validaciones > 0
+                if porc_compra <= 0:
+                    self.log_en_consola("⚠️ El porcentaje desde compra debe ser mayor que 0.")
+                    return
+                if porc_venta <= 0:
+                    self.log_en_consola("⚠️ El porcentaje desde venta debe ser mayor que 0.")
+                    return
+                if porc_profit <= 0:
+                    self.log_en_consola("⚠️ El porcentaje de profit por venta debe ser mayor que 0.")
+                    return
+                if porc_inv <= 0:
+                    self.log_en_consola("⚠️ El porcentaje de inversión por compra debe ser mayor que 0.")
+                    return
+                if usdtinit <= 0:
                     self.log_en_consola("⚠️ El capital inicial debe ser mayor que 0.")
                     return
 
@@ -583,13 +594,17 @@ class BotInterfaz(AnimationMixin):
                 self.bot.porc_profit_x_venta = porc_profit
                 self.bot.porc_inv_por_compra = porc_inv
                 self.bot.inv_inic = usdtinit
+                # Aseguramos que el balance inicial coincida con el capital configurado
+                self.bot.usdt = usdtinit
+
 
                 self.bot.fixed_buyer = (
                     self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
                 )
 
-                #  ── Validar monto de compra fijo
-                if self.bot.fixed_buyer <= Decimal('0'):
+                 # 5) Calculamos fixed_buyer y validamos
+                self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
+                if self.bot.fixed_buyer <= 0:
                     self.log_en_consola("⚠️ El monto de compra fijo debe ser mayor que 0.")
                     return
                 
@@ -605,52 +620,6 @@ class BotInterfaz(AnimationMixin):
         Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
             font=self._font_normal, fg="PaleGoldenRod").pack(pady=8)
-
-    """def toggle_bot(self):            
-        if self.bot.running:
-            self.bot.detener()
-            if self.sound_enabled:
-                reproducir_sonido("Sounds/detner.wav")
-            
-            self.btn_inicio.pack_forget()
-            self.btn_limpiar.pack(side=LEFT)
-            self.btn_confi.place_forget() 
-        else:
-            self.bot.iniciar()   
-            if self.sound_enabled:
-                reproducir_sonido("Sounds/soundinicio.wav")
-
-            self.guard_label.configure(image=self.guard_open_frames[0])
-            self.inicializar_valores_iniciales()
-
-            self.btn_inicio.config(text="Detener")
-            self.btn_inicio.pack(side=LEFT)
-            self.btn_limpiar.pack_forget()
-            
-            self._loop()
-
-
-    def clear_bot(self):
-        if not self.bot.running:
-            if self.sound_enabled:
-                reproducir_sonido("Sounds/limpiar.wav")
-            
-            # Limpiar UI
-            self.consola.delete('1.0', END)
-            self.historial.delete('1.0', END)
-            self.bot.reiniciar()
-            self.inicializar_valores_iniciales()
-            self.reset_stringvars()
-            self.reset_colores()
-            self.init_animation()
-            self.actualizar_ui()
-
-            # Restaurar botones
-            self.btn_inicio.config(text="Iniciar")
-            self.btn_inicio.pack(side=LEFT)
-            self.btn_limpiar.pack_forget()
-            self.btn_confi.place(x=50, y=210)"""
-
 
     def _on_close(self):
         # 1) cancelar el after programado
@@ -750,7 +719,7 @@ class BotInterfaz(AnimationMixin):
 
                 self.actualizar_historial_consola()                
                 # — Calcular y pintar variación total + colores de todos
-                var_tot = self.bot.variacion_total()
+                var_tot = self.bot.var_inicio
                 self.var_total_str.set(f"% {var_tot}" if var_tot else "")
                 self.actualizar_color("precio_actual", self.bot.precio_actual)
                 self.actualizar_color("balance", self.bot.usdt_mas_btc)
@@ -849,8 +818,13 @@ class BotInterfaz(AnimationMixin):
             'desde_ult_comp': self.bot.varCompra,
             'ult_vent': self.bot.varVenta,
             'variacion_desde_inicio': self.bot.var_inicio,
-            'variacion_total': 0
+            'variacion_total': self.bot.var_inicio
         }
 
     def run(self):
-        self.root.mainloop()
+        try:
+            self.root.mainloop()
+        except KeyboardInterrupt:
+            # Puedes optar por destruir la ventana o simplemente ignorar
+            pass
+
