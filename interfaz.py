@@ -58,6 +58,7 @@ class BotInterfaz(AnimationMixin):
         
         self.reset_stringvars()
         self.actualizar_ui()
+        self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
         self.inicializar_valores_iniciales()
         
