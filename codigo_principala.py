@@ -78,7 +78,7 @@ class TradingBot:
         self.param_b_enabled = True  
         self.timestamp = None
         self.ghost_purchase_enabled = False  
-        
+        self.var_total = Decimal("0")
 
     def log(self, mensaje):
         if self.log_fn:
@@ -450,6 +450,7 @@ class TradingBot:
              
     def realizar_primera_compra(self):
         self.comprar()
+        self.log("- - - - - - - - - -")
         
     def iniciar(self):
         # Capturamos precio de ingreso justo al arrancar
@@ -512,6 +513,7 @@ class TradingBot:
                     self.actualizar_balance()
                     self.hold_btc_var = self.hold_btc()
                     self.hold_usdt_var = self.hold_usdt()
+                    self.var_total = self.variacion_total()
                     self.vender()                
                     self.parametro_compra_desde_compra = self.parametro_compra_A()                
                     self.parametro_compra_desde_venta = self.parametro_compra_B()  

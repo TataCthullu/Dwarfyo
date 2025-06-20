@@ -397,7 +397,7 @@ class AnimationMixin:
         if self.bot.contador_compras_reales == 0:
             seq_map = None
         else:
-            delta_pct = self.bot.var_inicio   # porcentaje desde primera compra
+            delta_pct = self.bot.var_total   # porcentaje desde primera compra
             if   delta_pct > 0:
                 seq_map = self.vine_sequence_green
             elif delta_pct < 0:

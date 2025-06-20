@@ -213,7 +213,7 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_uno = Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=3)
+        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
         
         y_offset = 10
         row_height = 30
@@ -717,17 +717,17 @@ class BotInterfaz(AnimationMixin):
                 self.hold_btc_str.set(self.format_var(self.bot.hold_btc_var, "%"))
                 self.hold_usdt_str.set(self.format_var(self.bot.hold_usdt_var, "%"))
                 
+                self.var_total_str.set(self.format_var(self.bot.var_total, "%"))
 
                 self.actualizar_historial_consola()                
                 # — Calcular y pintar variación total + colores de todos
-                var_tot = self.bot.var_inicio
-                self.var_total_str.set(f"% {var_tot}" if var_tot else "")
+                
                 self.actualizar_color("precio_actual", self.bot.precio_actual)
                 self.actualizar_color("balance", self.bot.usdt_mas_btc)
                 self.actualizar_color("desde_ult_comp", self.bot.varCompra)
                 self.actualizar_color("ult_vent", self.bot.varVenta)
                 self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
-                self.actualizar_color("variacion_total", var_tot)
+                self.actualizar_color("variacion_total",self.bot.var_total)
 
 
                 
@@ -810,7 +810,7 @@ class BotInterfaz(AnimationMixin):
             'desde_ult_comp': self.bot.varCompra,
             'ult_vent': self.bot.varVenta,
             'variacion_desde_inicio': self.bot.var_inicio,
-            'variacion_total': self.bot.var_inicio
+            'variacion_total': self.bot.var_total
         }
 
     def run(self):
