@@ -80,6 +80,16 @@ class TradingBot:
         self.ghost_purchase_enabled = False  
         self.var_total = Decimal("0")
 
+        self.format_fn = lambda x, s="": f"{s} {x}"  # Por defecto, sin formato especial
+
+    def set_formatter(self, format_fn):
+        """
+        Asigna una función para formatear valores.
+        La función debe aceptar (valor, simbolo) y devolver texto.
+        """
+        self.format_fn = format_fn
+
+
     def log(self, mensaje):
         if self.log_fn:
             self.log_fn(mensaje)  
@@ -236,11 +246,11 @@ class TradingBot:
                             
             self.actualizar_balance()            
             self.log("✅ Compra realizada.")
-            self.log(f"📉 Precio de compra: $ {self.precio_actual}")
-            self.log(f"🪙 Btc comprado: ₿ {self.btc_comprado}")
+            self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
+            self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
-            self.log(f"🎯 Objetivo de venta: $ {self.precio_objetivo_venta}")
+            self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")
              
             if self.sound_enabled:          
                 reproducir_sonido("Sounds/soundcompra.wav")            
@@ -262,7 +272,7 @@ class TradingBot:
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
                 
-                self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.precio_actual}, Num: {self.contador_compras_fantasma}.")
+                self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.format_fn(self.precio_actual, '$')}, Num: {self.contador_compras_fantasma}.")
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual                                
                 self.reportado_trabajando = False
@@ -283,7 +293,7 @@ class TradingBot:
                 self.precio_ult_comp = self.precio_actual
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
             else:                          
-                self.log(f"⚠️ERROR (B) Fondos insuficientes, nueva compra fantasma registrada a: $ {self.precio_actual}")
+                self.log(f"⚠️ERROR (B) Fondos insuficientes, nueva compra fantasma registrada a: {self.format_fn(self.precio_actual, '$')}")
                 self.log("- - - - - - - - - -")
                 self.contador_compras_fantasma += 1                 
                 self.param_b_enabled = False       
@@ -349,10 +359,10 @@ class TradingBot:
                 self.log(f"Fecha y hora: {self.timestamp}")
                 self.log(f"🕒 Compra original: {precio_compra}")
                 self.log(f"🆔 Id: {id_compra}")
-                self.log(f"📈 Precio de venta: $ {self.precio_actual}")
+                self.log(f"📈 Precio de venta: {self.format_fn(self.precio_actual, '$')}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
-                self.log(f"📤 Btc vendido: ₿ {btc_vender}")
-                self.log(f"💹 Ganancia de esta operacion: $ {self.ganancia_neta}")
+                self.log(f"📤 Btc vendido: {self.format_fn(btc_vender, '₿')}")
+                self.log(f"💹 Ganancia de esta operacion: {self.format_fn(self.ganancia_neta, '$')}")
                 self.log("- - - - - - - - - -")
                 ejecutadas.append(transaccion)
                 
@@ -390,7 +400,7 @@ class TradingBot:
                 'id': id_f,
                 'precio': self.precio_actual
             })
-            self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a $ {self.precio_actual}")
+            self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
             self.log(f"---------------------------------------------------------")
             if self.sound_enabled:
                 reproducir_sonido("Sounds/ghostven.wav")

@@ -44,7 +44,9 @@ class BotInterfaz(AnimationMixin):
             "compras_fantasma": self.bot.contador_compras_fantasma,
             "ventas_fantasma": self.bot.contador_ventas_fantasma
         }
-       
+        self.labels = {}
+        self.bot.set_formatter(self.format_var)
+
             
 
         
@@ -758,14 +760,27 @@ class BotInterfaz(AnimationMixin):
             ts = t.get("timestamp", "")
             self.historial.insert(END, "Compra desde:", 'compra_tag')
             # el resto de la línea en color por defecto
-            resto = f" ${t['compra']} -> Id: {t['id']} -> Num: {t['numcompra']} -> Fecha: {ts} -> Objetivo: ${t['venta_obj']}\n"
+            resto = (
+                f" {self.format_var(t['compra'], '$')} -> "
+                f"Id: {t['id']} -> "
+                f"Num: {t['numcompra']} -> "
+                f"Fecha: {ts} -> "
+                f"Objetivo: {self.format_var(t['venta_obj'], '$')}\n"
+            )
+
             self.historial.insert(END, resto)
             id_op = t.get("id")
             
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
             self.historial.insert(END, "Venta desde:", 'venta_tag')
-            resto = f" $ {v['compra']} -> id: {v['id_compra']}, a: $ {v['venta']} | Ganancia: $ {v['ganancia']}, Num: {v['venta_numero']} -> Fecha: {ts}\n"
+            resto = (
+                f" {self.format_var(v['compra'], '$')} -> "
+                f"id: {v['id_compra']}, a: {self.format_var(v['venta'], '$')} | "
+                f"Ganancia: {self.format_var(v['ganancia'], '$')}, "
+                f"Num: {v['venta_numero']} -> Fecha: {ts}\n"
+            )
+
             self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
