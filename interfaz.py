@@ -38,8 +38,14 @@ class BotInterfaz(AnimationMixin):
         self.valores_iniciales = {}
         self.limpiar_visible = False
         self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
+        self.valores_a_mostrar = {
+            "compras_realizadas": self.bot.contador_compras_reales,
+            "ventas_realizadas": self.bot.contador_ventas_reales,
+            "compras_fantasma": self.bot.contador_compras_fantasma,
+            "ventas_fantasma": self.bot.contador_ventas_fantasma
+        }
        
-       
+            
 
         
 
@@ -78,30 +84,6 @@ class BotInterfaz(AnimationMixin):
         self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
-
-        
-        
-        """self.sound_enabled = True
-        self.bot.sound_enabled = True
-        # BARRA DE MENÚ
-        self.menubar = tk.Menu(self.root)
-        self.config_menu = Menu(self.menubar, tearoff=0)
-        self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
-        self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
-        self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
-        # submenú Vista
-        self.display_mode = tk.StringVar(value='decimal')
-        self.float_precision = 2
-        
-        # submenú Opciones
-        self.config_menu = tk.Menu(self.menubar, tearoff=0)
-        self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
-        self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
-        
-        self.root.config(menu=self.menubar)"""
-
-    
-    
     
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
@@ -126,11 +108,17 @@ class BotInterfaz(AnimationMixin):
 
         self.menubar.add_cascade(label="Vista", menu=view_menu)
 
-    def _on_cambio_vista(self, precision=None):
-        # Si viene precision, actualizamos también la precisión float
-        if precision is not None:
-            self.float_precision = precision
-        
+    def _on_cambio_vista(self, precision=2):
+        for clave, valor in self.valores_a_mostrar.items():
+            if clave in ["compras_realizadas", "ventas_realizadas", "compras_fantasma", "ventas_fantasma"]:
+                texto = str(int(valor))
+            else:
+                if self.display_mode.get() == 'float':
+                    texto = f"{float(valor):.{precision}f}"
+                else:
+                    texto = str(valor)
+            self.labels[clave].config(text=texto)
+
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
@@ -509,6 +497,12 @@ class BotInterfaz(AnimationMixin):
 
 
     def abrir_configuracion_subventana(self):
+        # Si ya está abierta y no fue destruida, traerla al frente
+        if self.config_ventana is not None and self.config_ventana.winfo_exists():
+            self.config_ventana.lift()
+            self.config_ventana.focus_force()
+            return  # No abrir otra
+
         self.config_ventana = Toplevel(self.root)
         self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
@@ -706,18 +700,20 @@ class BotInterfaz(AnimationMixin):
                 self.var_inicio_str.set(self.format_var(self.bot.var_inicio, "%"))
                 self.fixed_buyer_str.set(self.format_var(self.bot.fixed_buyer, "$"))
                 self.ganancia_total_str.set(self.format_var(self.bot.total_ganancia, "$"))
-                self.cont_compras_fantasma_str.set(self.format_var(self.bot.contador_compras_fantasma))
-                self.cont_ventas_fantasma_str.set(self.format_var(self.bot.contador_ventas_fantasma))
+                
                 self.porc_objetivo_venta_str.set(self.format_var(self.bot.porc_profit_x_venta, "%"))
                 self.ghost_ratio_var.set(self.format_var(self.bot.calcular_ghost_ratio()))
-                self.compras_realizadas_str.set(self.format_var(self.bot.contador_compras_reales))
-                self.ventas_realizadas_str.set(self.format_var(self.bot.contador_ventas_reales))
+                
                 self.start_time_str.set(self.bot.get_start_time_str() or "")
                 self.runtime_str.set(self.bot.get_runtime_str() or "")
                 self.hold_btc_str.set(self.format_var(self.bot.hold_btc_var, "%"))
                 self.hold_usdt_str.set(self.format_var(self.bot.hold_usdt_var, "%"))
                 
                 self.var_total_str.set(self.format_var(self.bot.var_total, "%"))
+                self.cont_compras_fantasma_str.set(str(int(self.bot.contador_compras_fantasma)))
+                self.cont_ventas_fantasma_str.set(str(int(self.bot.contador_ventas_fantasma)))
+                self.compras_realizadas_str.set(str(int(self.bot.contador_compras_reales)))
+                self.ventas_realizadas_str.set(str(int(self.bot.contador_ventas_reales)))
 
                 self.actualizar_historial_consola()                
                 # — Calcular y pintar variación total + colores de todos
