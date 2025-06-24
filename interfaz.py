@@ -24,11 +24,13 @@ class BotInterfaz(AnimationMixin):
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.was_offline = False
+        
+
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
         self._font_normal = ("LondonBetween", 16)
-        self._font_nd = ("Tolkien Dwarf Runes", 14) 
+        
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         # Lista de (StringVar, Label) para los No Data
@@ -36,6 +38,8 @@ class BotInterfaz(AnimationMixin):
         # UI variables and clear initial values
         self._create_stringvars()         
         self.valores_iniciales = {}
+        self.colores_actuales = {}  # key -> "Gold", "Green" o "Crimson"
+
         self.limpiar_visible = False
         self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
         self.valores_a_mostrar = {
@@ -44,7 +48,7 @@ class BotInterfaz(AnimationMixin):
             "compras_fantasma": self.bot.contador_compras_fantasma,
             "ventas_fantasma": self.bot.contador_ventas_fantasma
         }
-        self.labels = {}
+        
         self.bot.set_formatter(self.format_var)
 
             
@@ -64,15 +68,8 @@ class BotInterfaz(AnimationMixin):
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         
-        self.reset_stringvars()
-        self.actualizar_ui()
-        self._prev_price_ui = self.bot.precio_actual
-        # Baseline for color comparisons
-        self.inicializar_valores_iniciales()
         
-        self.sound_enabled = True
-        self.bot.sound_enabled = True
-         # —————— Barra de menú unificada ——————
+        # —————— Barra de menú unificada ——————
         self.menubar       = tk.Menu(self.root)
         # Estado de vista: 'decimal' o 'float'
         self.display_mode  = tk.StringVar(value='decimal')
@@ -86,40 +83,39 @@ class BotInterfaz(AnimationMixin):
         self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
+
+        self.actualizar_ui()
+        self._prev_price_ui = self.bot.precio_actual
+        # Baseline for color comparisons
+        #self.inicializar_valores_iniciales()
+        
+        self.sound_enabled = True
+        self.bot.sound_enabled = True
+         
     
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
-        # Opción Decimal
         view_menu.add_radiobutton(
             label="Vista Decimal",
             variable=self.display_mode, value='decimal',
-            command=self._on_cambio_vista
+            command=self.actualizar_ui  # <-- llamamos actualizar_ui directamente
         )
-        # Opción Float 2 decimales
         view_menu.add_radiobutton(
             label="Float (2 decimales)",
             variable=self.display_mode, value='float',
-            command=lambda: self._on_cambio_vista(precision=2)
+            command=lambda: self._cambiar_precision_y_actualizar(2)
         )
-        # Opción Float 4 decimales
         view_menu.add_radiobutton(
             label="Float (4 decimales)",
             variable=self.display_mode, value='float',
-            command=lambda: self._on_cambio_vista(precision=4)
+            command=lambda: self._cambiar_precision_y_actualizar(4)
         )
-
         self.menubar.add_cascade(label="Vista", menu=view_menu)
 
-    def _on_cambio_vista(self, precision=2):
-        for clave, valor in self.valores_a_mostrar.items():
-            if clave in ["compras_realizadas", "ventas_realizadas", "compras_fantasma", "ventas_fantasma"]:
-                texto = str(int(valor))
-            else:
-                if self.display_mode.get() == 'float':
-                    texto = f"{float(valor):.{precision}f}"
-                else:
-                    texto = str(valor)
-            self.labels[clave].config(text=texto)
+
+    def _cambiar_precision_y_actualizar(self, precision):
+        self.float_precision = precision
+        self.actualizar_ui()
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -248,10 +244,10 @@ class BotInterfaz(AnimationMixin):
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
         add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
-        add("Compras Realizadas:", self.compras_realizadas_str, "compras_r")
-        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_r")
-        add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_f")
-        add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_f")
+        add("Compras Realizadas:", self.compras_realizadas_str, "compras_realizadas")
+        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_realizadas")
+        add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_fantasma")
+        add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_fantasma")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
 
         
@@ -392,8 +388,6 @@ class BotInterfaz(AnimationMixin):
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundinicio.wav")
 
-         
-
             self.inicializar_valores_iniciales()
 
             self.btn_inicio.config(text="Detener")
@@ -405,31 +399,36 @@ class BotInterfaz(AnimationMixin):
 
     def clear_bot(self):
         if self.bot.running:
-            return  # si el bot está activo no limpiamos
+            return
 
+        # 1) Sonido y reinicio completo del bot
         if self.sound_enabled:
             reproducir_sonido("Sounds/limpiar.wav")
-
-        # 1) Limpiar textos
-        self.consola.delete('1.0', END)
-        self.historial.delete('1.0', END)
-
-        # 2) Reiniciar lógica del bot
         self.bot.reiniciar()
         self.bot.log_fn = self.log_en_consola
         self.bot.sound_enabled = self.sound_enabled
 
-        # 3) Reset all StringVars (incluye btc_en_usdt y var_total_str)
-        self.inicializar_valores_iniciales()
-        for attr, val in vars(self).items():
-            if isinstance(val, StringVar):
-                val.set("")
-        # repintar runas y colores
-        self.reset_stringvars()
-        self.reset_colores()
-        
+        # 2) Limpiar todos los StringVars a vacío
+        for attr in vars(self).values():
+            if isinstance(attr, tk.StringVar):
+                attr.set("")
 
-        # 6) Restaurar botones
+        # 3) Borrar texto de cada canvas (dejamos el mapeo, sólo limpiamos el contenido)
+        for canvas, item_id in self.info_canvas.values():
+            try:
+                canvas.itemconfig(item_id, text="", fill="Gold")
+            except Exception:
+                pass
+
+        # 4) Vaciar historial y consola
+        self.historial.delete("1.0", END)
+        self.consola.delete("1.0", END)
+
+        # 5) Resetear baseline de colores y valores
+        self.valores_iniciales.clear()
+        self.colores_actuales.clear()
+
+        # 6) Botones listos para nuevo inicio
         self.btn_inicio.config(text="Iniciar")
         self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
@@ -452,49 +451,36 @@ class BotInterfaz(AnimationMixin):
         btc_avail  = self.bot.btc
         CalculatorWindow(self.root, usdt_avail, btc_avail)
 
-    # Función para obtener el valor sin el símbolo %
-    def obtener_valor_limpio(entry_var):
-        valor = entry_var.get().replace('%', '').replace('$', '').strip()
-        try:
-            return Decimal(valor)           
-        except InvalidOperation:
-            return 0  # o lo que quieras como fallback
+    
         
-    def reset_stringvars(self):
-        for i, entry in enumerate(self.nd_canvas):
+    """def reset_stringvars(self):
+        for i, (var, canvas, item_id, x_pos, y_pos) in enumerate(self.nd_canvas):
+            valor = var.get()
 
-            var, canvas, item_id, x, y = entry
+            # Determinar color asociado si existe
+            color = "Gold"
+            key = None
+            for k, (c, id_old) in self.info_canvas.items():
+                if c == canvas and id_old == item_id:
+                    key = k
+                    color = self.colores_actuales.get(k, "Gold")
+                    break
 
-            valor = var.get().strip() if var.get() else ""
+            # Borrar lo anterior y redibujar texto con el valor y color
+            canvas.delete(item_id)
+            text_id = canvas.create_text(
+                x_pos, y_pos,
+                text=valor,
+                fill=color,
+                font=self._font_normal,
+                anchor="nw"
+            )
 
-           # ahora usamos la y original
-            y_pos = y
-            x_pos = x
+            self.nd_canvas[i] = (var, canvas, text_id, x_pos, y_pos)
+            if key:
+                self.info_canvas[key] = (canvas, text_id)"""
 
-            if valor in ("", "None", None, "0", "$ 0", "% 0", "₿ 0"):
 
-               if canvas.type(item_id) == "image":
-                    continue
-
-               canvas.delete(item_id)
-               image_id = canvas.create_image(x_pos, y_pos, image=self.runa_image, anchor='nw')
-               self.nd_canvas[i] = (var, canvas, image_id, x, y)
-            else:
-
-                if canvas.type(item_id) == "text":
-                    canvas.itemconfig(item_id, text=valor)
-                else:
-                    # reemplazar imagen por texto
-
-                   canvas.delete(item_id)
-                   text_id = canvas.create_text(
-                       x_pos, y_pos,
-                       text=valor,
-                       fill="gold",
-                       font=self._font_normal,
-                       anchor="nw"
-                   )
-                   self.nd_canvas[i] = (var, canvas, text_id, x, y)
 
 
 
@@ -658,6 +644,8 @@ class BotInterfaz(AnimationMixin):
     def format_var(self, valor, simbolo=""):
         if valor is None:
             return ""
+        if isinstance(valor, str):
+            return valor
         if self.display_mode.get() == 'decimal':
             # str() completo de Decimal
             texto = format(valor, 'f')
@@ -672,6 +660,85 @@ class BotInterfaz(AnimationMixin):
 
     def actualizar_ui(self):
         try:
+            # --- Siempre actualizamos la UI, con o sin bot corriendo ---
+            # 1) Fetch inicial de datos internos
+            #    (si quieres evitar re-fetch dentro de UI, sólo toma valores de self.bot ya guardados)
+            # 2) Pintado dinámico (colores) y fijo (texto), sin verificar self.bot.running
+
+            # —— Dinámicos (comparan contra baseline) ——
+            pintar = {
+                "precio_actual":       self.bot.precio_actual,
+                "balance":             self.bot.usdt_mas_btc,
+                "desde_ult_comp":      self.bot.varCompra,
+                "ult_vent":            self.bot.varVenta,
+                "variacion_desde_inicio": self.bot.var_inicio,
+                "variacion_total":     self.bot.var_total,
+                
+                "btcnusdt":            self.bot.btc_usdt,
+                "hold_usdt":           self.bot.hold_usdt_var,
+            }
+            for clave, valor in pintar.items():
+                self.actualizar_color(clave, valor)
+
+            # —— Fijos (texto) —— 
+            texto_fijo = {
+                "start_time":          self.bot.get_start_time_str()  or "",
+                "runtime":             self.bot.get_runtime_str()     or "",
+                "porc_inv_por_compra": self.bot.porc_inv_por_compra,
+                "usdt":                self.bot.usdt,
+                "btc_dispo":           self.bot.btc,
+                "desde_inicio":        self.bot.precio_ingreso or Decimal("0"),
+                # compras/ventas y demás siguen igual:
+                "compras_realizadas":  self.bot.contador_compras_reales,
+                "ventas_realizadas":   self.bot.contador_ventas_reales,
+                "compras_fantasma":    self.bot.contador_compras_fantasma,
+                "ventas_fantasma":     self.bot.contador_ventas_fantasma,
+                "ghost_ratio":         self.bot.calcular_ghost_ratio(),
+                "porc_obj_venta":      self.bot.porc_profit_x_venta,
+                "porc_desde_compra":   self.bot.porc_desde_compra,
+                "porc_desde_venta":    self.bot.porc_desde_venta,
+                "fixed_buyer":         self.bot.fixed_buyer,
+                "inv_inicial":         self.bot.inv_inic,
+                "ganancia_neta":       self.bot.total_ganancia,
+            }
+
+            for clave, valor in texto_fijo.items():
+                if clave not in self.info_canvas:
+                    continue
+                canvas, item_id = self.info_canvas[clave]
+                coords = canvas.coords(item_id)
+                if coords and len(coords) == 2:
+                    x, y = coords
+                else:
+                    # fallback: no pintamos si no hay coords
+                    continue
+
+                canvas.delete(item_id)
+                # enteros para los contadores
+                if clave in (
+                    "compras_realizadas","ventas_realizadas",
+                    "compras_fantasma","ventas_fantasma"
+                ):
+                    display = str(int(valor))
+                else:
+                    display = self.format_var(valor)
+
+                new_id = canvas.create_text(
+                    x, y,
+                    text=display,
+                    fill="Gold",
+                    font=self._font_normal,
+                    anchor="nw"
+                )
+                self.info_canvas[clave] = (canvas, new_id)
+
+
+            # Finalmente, refrescamos historial y consola
+            self.actualizar_historial_consola()
+
+        except Exception as e:
+            self.log_en_consola(f"❌ Error UI: {e}")
+        try:
             # Si el bot está corriendo, procedemos (no volvemos a fetchear en UI)
             if self.bot.running:
                 # Detectar reconexión basándose en que precio anterior era None
@@ -680,79 +747,16 @@ class BotInterfaz(AnimationMixin):
                 if prev is None and actual is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
+                    self.inicializar_valores_iniciales()
                 self._prev_price_ui = actual
 
                 # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading
                 if actual is None:
                     return
                 
-                # Actualizamos el balance con el precio (que ya cargamos)
-                self.bot.actualizar_balance()
-                self.precio_act_str.set(self.format_var(self.bot.precio_actual, "$"))
-                self.cant_btc_str.set(self.format_var(self.bot.btc, "₿"))
-                self.cant_usdt_str.set(self.format_var(self.bot.usdt, "$"))
-                self.balance_str.set(self.format_var(self.bot.usdt_mas_btc, "$"))
-                self.btc_en_usdt.set(self.format_var(self.bot.btc_usdt, "$"))
-                self.precio_de_ingreso_str.set(self.format_var(self.bot.precio_ingreso, "$"))
-                self.inv_por_compra_str.set(self.format_var(self.bot.porc_inv_por_compra, "%"))
-                self.varpor_set_compra_str.set(self.format_var(self.bot.varCompra, "%"))
-                self.varpor_set_venta_str.set(self.format_var(self.bot.varVenta, "%"))
-                self.porc_desde_compra_str.set(self.format_var(self.bot.porc_desde_compra, "%"))
-                self.porc_desde_venta_str.set(self.format_var(self.bot.porc_desde_venta, "%"))
-                self.var_inicio_str.set(self.format_var(self.bot.var_inicio, "%"))
-                self.fixed_buyer_str.set(self.format_var(self.bot.fixed_buyer, "$"))
-                self.ganancia_total_str.set(self.format_var(self.bot.total_ganancia, "$"))
                 
-                self.porc_objetivo_venta_str.set(self.format_var(self.bot.porc_profit_x_venta, "%"))
-                self.ghost_ratio_var.set(self.format_var(self.bot.calcular_ghost_ratio()))
-                
-                self.start_time_str.set(self.bot.get_start_time_str() or "")
-                self.runtime_str.set(self.bot.get_runtime_str() or "")
-                self.hold_btc_str.set(self.format_var(self.bot.hold_btc_var, "%"))
-                self.hold_usdt_str.set(self.format_var(self.bot.hold_usdt_var, "%"))
-                
-                self.var_total_str.set(self.format_var(self.bot.var_total, "%"))
-                self.cont_compras_fantasma_str.set(str(int(self.bot.contador_compras_fantasma)))
-                self.cont_ventas_fantasma_str.set(str(int(self.bot.contador_ventas_fantasma)))
-                self.compras_realizadas_str.set(str(int(self.bot.contador_compras_reales)))
-                self.ventas_realizadas_str.set(str(int(self.bot.contador_ventas_reales)))
-
-                self.actualizar_historial_consola()                
-                # — Calcular y pintar variación total + colores de todos
-                
-                self.actualizar_color("precio_actual", self.bot.precio_actual)
-                self.actualizar_color("balance", self.bot.usdt_mas_btc)
-                self.actualizar_color("desde_ult_comp", self.bot.varCompra)
-                self.actualizar_color("ult_vent", self.bot.varVenta)
-                self.actualizar_color("variacion_desde_inicio", self.bot.var_inicio)
-                self.actualizar_color("variacion_total",self.bot.var_total)
-
-
-                
-
-                for idx, (var, canvas, item_id, x, y) in enumerate(self.nd_canvas):
-                    texto = var.get().strip()
-                    if texto:
-                        # Mostrar texto
-                        if canvas.type(item_id) != "text":
-                            canvas.delete(item_id)
-                            nid = canvas.create_text(x, y, text=texto,
-                                                     fill="gold", font=self._font_normal, anchor="nw")
-                            self.nd_canvas[idx] = (var, canvas, nid, x, y)
-                        else:
-                            canvas.itemconfig(item_id, text=texto)
-                    else:
-                        # Mostrar runa
-                        if canvas.type(item_id) != "image":
-                            canvas.delete(item_id)
-                            iid = canvas.create_image(x, y, image=self.runa_image, anchor="nw")
-                            self.nd_canvas[idx] = (var, canvas, iid, x, y)
-                   
         except Exception as exc_ui:
-            # Si algo falla en UI, lo marcamos y forzamos precio(None)
-            self.bot.precio_actual = None
-            self.root.after(0, lambda exc=exc_ui: self.log_en_consola(f"❌ Error UI: {exc_ui}"))
-        # ← IMPORTANTE: **Aquí NO agregamos ningún `after_idle(self.actualizar_ui)`**.
+                self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
@@ -784,28 +788,62 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(END, resto)
 
     def actualizar_color(self, key, valor_actual):
-        if valor_actual is None:
+        if valor_actual is None or key not in self.info_canvas:
             return
+
         inicial = self.valores_iniciales.get(key, 0)
         color = "Gold"
         if valor_actual > inicial:
             color = "Green"
         elif valor_actual < inicial:
             color = "Crimson"
+        """else:
+            color = "Gold"  """  
 
-        ci = self.info_canvas.get(key)
-        if ci:
-            canvas, item_id = ci
-            canvas.itemconfig(item_id, fill=color)
+        self.colores_actuales[key] = color
+
+        if key not in self.info_canvas:
+            return
+
+        canvas, item_id = self.info_canvas[key]
+
+        # Obtener coordenadas anteriores
+        coords = canvas.coords(item_id)
+        if not coords or len(coords) != 2:
+            x, y = 20, 10
+        else:
+            x, y = coords
+
+        canvas.delete(item_id)
+
+        if key in ["compras_realizadas", "ventas_realizadas", "compras_fantasma", "ventas_fantasma"]:
+            texto = str(int(valor_actual))
+        else:
+            texto = self.format_var(valor_actual)
+
+        text_id = canvas.create_text(
+            x, y,
+            text=texto,
+            fill=color,
+            font=self._font_normal,
+            anchor="nw"
+        )
+
+        self.info_canvas[key] = (canvas, text_id)
+
+
+        #print(f"[TEXTO DIRECTO] key={key} valor={valor_actual} color={color}")
 
 
 
-    def reset_colores(self):
+
+
+    """def reset_colores(self):
         for canvas, item_id in self.info_canvas.values():
             try:
                 canvas.itemconfig(item_id, fill="Gold")
             except TclError:
-                pass
+                pass"""
 
         
     def log_en_consola(self, msg):
@@ -814,6 +852,8 @@ class BotInterfaz(AnimationMixin):
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
+        if self.bot.precio_actual is None:
+            return  # No inicializar con datos vacíos
         # Guarda el primer snapshot para colorear luego
         self.valores_iniciales = {
             'precio_actual': self.bot.precio_actual or 0,
@@ -821,7 +861,9 @@ class BotInterfaz(AnimationMixin):
             'desde_ult_comp': self.bot.varCompra,
             'ult_vent': self.bot.varVenta,
             'variacion_desde_inicio': self.bot.var_inicio,
-            'variacion_total': self.bot.var_total
+            'variacion_total': self.bot.var_total,
+            'hold_usdt': self.bot.hold_usdt_var,
+            'hold_btc': self.bot.hold_btc_var,
         }
 
     def run(self):

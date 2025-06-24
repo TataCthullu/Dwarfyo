@@ -25,8 +25,9 @@ class TradingBot:
         self.log_fn = None
         self.sound_enabled = True
         self.start_time = None
+        self.run_time = self.get_runtime_str()
 
-        self.inv_inic = Decimal("0")
+        self.inv_inic = Decimal("5000")
         self.usdt = self.inv_inic
         self.btc = Decimal("0")        
         self.btc_comprado = Decimal("0")
@@ -40,10 +41,10 @@ class TradingBot:
         self.parametro_venta_fantasma = False
         self.precio_ult_venta = Decimal("0")
 
-        self.porc_desde_compra = Decimal("0.5")
-        self.porc_desde_venta = Decimal("0.5")
+        self.porc_desde_compra = Decimal("0.05")
+        self.porc_desde_venta = Decimal("0.05")
         self.porc_inv_por_compra = Decimal("10")
-        self.porc_profit_x_venta = Decimal("0.5")
+        self.porc_profit_x_venta = Decimal("0.05")
 
 
         self.fixed_buyer = self.cant_inv()
@@ -79,7 +80,7 @@ class TradingBot:
         self.timestamp = None
         self.ghost_purchase_enabled = False  
         self.var_total = Decimal("0")
-
+        self.ghost_ratio = self.calcular_ghost_ratio()
         self.format_fn = lambda x, s="": f"{s} {x}"  # Por defecto, sin formato especial
 
     def set_formatter(self, format_fn):
