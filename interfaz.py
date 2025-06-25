@@ -231,7 +231,7 @@ class BotInterfaz(AnimationMixin):
                 y_offset += row_height
 
         add("Usdt + Btc:", self.balance_str, "balance")
-        add("% Variación Total:", self.var_total_str, "variacion_total")
+        add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
         add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
@@ -425,8 +425,8 @@ class BotInterfaz(AnimationMixin):
         self.consola.delete("1.0", END)
 
         # 5) Resetear baseline de colores y valores
-        self.valores_iniciales.clear()
-        self.colores_actuales.clear()
+        """self.valores_iniciales.clear()
+        self.colores_actuales.clear()"""
 
         # 6) Botones listos para nuevo inicio
         self.btn_inicio.config(text="Iniciar")
@@ -672,9 +672,9 @@ class BotInterfaz(AnimationMixin):
                 "desde_ult_comp":      self.bot.varCompra,
                 "ult_vent":            self.bot.varVenta,
                 "variacion_desde_inicio": self.bot.var_inicio,
-                "variacion_total":     self.bot.var_total,
+                "variacion_total_inv":     self.bot.var_total,
                 
-                "btcnusdt":            self.bot.btc_usdt,
+                
                 "hold_usdt":           self.bot.hold_usdt_var,
             }
             for clave, valor in pintar.items():
@@ -700,6 +700,7 @@ class BotInterfaz(AnimationMixin):
                 "fixed_buyer":         self.bot.fixed_buyer,
                 "inv_inicial":         self.bot.inv_inic,
                 "ganancia_neta":       self.bot.total_ganancia,
+                "btcnusdt":            self.bot.btc_usdt,
             }
 
             for clave, valor in texto_fijo.items():
@@ -747,7 +748,7 @@ class BotInterfaz(AnimationMixin):
                 if prev is None and actual is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
-                    self.inicializar_valores_iniciales()
+                    #self.inicializar_valores_iniciales()
                 self._prev_price_ui = actual
 
                 # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading
@@ -861,7 +862,7 @@ class BotInterfaz(AnimationMixin):
             'desde_ult_comp': self.bot.varCompra,
             'ult_vent': self.bot.varVenta,
             'variacion_desde_inicio': self.bot.var_inicio,
-            'variacion_total': self.bot.var_total,
+            'variacion_total_inv': self.bot.var_total,
             'hold_usdt': self.bot.hold_usdt_var,
             'hold_btc': self.bot.hold_btc_var,
         }
