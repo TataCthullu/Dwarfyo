@@ -407,6 +407,8 @@ class BotInterfaz(AnimationMixin):
         self.bot.reiniciar()
         self.bot.log_fn = self.log_en_consola
         self.bot.sound_enabled = self.sound_enabled
+        self.bot.set_formatter(self.format_var)
+
 
         # 2) Limpiar todos los StringVars a vacío
         for attr in vars(self).values():
@@ -667,15 +669,13 @@ class BotInterfaz(AnimationMixin):
 
             # —— Dinámicos (comparan contra baseline) ——
             pintar = {
-                "precio_actual":       self.bot.precio_actual,
-                "balance":             self.bot.usdt_mas_btc,
-                "desde_ult_comp":      self.bot.varCompra,
-                "ult_vent":            self.bot.varVenta,
-                "variacion_desde_inicio": self.bot.var_inicio,
-                "variacion_total_inv":     self.bot.var_total,
-                
-                
-                "hold_usdt":           self.bot.hold_usdt_var,
+                "precio_actual":       (self.bot.precio_actual, "$"),
+                "balance":             (self.bot.usdt_mas_btc, "$"),
+                "desde_ult_comp":      (self.bot.varCompra, "%"),
+                "ult_vent":            (self.bot.varVenta, "%"),
+                "variacion_desde_inicio": (self.bot.var_inicio, "%"),
+                "variacion_total_inv":     (self.bot.var_total, "%"),
+                "hold_usdt":           (self.bot.hold_usdt_var, "$"),
             }
             for clave, valor in pintar.items():
                 self.actualizar_color(clave, valor)
@@ -684,23 +684,23 @@ class BotInterfaz(AnimationMixin):
             texto_fijo = {
                 "start_time":          self.bot.get_start_time_str()  or "",
                 "runtime":             self.bot.get_runtime_str()     or "",
-                "porc_inv_por_compra": self.bot.porc_inv_por_compra,
-                "usdt":                self.bot.usdt,
-                "btc_dispo":           self.bot.btc,
-                "desde_inicio":        self.bot.precio_ingreso or Decimal("0"),
+                "porc_inv_por_compra": (self.bot.porc_inv_por_compra, "%"),
+                "usdt":                (self.bot.usdt, "$"),
+                "btc_dispo":           (self.bot.btc, "₿"),
+                "desde_inicio":        (self.bot.precio_ingreso, "$") or Decimal("0"),
                 # compras/ventas y demás siguen igual:
                 "compras_realizadas":  self.bot.contador_compras_reales,
                 "ventas_realizadas":   self.bot.contador_ventas_reales,
                 "compras_fantasma":    self.bot.contador_compras_fantasma,
                 "ventas_fantasma":     self.bot.contador_ventas_fantasma,
-                "ghost_ratio":         self.bot.calcular_ghost_ratio(),
-                "porc_obj_venta":      self.bot.porc_profit_x_venta,
-                "porc_desde_compra":   self.bot.porc_desde_compra,
-                "porc_desde_venta":    self.bot.porc_desde_venta,
-                "fixed_buyer":         self.bot.fixed_buyer,
-                "inv_inicial":         self.bot.inv_inic,
-                "ganancia_neta":       self.bot.total_ganancia,
-                "btcnusdt":            self.bot.btc_usdt,
+                "ghost_ratio":         (self.bot.calcular_ghost_ratio(), "%"),
+                "porc_obj_venta":      (self.bot.porc_profit_x_venta, "%"),
+                "porc_desde_compra":   (self.bot.porc_desde_compra, "%"),
+                "porc_desde_venta":    (self.bot.porc_desde_venta, "%"),
+                "fixed_buyer":         (self.bot.fixed_buyer, "$"),
+                "inv_inicial":         (self.bot.inv_inic, "$"),
+                "ganancia_neta":       (self.bot.total_ganancia, "$"),
+                "btcnusdt":            (self.bot.btc_usdt, "$"),
             }
 
             for clave, valor in texto_fijo.items():
@@ -715,14 +715,20 @@ class BotInterfaz(AnimationMixin):
                     continue
 
                 canvas.delete(item_id)
+                # detectar si hay símbolo
+                if isinstance(valor, tuple):
+                    valor_real, simbolo = valor
+                else:
+                    valor_real, simbolo = valor, ""
+
                 # enteros para los contadores
                 if clave in (
                     "compras_realizadas","ventas_realizadas",
                     "compras_fantasma","ventas_fantasma"
                 ):
-                    display = str(int(valor))
+                    display = str(int(valor_real))
                 else:
-                    display = self.format_var(valor)
+                    display = self.format_var(valor_real, simbolo)
 
                 new_id = canvas.create_text(
                     x, y,
