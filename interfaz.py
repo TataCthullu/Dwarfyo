@@ -657,7 +657,35 @@ class BotInterfaz(AnimationMixin):
             texto = fmt.format(float(valor))
         return f"{simbolo} {texto}"
 
-    
+    def format_fijo(self, clave, valor):
+        """
+        Devuelve el string formateado final para mostrar en pantalla.
+        Se encarga de símbolos, decimales y valores enteros si aplica.
+        """
+        # Si viene con símbolo
+        if isinstance(valor, tuple):
+            valor_real, simbolo = valor
+        else:
+            valor_real, simbolo = valor, ""
+
+        # Si es contador entero
+        if clave in (
+            "compras_realizadas", "ventas_realizadas",
+            "compras_fantasma", "ventas_fantasma"
+        ):
+            return str(int(valor_real))
+
+        # Si es texto plano
+        if isinstance(valor_real, str):
+            return valor_real
+
+        # Si es None
+        if valor_real is None:
+            return ""
+
+        # En todos los demás casos
+        return self.format_var(valor_real, simbolo)
+
  
 
     def actualizar_ui(self):
@@ -687,7 +715,7 @@ class BotInterfaz(AnimationMixin):
                 "porc_inv_por_compra": (self.bot.porc_inv_por_compra, "%"),
                 "usdt":                (self.bot.usdt, "$"),
                 "btc_dispo":           (self.bot.btc, "₿"),
-                "desde_inicio":        (self.bot.precio_ingreso, "$") or Decimal("0"),
+                "desde_inicio":        (self.bot.precio_ingreso or Decimal("0"), "$"), 
                 # compras/ventas y demás siguen igual:
                 "compras_realizadas":  self.bot.contador_compras_reales,
                 "ventas_realizadas":   self.bot.contador_ventas_reales,
@@ -700,6 +728,7 @@ class BotInterfaz(AnimationMixin):
                 "fixed_buyer":         (self.bot.fixed_buyer, "$"),
                 "inv_inicial":         (self.bot.inv_inic, "$"),
                 "ganancia_neta":       (self.bot.total_ganancia, "$"),
+                "hold_btc":       (self.bot.hold_btc_var, "₿"),
                 "btcnusdt":            (self.bot.btc_usdt, "$"),
             }
 
@@ -716,19 +745,14 @@ class BotInterfaz(AnimationMixin):
 
                 canvas.delete(item_id)
                 # detectar si hay símbolo
-                if isinstance(valor, tuple):
+                """if isinstance(valor, tuple):
                     valor_real, simbolo = valor
                 else:
-                    valor_real, simbolo = valor, ""
+                    valor_real, simbolo = valor, """""
 
                 # enteros para los contadores
-                if clave in (
-                    "compras_realizadas","ventas_realizadas",
-                    "compras_fantasma","ventas_fantasma"
-                ):
-                    display = str(int(valor_real))
-                else:
-                    display = self.format_var(valor_real, simbolo)
+                display = self.format_fijo(clave, valor)
+
 
                 new_id = canvas.create_text(
                     x, y,
@@ -798,23 +822,19 @@ class BotInterfaz(AnimationMixin):
         if valor_actual is None or key not in self.info_canvas:
             return
 
+        # Extraer valor real (para comparación) si es tupla
+        valor_real = valor_actual[0] if isinstance(valor_actual, tuple) else valor_actual
+
         inicial = self.valores_iniciales.get(key, 0)
         color = "Gold"
-        if valor_actual > inicial:
+        if valor_real > inicial:
             color = "Green"
-        elif valor_actual < inicial:
+        elif valor_real < inicial:
             color = "Crimson"
-        """else:
-            color = "Gold"  """  
 
         self.colores_actuales[key] = color
 
-        if key not in self.info_canvas:
-            return
-
         canvas, item_id = self.info_canvas[key]
-
-        # Obtener coordenadas anteriores
         coords = canvas.coords(item_id)
         if not coords or len(coords) != 2:
             x, y = 20, 10
@@ -822,11 +842,7 @@ class BotInterfaz(AnimationMixin):
             x, y = coords
 
         canvas.delete(item_id)
-
-        if key in ["compras_realizadas", "ventas_realizadas", "compras_fantasma", "ventas_fantasma"]:
-            texto = str(int(valor_actual))
-        else:
-            texto = self.format_var(valor_actual)
+        texto = self.format_fijo(key, valor_actual)
 
         text_id = canvas.create_text(
             x, y,
@@ -838,19 +854,6 @@ class BotInterfaz(AnimationMixin):
 
         self.info_canvas[key] = (canvas, text_id)
 
-
-        #print(f"[TEXTO DIRECTO] key={key} valor={valor_actual} color={color}")
-
-
-
-
-
-    """def reset_colores(self):
-        for canvas, item_id in self.info_canvas.values():
-            try:
-                canvas.itemconfig(item_id, fill="Gold")
-            except TclError:
-                pass"""
 
         
     def log_en_consola(self, msg):
