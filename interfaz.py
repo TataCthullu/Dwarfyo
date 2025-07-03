@@ -49,7 +49,7 @@ class BotInterfaz(AnimationMixin):
             "ventas_fantasma": self.bot.contador_ventas_fantasma
         }
         
-        self.bot.set_formatter(self.format_var)
+        
 
             
 
@@ -74,6 +74,7 @@ class BotInterfaz(AnimationMixin):
         # Estado de vista: 'decimal' o 'float'
         self.display_mode  = tk.StringVar(value='decimal')
         self.float_precision = 2
+
         # 3) Submenú Vista
         self._crear_menu_vista()
         # Creamos submenu Opciones
@@ -83,7 +84,7 @@ class BotInterfaz(AnimationMixin):
         self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
-
+        self.bot.set_formatter(self.format_var)
         self.actualizar_ui()
         self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
@@ -96,26 +97,34 @@ class BotInterfaz(AnimationMixin):
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
         view_menu.add_radiobutton(
-            label="Vista Decimal",
-            variable=self.display_mode, value='decimal',
-            command=self.actualizar_ui  # <-- llamamos actualizar_ui directamente
+            label="Decimal",
+            variable=self.display_mode,
+            value="decimal",
+            command=self._cambiar_precision
         )
         view_menu.add_radiobutton(
             label="Float (2 decimales)",
-            variable=self.display_mode, value='float',
-            command=lambda: self._cambiar_precision_y_actualizar(2)
+            variable=self.display_mode,
+            value="float",
+            command=lambda: self._cambiar_precision(2)
         )
         view_menu.add_radiobutton(
             label="Float (4 decimales)",
-            variable=self.display_mode, value='float',
-            command=lambda: self._cambiar_precision_y_actualizar(4)
+            variable=self.display_mode,
+            value="float",
+            command=lambda: self._cambiar_precision(4)
         )
+
         self.menubar.add_cascade(label="Vista", menu=view_menu)
 
 
-    def _cambiar_precision_y_actualizar(self, precision):
-        self.float_precision = precision
+    def _cambiar_precision(self, prec=None):
+        if prec is not None:
+            self.float_precision = prec
+        self.bot.set_formatter(self.format_var)
         self.actualizar_ui()
+
+
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -407,9 +416,11 @@ class BotInterfaz(AnimationMixin):
 
         # 2) Reiniciar bot y resetear estado lógico
         self.bot.reiniciar()
+        
+
         self.bot.log_fn = self.log_en_consola
-        self.bot.sound_enabled = self.sound_enabled
-        self.bot.set_formatter(self.format_var)
+        #self.bot.sound_enabled = self.sound_enabled
+        
 
         for key in list(self.info_canvas.keys()):
             canvas, item_id = self.info_canvas[key]
@@ -434,16 +445,26 @@ class BotInterfaz(AnimationMixin):
         self.historial.delete("1.0", END)
         self.consola.delete("1.0", END)
 
-        # 7) Reconstruir paneles de datos
+        # 7) Guardar la vista actual del usuario
+        modo_vista_actual = self.display_mode.get()
+        precision_actual = self.float_precision
+
+        # 8) Destruir frames viejos
         try:
             self.left_frame.destroy()
             self.center_frame.destroy()
         except Exception:
             pass
 
+        # 9) Reconstruir paneles
         self.left_panel()
         self.center_panel()
         self.init_animation()
+
+        # 10) Restaurar la vista del usuario
+        self.display_mode.set(modo_vista_actual)
+        self.float_precision = precision_actual
+        self.bot.set_formatter(self.format_var)
 
         # 8) Redibujar datos actuales (aunque estén vacíos)
         self.actualizar_ui()
