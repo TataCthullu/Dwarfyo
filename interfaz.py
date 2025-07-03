@@ -404,37 +404,58 @@ class BotInterfaz(AnimationMixin):
         # 1) Sonido y reinicio completo del bot
         if self.sound_enabled:
             reproducir_sonido("Sounds/limpiar.wav")
+
+        # 2) Reiniciar bot y resetear estado lógico
         self.bot.reiniciar()
         self.bot.log_fn = self.log_en_consola
         self.bot.sound_enabled = self.sound_enabled
         self.bot.set_formatter(self.format_var)
 
+        for key in list(self.info_canvas.keys()):
+            canvas, item_id = self.info_canvas[key]
+            try:
+                canvas.delete(item_id)
+            except Exception:
+                pass
+        self.info_canvas.clear()
 
-        # 2) Limpiar todos los StringVars a vacío
+        self.nd_canvas.clear()
+
+        # 4) Reset variables visuales
+        self.valores_iniciales.clear()
+        self.colores_actuales.clear()
+
+        # 5) Reset StringVars
         for attr in vars(self).values():
             if isinstance(attr, tk.StringVar):
                 attr.set("")
 
-        # 3) Borrar texto de cada canvas (dejamos el mapeo, sólo limpiamos el contenido)
-        for canvas, item_id in self.info_canvas.values():
-            try:
-                canvas.itemconfig(item_id, text="", fill="Gold")
-            except Exception:
-                pass
-
-        # 4) Vaciar historial y consola
+        # 6) Vaciar historial y consola
         self.historial.delete("1.0", END)
         self.consola.delete("1.0", END)
 
-        # 5) Resetear baseline de colores y valores
-        """self.valores_iniciales.clear()
-        self.colores_actuales.clear()"""
+        # 7) Reconstruir paneles de datos
+        try:
+            self.left_frame.destroy()
+            self.center_frame.destroy()
+        except Exception:
+            pass
 
-        # 6) Botones listos para nuevo inicio
+        self.left_panel()
+        self.center_panel()
+        self.init_animation()
+
+        # 8) Redibujar datos actuales (aunque estén vacíos)
+        self.actualizar_ui()
+
+        # 9) Restaurar botones
         self.btn_inicio.config(text="Iniciar")
         self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
+
+        # 10) Forzar primer log de limpieza
+        self.log_en_consola("🧹 Bot limpiado.")
 
 
     def _thread_callback(self, future):
@@ -744,25 +765,15 @@ class BotInterfaz(AnimationMixin):
                     continue
 
                 canvas.delete(item_id)
-                # detectar si hay símbolo
-                """if isinstance(valor, tuple):
-                    valor_real, simbolo = valor
-                else:
-                    valor_real, simbolo = valor, """""
-
-                # enteros para los contadores
-                display = self.format_fijo(clave, valor)
-
-
+                texto = self.format_fijo(clave, valor)
                 new_id = canvas.create_text(
                     x, y,
-                    text=display,
+                    text=texto,
                     fill="Gold",
                     font=self._font_normal,
                     anchor="nw"
                 )
                 self.info_canvas[clave] = (canvas, new_id)
-
 
             # Finalmente, refrescamos historial y consola
             self.actualizar_historial_consola()
