@@ -696,14 +696,30 @@ class BotInterfaz(AnimationMixin):
             return ""
         if isinstance(valor, str):
             return valor
-        if self.display_mode.get() == 'decimal':
-            # str() completo de Decimal
-            texto = format(valor, 'f')
+        if valor == 0:
+            return f"{simbolo} 0" if simbolo else "0"
+
+        modo = self.display_mode.get()
+        prec = self.float_precision
+
+        # Convertir a float para operaciones comunes
+        valor_f = float(valor)
+
+        if modo == 'decimal':
+            if valor_f.is_integer():
+                texto = str(int(valor_f))
+            else:
+                texto = format(valor_f, 'f').rstrip('0').rstrip('.')
         else:
-            # float con los decimales definidos
-            fmt = f"{{0:.{self.float_precision}f}}"
-            texto = fmt.format(float(valor))
-        return f"{simbolo} {texto}"
+            texto_raw = f"{valor_f:.{prec}f}"
+            # Si termina en .000... o ceros sin significado, recortamos
+            if valor_f.is_integer():
+                texto = str(int(valor_f))
+            else:
+                texto = texto_raw.rstrip('0').rstrip('.') if '.' in texto_raw else texto_raw
+
+        return f"{simbolo} {texto}" if simbolo else texto
+
 
     def format_fijo(self, clave, valor):
         """
