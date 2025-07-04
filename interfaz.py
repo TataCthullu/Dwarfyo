@@ -420,7 +420,17 @@ class BotInterfaz(AnimationMixin):
 
         self.bot.log_fn = self.log_en_consola
         #self.bot.sound_enabled = self.sound_enabled
-        
+        modo_vista_actual = self.display_mode.get()
+        precision_actual = self.float_precision
+
+# 5) Reset StringVars
+        for attr in vars(self).values():
+            if isinstance(attr, tk.StringVar):
+                attr.set("")
+
+        # 10) Restaurar la vista del usuario
+        self.display_mode.set(modo_vista_actual)
+        self.float_precision = precision_actual
 
         for key in list(self.info_canvas.keys()):
             canvas, item_id = self.info_canvas[key]
@@ -435,19 +445,17 @@ class BotInterfaz(AnimationMixin):
         # 4) Reset variables visuales
         self.valores_iniciales.clear()
         self.colores_actuales.clear()
+       
 
-        # 5) Reset StringVars
-        for attr in vars(self).values():
-            if isinstance(attr, tk.StringVar):
-                attr.set("")
+        
 
+        
         # 6) Vaciar historial y consola
         self.historial.delete("1.0", END)
         self.consola.delete("1.0", END)
 
         # 7) Guardar la vista actual del usuario
-        modo_vista_actual = self.display_mode.get()
-        precision_actual = self.float_precision
+        
 
         # 8) Destruir frames viejos
         try:
@@ -461,9 +469,7 @@ class BotInterfaz(AnimationMixin):
         self.center_panel()
         self.init_animation()
 
-        # 10) Restaurar la vista del usuario
-        self.display_mode.set(modo_vista_actual)
-        self.float_precision = precision_actual
+        
         self.bot.set_formatter(self.format_var)
 
         # 8) Redibujar datos actuales (aunque estén vacíos)
