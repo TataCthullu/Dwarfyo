@@ -29,7 +29,7 @@ class BotInterfaz(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("LondonBetween", 16)
+        self._font_normal = ("LondonBetween", 24)
         
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -64,6 +64,7 @@ class BotInterfaz(AnimationMixin):
         self.various_panel()
         self.init_animation()
         
+
         
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
@@ -74,7 +75,7 @@ class BotInterfaz(AnimationMixin):
         # Estado de vista: 'decimal' o 'float'
         self.display_mode  = tk.StringVar(value='decimal')
         self.float_precision = 2
-
+        self.ajustar_fuente_por_vista()
         # 3) Submenú Vista
         self._crear_menu_vista()
         # Creamos submenu Opciones
@@ -121,9 +122,34 @@ class BotInterfaz(AnimationMixin):
     def _cambiar_precision(self, prec=None):
         if prec is not None:
             self.float_precision = prec
+
+        self.ajustar_fuente_por_vista()  
+        # 🧼 Destruir y recrear paneles para que los textos fijos usen nueva fuente
+        try:
+            self.left_frame.destroy()
+            self.center_frame.destroy()
+        except Exception:
+            pass
+        self.left_panel()
+        self.center_panel()
+        self.init_animation()  
+
         self.bot.set_formatter(self.format_var)
         self.actualizar_ui()
 
+    def ajustar_fuente_por_vista(self):
+        modo = self.display_mode.get()
+
+        if modo == 'decimal':
+            size = 24
+        elif modo == 'float' and self.float_precision == 2:
+            size = 28
+        elif modo == 'float' and self.float_precision == 4:
+            size = 26
+        else:
+            size = 24  # fallback
+
+        self._font_normal = ("LondonBetween", size)
 
 
     def toggle_sound(self):
@@ -313,7 +339,7 @@ class BotInterfaz(AnimationMixin):
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
         
 
-        self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_normal)
+        self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=("LondonBetween", 16))
 
         self.historial.place(x=50, y=50, width=750, height=350)
 
@@ -335,7 +361,7 @@ class BotInterfaz(AnimationMixin):
             bg="DarkGoldenRod",
             relief="flat",
             bd=0,
-            font=self._font_normal
+            font=("LondonBetween", 16)
         )
         self.consola_window = self.canvas_right_b.create_window(
             70, 70,
@@ -367,17 +393,17 @@ class BotInterfaz(AnimationMixin):
         self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=3)
         
         # Crear botones pero solo mostrar "Iniciar" al principio
-        self.btn_inicio = Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_inicio = Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
 
-        self.btn_limpiar = Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_limpiar = Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_limpiar_id = self.canvas_various.create_window(250, 50, window=self.btn_limpiar)
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
 
-        self.btn_calc = Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_calc = Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.canvas_various.create_window(400, 50, window=self.btn_calc)
 
-        self.btn_confi = Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=self._font_normal, fg="PaleGoldenRod")
+        self.btn_confi = Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_confi_id = self.canvas_various.create_window(600, 50, window=self.btn_confi)
 
     def toggle_bot(self):
@@ -422,6 +448,7 @@ class BotInterfaz(AnimationMixin):
         #self.bot.sound_enabled = self.sound_enabled
         modo_vista_actual = self.display_mode.get()
         precision_actual = self.float_precision
+        self.ajustar_fuente_por_vista()
 
 # 5) Reset StringVars
         for attr in vars(self).values():
@@ -501,39 +528,6 @@ class BotInterfaz(AnimationMixin):
         btc_avail  = self.bot.btc
         CalculatorWindow(self.root, usdt_avail, btc_avail)
 
-    
-        
-    """def reset_stringvars(self):
-        for i, (var, canvas, item_id, x_pos, y_pos) in enumerate(self.nd_canvas):
-            valor = var.get()
-
-            # Determinar color asociado si existe
-            color = "Gold"
-            key = None
-            for k, (c, id_old) in self.info_canvas.items():
-                if c == canvas and id_old == item_id:
-                    key = k
-                    color = self.colores_actuales.get(k, "Gold")
-                    break
-
-            # Borrar lo anterior y redibujar texto con el valor y color
-            canvas.delete(item_id)
-            text_id = canvas.create_text(
-                x_pos, y_pos,
-                text=valor,
-                fill=color,
-                font=self._font_normal,
-                anchor="nw"
-            )
-
-            self.nd_canvas[i] = (var, canvas, text_id, x_pos, y_pos)
-            if key:
-                self.info_canvas[key] = (canvas, text_id)"""
-
-
-
-
-
     def abrir_configuracion_subventana(self):
         # Si ya está abierta y no fue destruida, traerla al frente
         if self.config_ventana is not None and self.config_ventana.winfo_exists():
@@ -571,7 +565,7 @@ class BotInterfaz(AnimationMixin):
                     text="Habilitar compra tras venta fantasma",
                     variable=self.var_ghost,
                     bg="DarkGoldenRod",
-                    font=self._font_normal,
+                    font=("LondonBetween", 16),
                     fg="DarkSlateGray").pack(side=LEFT)  
 
         entries = []
@@ -580,10 +574,10 @@ class BotInterfaz(AnimationMixin):
             frame = Frame(self.config_ventana, bg="DarkGoldenRod")
             frame.pack(fill=X, pady=4, padx=8)
             Label(frame, text=etiqueta, bg="DarkGoldenRod",
-                font=self._font_normal, fg="DarkSlateGray").pack(side=LEFT)
+                font=("LondonBetween", 16), fg="DarkSlateGray").pack(side=LEFT)
             var = StringVar(value=str(valor))
             Entry(frame, textvariable=var, bg="DarkGoldenRod",
-                font=self._font_normal, fg="Gold").pack(side=LEFT, padx=6)
+                font=("LondonBetween", 16), fg="Gold").pack(side=LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
@@ -652,27 +646,56 @@ class BotInterfaz(AnimationMixin):
 
         Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
-            font=self._font_normal, fg="PaleGoldenRod").pack(pady=8)
+            font=("LondonBetween", 16), fg="PaleGoldenRod").pack(pady=8)
 
     def _on_close(self):
-        # 1) cancelar el after programado
-        if self.loop_id is not None:
+        # 1) Cancelar after programado si existe
+        if hasattr(self, 'loop_id') and self.loop_id is not None:
             try:
                 self.root.after_cancel(self.loop_id)
             except Exception:
                 pass
-        # 2) Detener el executor
-        self.executor.shutdown(wait=False, cancel_futures=True)
-        # 3) cerrar la ventana
-        self.root.destroy()
+
+        # 2) Detener el bot si sigue corriendo
+        try:
+            if self.bot.running:
+                self.bot.detener()
+        except Exception:
+            pass
+
+        # 3) Apagar el ThreadPoolExecutor
+        try:
+            self.executor.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
+
+        # 4) Cerrar ventana
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+
             
     def _loop(self):
+        # Si el bot ya no corre o la ventana ya no existe, salimos
         if not self.bot.running:
             return
+        if not self.root.winfo_exists():
+            return
+
+        # Ejecutamos el ciclo de trading en segundo plano
         future = self.executor.submit(self._run_trading_cycle)
-        future.add_done_callback(
-            lambda _: self.root.after(3000, self._loop)
-        )
+
+        # Cuando termine, planificamos el próximo _loop (solo si root sigue viva)
+        def replanear(_):
+            try:
+                if self.root.winfo_exists() and self.bot.running:
+                    self.root.after(3000, self._loop)
+            except Exception as e:
+                print(f"[⚠️ Error after loop]: {e}")
+
+        future.add_done_callback(replanear)
+
 
     def _run_trading_cycle(self):
         try:
@@ -688,7 +711,12 @@ class BotInterfaz(AnimationMixin):
             self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading (sin precio): {exc}"))
         finally:
             # Solo aquí reprogramamos la actualización de la UI (una vez por ciclo)
-            self.root.after_idle(self.actualizar_ui)
+            try:
+                if self.root.winfo_exists():
+                    self.root.after_idle(self.actualizar_ui)
+            except:
+                pass  # la ventana ya no existe
+
 
 
     def format_var(self, valor, simbolo=""):
@@ -908,7 +936,7 @@ class BotInterfaz(AnimationMixin):
 
         self.info_canvas[key] = (canvas, text_id)
 
-
+    
         
     def log_en_consola(self, msg):
         self.consola.insert(END, msg+"\n")
