@@ -29,7 +29,7 @@ class BotInterfaz(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
-        self._font_normal = ("LondonBetween", 24)
+        self._font_normal = ("LondonBetween", 16)
         
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -141,13 +141,13 @@ class BotInterfaz(AnimationMixin):
         modo = self.display_mode.get()
 
         if modo == 'decimal':
-            size = 24
+            size = 16
         elif modo == 'float' and self.float_precision == 2:
             size = 28
         elif modo == 'float' and self.float_precision == 4:
-            size = 26
+            size = 24
         else:
-            size = 24  # fallback
+            size = 16  # fallback
 
         self._font_normal = ("LondonBetween", size)
 
@@ -727,27 +727,20 @@ class BotInterfaz(AnimationMixin):
         if valor == 0:
             return f"{simbolo} 0" if simbolo else "0"
 
-        modo = self.display_mode.get()
-        prec = self.float_precision
-
-        # Convertir a float para operaciones comunes
-        valor_f = float(valor)
+        modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
+        prec = self.float_precision if hasattr(self, 'float_precision') else 2
 
         if modo == 'decimal':
-            if valor_f.is_integer():
-                texto = str(int(valor_f))
-            else:
-                texto = format(valor_f, 'f').rstrip('0').rstrip('.')
+            # Evitar ceros sin sentido: convertir a string y limpiar ceros a la derecha
+            texto = format(valor.normalize(), 'f')
+            if '.' in texto:
+                texto = texto.rstrip('0').rstrip('.')
         else:
+            valor_f = float(valor)
             texto_raw = f"{valor_f:.{prec}f}"
-            # Si termina en .000... o ceros sin significado, recortamos
-            if valor_f.is_integer():
-                texto = str(int(valor_f))
-            else:
-                texto = texto_raw.rstrip('0').rstrip('.') if '.' in texto_raw else texto_raw
+            texto = texto_raw.rstrip('0').rstrip('.') if '.' in texto_raw else texto_raw
 
         return f"{simbolo} {texto}" if simbolo else texto
-
 
     def format_fijo(self, clave, valor):
         """
