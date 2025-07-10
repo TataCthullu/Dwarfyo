@@ -289,9 +289,9 @@ class BotInterfaz(AnimationMixin):
   
     def center_panel(self):
         self.center_frame = Frame(self.root, bd=0, relief='flat')
-        self.center_frame.place(x=600, y=0, width=500, height=450)
+        self.center_frame.place(x=600, y=0, width=700, height=450)
 
-        self.canvas_center = Canvas(self.center_frame, width=500, height=450, highlightthickness=0, bd=0, relief='flat')
+        self.canvas_center = Canvas(self.center_frame, width=700, height=450, highlightthickness=0, bd=0, relief='flat')
         self.canvas_center.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_center, "imagenes/decoa/wall/wall_vines_1.png", escala=2)
         
@@ -332,16 +332,16 @@ class BotInterfaz(AnimationMixin):
     def right_panel(self):
         self.right_frame = Frame(self.root, bd=0, # sin “resaltado” al enfoque
     relief='flat')
-        self.right_frame.place(x=1100, y=0, width=850, height=450)
+        self.right_frame.place(x=1300, y=0, width=650, height=450)
 
-        self.canvas_right = Canvas(self.right_frame, width=850, height=450, highlightthickness=0)
+        self.canvas_right = Canvas(self.right_frame, width=650, height=450, highlightthickness=0)
         self.canvas_right.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
         
 
         self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=("LondonBetween", 16))
 
-        self.historial.place(x=50, y=50, width=750, height=350)
+        self.historial.place(x=50, y=50, width=500, height=350)
 
 
    
