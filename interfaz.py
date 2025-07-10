@@ -94,7 +94,11 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = True
         self.bot.sound_enabled = True
          
-    
+    def reset_animaciones(self):
+        self._animaciones_activas = False
+        # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
+        # Pero este flag impide que nuevas animaciones se dupliquen.
+
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
         view_menu.add_radiobutton(
@@ -124,6 +128,8 @@ class BotInterfaz(AnimationMixin):
             self.float_precision = prec
 
         self.ajustar_fuente_por_vista()  
+        #self.reset_animaciones()
+
         # 🧼 Destruir y recrear paneles para que los textos fijos usen nueva fuente
         try:
             self.left_frame.destroy()
@@ -151,6 +157,8 @@ class BotInterfaz(AnimationMixin):
 
         self._font_normal = ("LondonBetween", size)
 
+   
+        
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -273,8 +281,8 @@ class BotInterfaz(AnimationMixin):
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
-        add("Hold Btc/Usdt Comparativo:", self.hold_usdt_str, "hold_usdt")
-        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc")
+        add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
+        add("Hold Btc Guía:", self.hold_btc_str, "hold_btc")
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
@@ -482,7 +490,8 @@ class BotInterfaz(AnimationMixin):
         self.consola.delete("1.0", END)
 
         # 7) Guardar la vista actual del usuario
-        
+        self.reset_animaciones()
+
 
         # 8) Destruir frames viejos
         try:
@@ -494,6 +503,7 @@ class BotInterfaz(AnimationMixin):
         # 9) Reconstruir paneles
         self.left_panel()
         self.center_panel()
+               
         self.init_animation()
 
         
