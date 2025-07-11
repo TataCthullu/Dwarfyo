@@ -199,11 +199,11 @@ class AnimationMixin:
         for i in range(1, 4):
             path = "imagenes/deco/gates/abyss/enter_abyss_{}.png".format(i)
             if os.path.exists(path):
-                self.abyss_frames.append(PhotoImage(file=path).zoom(2, 2))
+                self.abyss_frames.append(PhotoImage(file=path).zoom(3, 3))
 
         # Imagen estática (cuando está desactivado)
         abyss_static = "imagenes/deco/gates/abyss/enter_abyss.png"
-        self.abyss_static_img = PhotoImage(file=abyss_static).zoom(2, 2) if os.path.exists(abyss_static) else None
+        self.abyss_static_img = PhotoImage(file=abyss_static).zoom(3, 3) if os.path.exists(abyss_static) else None
 
         # Índice para animación
         self.abyss_frame_index = 0
@@ -300,7 +300,7 @@ class AnimationMixin:
         
         # Crear imagen inicial
         initial_g = self.abyss_static_img or (self.abyss_frames[0] if self.abyss_frames else "")
-        self.abyss_item = self.canvas_uno.create_image(50, 700, image=initial_g, anchor='nw')
+        self.abyss_item = self.canvas_uno.create_image(350, 800, image=initial_g, anchor='nw')
 
         # Garantizar que esté al frente después de que todo cargue
         self.canvas_uno.tag_raise(self.abyss_item)
