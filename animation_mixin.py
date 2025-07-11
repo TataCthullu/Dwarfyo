@@ -194,8 +194,21 @@ class AnimationMixin:
             if os.path.exists(pc):
                 self.guard_closed_frames.append(PhotoImage(file=pc).zoom(2,2))
         self.guard_frame_index = 0
+#abyssal gate
+        self.abyss_frames = []
+        for i in range(1, 4):
+            path = "imagenes/deco/gates/abyss/enter_abyss_{}.png".format(i)
+            if os.path.exists(path):
+                self.abyss_frames.append(PhotoImage(file=path).zoom(2, 2))
 
-        
+        # Imagen estática (cuando está desactivado)
+        abyss_static = "imagenes/deco/gates/abyss/enter_abyss.png"
+        self.abyss_static_img = PhotoImage(file=abyss_static).zoom(2, 2) if os.path.exists(abyss_static) else None
+
+        # Índice para animación
+        self.abyss_frame_index = 0
+
+# dithmenos
         self.dithmenos_frames = []
         for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png"):
             path = os.path.join("imagenes", "deco", name)
@@ -246,7 +259,7 @@ class AnimationMixin:
         self.hydra_gate_f = self.canvas_center.create_image(200,320, image=self.hydra_gate, anchor='nw')
         
 
-
+        
 
         # Guardián en canvas_uno
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
@@ -283,6 +296,20 @@ class AnimationMixin:
         self.skel_buy_it  = self.canvas_center.create_image(360,385, image='', anchor='nw')
         self.skel_sell_it = self.canvas_center.create_image(100,385, image='', anchor='nw')
 
+        # abyssal gate
+        
+        # Crear imagen inicial
+        initial_g = self.abyss_static_img or (self.abyss_frames[0] if self.abyss_frames else "")
+        self.abyss_item = self.canvas_uno.create_image(50, 700, image=initial_g, anchor='nw')
+
+        # Garantizar que esté al frente después de que todo cargue
+        self.canvas_uno.tag_raise(self.abyss_item)
+
+        print("Frames loaded:", len(self.abyss_frames))
+        print("Static image exists:", self.abyss_static_img is not None)
+
+
+
         # ─── BUQUES INDEPENDIENTES ───
         self.animar(100,  self._animate_torch)
         self.animar(100,  self._animate_guard)
@@ -292,6 +319,7 @@ class AnimationMixin:
         self.animar(500,  self._update_skeleton)
         self.animar(200, self._update_noise_icon)
         self.animar(250, self._animate_vines)
+        self.animar(500, self._update_abyss)
 
     def _is_valid_image_item(self, canvas, item_id):
         try:
@@ -309,7 +337,7 @@ class AnimationMixin:
                 self.root.after_cancel(aid)
             except Exception:
                 pass
-            
+
         self._after_ids.clear()
         self._animaciones_activas = False
 
@@ -322,7 +350,18 @@ class AnimationMixin:
             return None, index
         index = (index + 1) % len(frames)
         return frames[index], index    
-       
+
+    def _update_abyss(self):
+        usar_animacion = getattr(self.bot, 'ghost_purchase_enabled', False)
+        if usar_animacion and self.abyss_frames:
+            frame, self.abyss_frame_index = self._safe_next_frame(self.abyss_frames, self.abyss_frame_index)
+            self.canvas_uno.itemconfig(self.abyss_item, image=frame)
+        elif self.abyss_static_img:
+            self.canvas_uno.itemconfig(self.abyss_item, image=self.abyss_static_img)
+
+        self.animar(500, self._update_abyss)
+
+   
     def _update_elephant(self):
         """
         Cada 500 ms revisamos self.bot.contador_compras_fantasma y reemplazamos la imagen:

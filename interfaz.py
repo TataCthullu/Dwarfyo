@@ -11,6 +11,7 @@ from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
+import os
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
@@ -301,7 +302,6 @@ class BotInterfaz(AnimationMixin):
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
 
         
-  
     def center_panel(self):
         self.center_frame = Frame(self.root, bd=0, relief='flat')
         self.center_frame.place(x=600, y=0, width=700, height=450)
