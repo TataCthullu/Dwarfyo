@@ -305,10 +305,6 @@ class AnimationMixin:
         # Garantizar que esté al frente después de que todo cargue
         self.canvas_uno.tag_raise(self.abyss_item)
 
-        print("Frames loaded:", len(self.abyss_frames))
-        print("Static image exists:", self.abyss_static_img is not None)
-
-
 
         # ─── BUQUES INDEPENDIENTES ───
         self.animar(100,  self._animate_torch)
@@ -352,7 +348,7 @@ class AnimationMixin:
         return frames[index], index    
 
     def _update_abyss(self):
-        usar_animacion = getattr(self.bot, 'ghost_purchase_enabled', False)
+        usar_animacion = getattr(self.bot, 'compra_en_venta_fantasma', False)
         if usar_animacion and self.abyss_frames:
             frame, self.abyss_frame_index = self._safe_next_frame(self.abyss_frames, self.abyss_frame_index)
             self.canvas_uno.itemconfig(self.abyss_item, image=frame)

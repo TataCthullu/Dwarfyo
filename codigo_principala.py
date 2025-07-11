@@ -38,6 +38,7 @@ class TradingBot:
 
         self.parametro_compra_desde_compra = False
         self.parametro_compra_desde_venta = False
+        self.parametro_compra_desde_venta_fantasma = False
         self.parametro_venta_fantasma = False
         self.precio_ult_venta = Decimal("0")
 
@@ -78,7 +79,11 @@ class TradingBot:
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
         self.timestamp = None
-        self.ghost_purchase_enabled = False  
+         
+        self.compra_en_venta_fantasma = False
+        self.activar_compra_tras_vta_fantasma = False
+        self.venta_fantasma_ocurrida = False
+
         self.var_total = Decimal("0")
         self.ghost_ratio = self.calcular_ghost_ratio()
         self.format_fn = lambda x, s="": f"{s} {x}"  # Por defecto, sin formato especial
@@ -386,6 +391,7 @@ class TradingBot:
 
     def venta_fantasma(self) -> bool:       
         if self.precio_ult_venta is None:
+            
             return False  
         
         self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
@@ -395,6 +401,10 @@ class TradingBot:
         if self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             id_f = token_hex(2)
             self.contador_ventas_fantasma += 1
+            
+            self.venta_fantasma_ocurrida = True
+            self.activar_compra_tras_vta_fantasma = True
+   
                 # Actualiza el punto de referencia para el próximo umbral
             self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append({
@@ -405,15 +415,12 @@ class TradingBot:
             self.log(f"---------------------------------------------------------")
             if self.sound_enabled:
                 reproducir_sonido("Sounds/ghostven.wav")
-                
-            # ── Si está habilitada, ejecutamos compra automática tras venta fantasma
-            if getattr(self, 'ghost_purchase_enabled', False):
-                if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:
-                    self.log("🔵 Ejecutando compra automática tras venta fantasma.")
-                    self.comprar()
-                else:
-                    self.log("⚠️ Fondos insuficientes para compra automática tras venta fantasma.")
             return True
+
+        # Aseguramos que no quede activa si no se cumplió la condición
+        self.activar_compra_tras_vta_fantasma = False
+        self.venta_fantasma_ocurrida = False
+        return False
 
     def variacion_total(self) -> Decimal:
         """
@@ -527,10 +534,15 @@ class TradingBot:
                     self.var_total = self.variacion_total()
                     self.vender()                
                     self.parametro_compra_desde_compra = self.parametro_compra_A()                
-                    self.parametro_compra_desde_venta = self.parametro_compra_B()  
+                    self.parametro_compra_desde_venta = self.parametro_compra_B()
+                    self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
                     self.parametro_venta_fantasma = self.venta_fantasma()              
                     self.var_inicio = self.varpor_ingreso()
-                                
+
+                    
+
+                    
+
                     if self.reportado_trabajando == False:                        
                         self.log("🟡 Trabajando...")   
                         self.log("- - - - - - - - - -")                   
@@ -549,6 +561,23 @@ class TradingBot:
             finally:                                            
                 if after_fn:
                     after_fn(3000, lambda: self.loop(after_fn))
+
+    def parametro_compra_C(self):
+        if not self.compra_en_venta_fantasma:
+            return False
+
+        #self.log(f"🧪 Parametro C: habilitado={self.compra_en_venta_fantasma}, activado={self.activar_compra_tras_vta_fantasma}, ocurrida={self.venta_fantasma_ocurrida}")
+
+        if self.activar_compra_tras_vta_fantasma and self.venta_fantasma_ocurrida:
+            if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:
+                self.comprar()
+                self.log("🔵 [Parametro C] Compra tras venta fantasma.")
+            else:
+                self.log("⚠️ Fondos insuficientes para Parametro C.")
+            self.activar_compra_tras_vta_fantasma = False
+            self.venta_fantasma_ocurrida = False
+            return True
+        return False
 
     def detener(self):
         self.running = False  

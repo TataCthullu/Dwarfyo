@@ -576,7 +576,7 @@ class BotInterfaz(AnimationMixin):
         ]
 
         # ── Check para activar compra tras venta fantasma
-        self.var_ghost = BooleanVar(value=self.bot.ghost_purchase_enabled)
+        self.var_ghost = BooleanVar(value=self.bot.compra_en_venta_fantasma)
         cb_frame = Frame(self.config_ventana, bg="DarkGoldenRod")
         cb_frame.pack(fill=X, pady=4, padx=8)
         Checkbutton(cb_frame,
@@ -639,21 +639,21 @@ class BotInterfaz(AnimationMixin):
                 self.bot.porc_profit_x_venta = porc_profit
                 self.bot.porc_inv_por_compra = porc_inv
                 self.bot.inv_inic = usdtinit
-                # Aseguramos que el balance inicial coincida con el capital configurado
-                self.bot.usdt = usdtinit
 
+                if not self.bot.running:
+                    self.bot.usdt = usdtinit
 
-                self.bot.fixed_buyer = (
+                """self.bot.fixed_buyer = (
                     self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
-                )
+                )"""
 
                  # 5) Calculamos fixed_buyer y validamos
-                self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
+                #self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
                 if self.bot.fixed_buyer <= 0:
                     self.log_en_consola("⚠️ El monto de compra fijo debe ser mayor que 0.")
                     return
                 
-                self.bot.ghost_purchase_enabled = self.var_ghost.get()
+                self.bot.compra_en_venta_fantasma = self.var_ghost.get()
    
                 self.log_en_consola("Configuracion actualizada")
                 self.log_en_consola("-------------------------")
