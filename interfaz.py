@@ -25,12 +25,14 @@ class BotInterfaz(AnimationMixin):
         self.bot = bot
         self.was_offline = False
         
+        self.bot.set_formatter(self.format_var)
 
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
         self._font_normal = ("LondonBetween", 16)
-        
+        self.espaciado_horizontal = 5
+        self.espaciado_vertical = 35
         self.loop_id = None
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         # Lista de (StringVar, Label) para los No Data
@@ -148,12 +150,16 @@ class BotInterfaz(AnimationMixin):
 
         if modo == 'decimal':
             size = 16
+            self.espaciado_vertical = 35
         elif modo == 'float' and self.float_precision == 2:
             size = 28
+            self.espaciado_vertical = 40
         elif modo == 'float' and self.float_precision == 4:
             size = 24
+            self.espaciado_vertical = 40
         else:
             size = 16  # fallback
+            self.espaciado_vertical = 35
 
         self._font_normal = ("LondonBetween", size)
 
@@ -245,7 +251,8 @@ class BotInterfaz(AnimationMixin):
         self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
         
         y_offset = 10
-        row_height = 30
+        row_height = self.espaciado_vertical 
+
 
         if not hasattr(self, 'info_canvas'):
             self.info_canvas = {}
@@ -262,7 +269,7 @@ class BotInterfaz(AnimationMixin):
                                                  anchor="nw")
             # 2) medir y posicionar valor a la derecha
             bbox = self.canvas_uno.bbox(lbl_id)
-            x_val = bbox[2] 
+            x_val = bbox[2] + self.espaciado_horizontal
             txt_id = self.canvas_uno.create_text(x_val, y_offset,
                                                  text=var.get(),
                                                  fill="gold",
@@ -305,7 +312,8 @@ class BotInterfaz(AnimationMixin):
         
 
         y_offset = 10
-        row_height = 30
+        row_height = self.espaciado_vertical
+
 
         def add(label_text, var, key=None):
             nonlocal y_offset
@@ -317,7 +325,7 @@ class BotInterfaz(AnimationMixin):
                                                     anchor="nw")
             # 2) medir y posicionar valor
             bbox = self.canvas_center.bbox(lbl_id)
-            x_val = bbox[2] 
+            x_val = bbox[2] + self.espaciado_horizontal
             txt_id = self.canvas_center.create_text(x_val, y_offset,
                                                     text=var.get(),
                                                     fill="gold",
@@ -349,7 +357,7 @@ class BotInterfaz(AnimationMixin):
 
         self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=("LondonBetween", 16))
 
-        self.historial.place(x=50, y=50, width=500, height=350)
+        self.historial.place(x=70, y=70, width=500, height=310)
 
 
    
@@ -741,7 +749,9 @@ class BotInterfaz(AnimationMixin):
         prec = self.float_precision if hasattr(self, 'float_precision') else 2
 
         if modo == 'decimal':
-            # Evitar ceros sin sentido: convertir a string y limpiar ceros a la derecha
+            # Asegurar que sea Decimal
+            if not isinstance(valor, Decimal):
+                valor = Decimal(str(valor))
             texto = format(valor.normalize(), 'f')
             if '.' in texto:
                 texto = texto.rstrip('0').rstrip('.')
@@ -876,32 +886,29 @@ class BotInterfaz(AnimationMixin):
 
     def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
+
+        # ——— COMPRAS ———
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
-            self.historial.insert(END, "Compra desde:", 'compra_tag')
-            # el resto de la línea en color por defecto
-            resto = (
-                f" {self.format_var(t['compra'], '$')} -> "
-                f"Id: {t['id']} -> "
-                f"Num: {t['numcompra']} -> "
-                f"Fecha: {ts} -> "
-                f"Objetivo: {self.format_var(t['venta_obj'], '$')}\n"
-            )
+            self.historial.insert(END, "🟦 Compra realizada:\n", 'compra_tag')
+            self.historial.insert(END, f"Precio de compra: {self.format_var(t['compra'], '$')}\n")
+            self.historial.insert(END, f"Id: {t['id']}\n")
+            self.historial.insert(END, f"Número de compra: {t['numcompra']}\n")
+            self.historial.insert(END, f"Fecha y hora: {ts}\n")
+            self.historial.insert(END, f"Objetivo de venta: {self.format_var(t['venta_obj'], '$')}\n")
+            self.historial.insert(END, "-"*40 + "\n")
 
-            self.historial.insert(END, resto)
-            id_op = t.get("id")
-            
+        # ——— VENTAS ———
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
-            self.historial.insert(END, "Venta desde:", 'venta_tag')
-            resto = (
-                f" {self.format_var(v['compra'], '$')} -> "
-                f"id: {v['id_compra']}, a: {self.format_var(v['venta'], '$')} | "
-                f"Ganancia: {self.format_var(v['ganancia'], '$')}, "
-                f"Num: {v['venta_numero']} -> Fecha: {ts}\n"
-            )
-
-            self.historial.insert(END, resto)
+            self.historial.insert(END, "🟩 Venta realizada:\n", 'venta_tag')
+            self.historial.insert(END, f"Precio de compra: {self.format_var(v['compra'], '$')}\n")
+            self.historial.insert(END, f"Precio de venta: {self.format_var(v['venta'], '$')}\n")
+            self.historial.insert(END, f"Id compra: {v['id_compra']}\n")
+            self.historial.insert(END, f"Ganancia: {self.format_var(v['ganancia'], '$')}\n")
+            self.historial.insert(END, f"Número de venta: {v['venta_numero']}\n")
+            self.historial.insert(END, f"Fecha y hora: {ts}\n")
+            self.historial.insert(END, "-"*40 + "\n")
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
@@ -913,7 +920,7 @@ class BotInterfaz(AnimationMixin):
         inicial = self.valores_iniciales.get(key, 0)
         color = "Gold"
         if valor_real > inicial:
-            color = "Green"
+            color = "lime"
         elif valor_real < inicial:
             color = "Crimson"
 
