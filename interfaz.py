@@ -802,39 +802,39 @@ class BotInterfaz(AnimationMixin):
 
             # —— Dinámicos (comparan contra baseline) ——
             pintar = {
-                "precio_actual":       (self.bot.precio_actual, "$"),
-                "balance":             (self.bot.usdt_mas_btc, "$"),
-                "desde_ult_comp":      (self.bot.varCompra, "%"),
-                "ult_vent":            (self.bot.varVenta, "%"),
+                "precio_actual": (self.bot.precio_actual, "$"),
+                "balance": (self.bot.usdt_mas_btc, "$"),
+                "desde_ult_comp": (self.bot.varCompra, "%"),
+                "ult_vent": (self.bot.varVenta, "%"),
                 "variacion_desde_inicio": (self.bot.var_inicio, "%"),
-                "variacion_total_inv":     (self.bot.var_total, "%"),
-                "hold_usdt":           (self.bot.hold_usdt_var, "$"),
+                "variacion_total_inv": (self.bot.var_total, "%"),
+                "hold_usdt": (self.bot.hold_usdt_var, "$"),
             }
             for clave, valor in pintar.items():
                 self.actualizar_color(clave, valor)
 
             # —— Fijos (texto) —— 
             texto_fijo = {
-                "start_time":          self.bot.get_start_time_str()  or "",
-                "runtime":             self.bot.get_runtime_str()     or "",
+                "start_time": self.bot.get_start_time_str()  or "",
+                "runtime": self.bot.get_runtime_str()     or "",
                 "porc_inv_por_compra": (self.bot.porc_inv_por_compra, "%"),
-                "usdt":                (self.bot.usdt, "$"),
-                "btc_dispo":           (self.bot.btc, "₿"),
-                "desde_inicio":        (self.bot.precio_ingreso or Decimal("0"), "$"), 
+                "usdt": (self.bot.usdt, "$"),
+                "btc_dispo": (self.bot.btc, "₿"),
+                "desde_inicio": (self.bot.precio_ingreso or Decimal("0"), "$"), 
                 # compras/ventas y demás siguen igual:
-                "compras_realizadas":  self.bot.contador_compras_reales,
-                "ventas_realizadas":   self.bot.contador_ventas_reales,
-                "compras_fantasma":    self.bot.contador_compras_fantasma,
-                "ventas_fantasma":     self.bot.contador_ventas_fantasma,
-                "ghost_ratio":         (self.bot.calcular_ghost_ratio(), "%"),
-                "porc_obj_venta":      (self.bot.porc_profit_x_venta, "%"),
-                "porc_desde_compra":   (self.bot.porc_desde_compra, "%"),
-                "porc_desde_venta":    (self.bot.porc_desde_venta, "%"),
-                "fixed_buyer":         (self.bot.fixed_buyer, "$"),
-                "inv_inicial":         (self.bot.inv_inic, "$"),
-                "ganancia_neta":       (self.bot.total_ganancia, "$"),
-                "hold_btc":       (self.bot.hold_btc_var, "₿"),
-                "btcnusdt":            (self.bot.btc_usdt, "$"),
+                "compras_realizadas": self.bot.contador_compras_reales,
+                "ventas_realizadas": self.bot.contador_ventas_reales,
+                "compras_fantasma": self.bot.contador_compras_fantasma,
+                "ventas_fantasma": self.bot.contador_ventas_fantasma,
+                "ghost_ratio": (self.bot.calcular_ghost_ratio(), "%"),
+                "porc_obj_venta": (self.bot.porc_profit_x_venta, "%"),
+                "porc_desde_compra": (self.bot.porc_desde_compra, "%"),
+                "porc_desde_venta": (self.bot.porc_desde_venta, "%"),
+                "fixed_buyer": (self.bot.fixed_buyer, "$"),
+                "inv_inicial": (self.bot.inv_inic, "$"),
+                "ganancia_neta": (self.bot.total_ganancia, "$"),
+                "hold_btc": (self.bot.hold_btc_var, "₿"),
+                "btcnusdt": (self.bot.btc_usdt, "$"),
             }
 
             for clave, valor in texto_fijo.items():
@@ -964,7 +964,7 @@ class BotInterfaz(AnimationMixin):
             'ult_vent': self.bot.varVenta,
             'variacion_desde_inicio': self.bot.var_inicio,
             'variacion_total_inv': self.bot.var_total,
-            'hold_usdt': self.bot.hold_usdt_var,
+            'hold_usdt': self.bot.hold_usdt_var if self.bot.hold_usdt_var > 0 else self.bot.inv_inic,
             'hold_btc': self.bot.hold_btc_var,
         }
 
