@@ -78,6 +78,7 @@ class TradingBot:
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
+        
         self.timestamp = None
          
         self.compra_en_venta_fantasma = False
@@ -343,7 +344,8 @@ class TradingBot:
                 
                 
                 self.contador_ventas_reales += 1
-                
+                self.param_b_enabled = True  # 🔓 Habilitar B nuevamente tras una venta real
+
 
                 self.precios_ventas.append({
                     "compra": transaccion["compra"],
@@ -569,14 +571,20 @@ class TradingBot:
         #self.log(f"🧪 Parametro C: habilitado={self.compra_en_venta_fantasma}, activado={self.activar_compra_tras_vta_fantasma}, ocurrida={self.venta_fantasma_ocurrida}")
 
         if self.activar_compra_tras_vta_fantasma and self.venta_fantasma_ocurrida:
+            self.precio_ult_venta = self.precio_actual  # ✅ Siempre actualizamos
             if self.fixed_buyer > Decimal('0') and self.usdt >= self.fixed_buyer:
                 self.comprar()
+                self.param_b_enabled = False  # 🔒 Desactivar B luego de C
+
                 self.log("🔵 [Parametro C] Compra tras venta fantasma.")
             else:
                 self.log("⚠️ Fondos insuficientes para Parametro C.")
+                self.param_b_enabled = True  # 🟢 B vuelve a activarse si no se pudo comprar
+
             self.activar_compra_tras_vta_fantasma = False
             self.venta_fantasma_ocurrida = False
             return True
+        
         return False
 
     def detener(self):
