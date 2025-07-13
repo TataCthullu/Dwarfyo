@@ -34,13 +34,13 @@ class TradingBot:
         
 
         self.precio_actual = self._fetch_precio()
-        self.btc_usdt = None
+        self.btc_usdt = Decimal('0')
 
         self.parametro_compra_desde_compra = False
         self.parametro_compra_desde_venta = False
         self.parametro_compra_desde_venta_fantasma = False
         self.parametro_venta_fantasma = False
-        self.precio_ult_venta = None
+        self.precio_ult_venta = Decimal('0')
 
         self.porc_desde_compra = Decimal("0.05")
         self.porc_desde_venta = Decimal("0.05")
@@ -52,21 +52,21 @@ class TradingBot:
         self.running = False
         self.valores_iniciales = {}
         self.precio_ult_comp = None
-        self.usdt_mas_btc = None
+        self.usdt_mas_btc = Decimal('0')
         
         self.precios_ventas = []
         self.ventas_fantasma = []
         self.compras_fantasma = []
         self.transacciones = []
-        self.kant_usdt_vendido = None       
+        self.kant_usdt_vendido = Decimal('0')       
         self.varCompra = Decimal('0')
         self.varVenta = Decimal('0')       
-        self.btc_vendido = None
-        self.precio_objetivo_venta = None
-        self.precio_ingreso = None
+        self.btc_vendido = Decimal('0')
+        self.precio_objetivo_venta = Decimal('0')
+        self.precio_ingreso = Decimal('0')
         self.var_inicio = Decimal('0')
         self.log_fn = None
-        self.usdt_obtenido = None
+        self.usdt_obtenido = Decimal('0')
         self.contador_compras_fantasma = 0
         self.contador_ventas_fantasma = 0
         self.parametro_compra_fantasma = False
@@ -239,6 +239,9 @@ class TradingBot:
     def _new_id(self):
         # Genera 4 dígitos hex aleatorios
         return token_hex(2)  # e.g. '9f3b'
+    
+    
+
 
     def comprar(self):
             nuevo_precio = self._fetch_precio()
@@ -284,6 +287,8 @@ class TradingBot:
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")
              
+           
+
             if self.sound_enabled:          
                 reproducir_sonido("Sounds/soundcompra.wav")            
             self.reportado_trabajando = False

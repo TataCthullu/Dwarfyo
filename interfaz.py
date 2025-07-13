@@ -838,7 +838,7 @@ class BotInterfaz(AnimationMixin):
                 self.info_canvas[clave] = (canvas, new_id)
 
             # Finalmente, refrescamos historial y consola
-            self.actualizar_historial_consola()
+            #self.actualizar_historial_consola()
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")
@@ -862,7 +862,7 @@ class BotInterfaz(AnimationMixin):
         except Exception as exc_ui:
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
-    def actualizar_historial_consola(self):
+    """def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
 
         # ——— COMPRAS ———
@@ -873,7 +873,11 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(END, f"Id: {t['id']}\n")
             self.historial.insert(END, f"Número de compra: {t['numcompra']}\n")
             self.historial.insert(END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(END, f"Objetivo de venta: {self.format_fijo(t['venta_obj'], '$')}\n")
+            venta_obj = t.get("venta_obj")
+            if venta_obj is not None:
+                self.historial.insert(END, f"Objetivo de venta: {self.format_fijo(venta_obj, '$')}\n")
+
+
             self.historial.insert(END, "-"*40 + "\n")
 
         # ——— VENTAS ———
@@ -886,7 +890,7 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(END, f"Ganancia: {self.format_fijo(v['ganancia'], '$')}\n")
             self.historial.insert(END, f"Número de venta: {v['venta_numero']}\n")
             self.historial.insert(END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(END, "-"*40 + "\n")
+            self.historial.insert(END, "-"*40 + "\n")"""
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
