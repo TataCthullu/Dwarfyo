@@ -5,7 +5,7 @@ import ccxt
 from utils import reproducir_sonido
 import datetime
 #import uuid
-from decimal import Decimal, InvalidOperation, DivisionByZero
+from decimal import Decimal, InvalidOperation, DivisionByZero, localcontext
 from secrets import token_hex
 
 """Azul (\033[94m) para información general.
@@ -87,9 +87,35 @@ class TradingBot:
 
         self.var_total = Decimal('0')
         self.ghost_ratio = self.calcular_ghost_ratio()
-        self.format_fn = lambda x, s="": f"{s} {x}"  # Por defecto, sin formato especial
-
+        
     
+
+    def format_fn(self, valor, simbolo=""):
+        if valor is None:
+            return ""
+        if isinstance(valor, str):
+            return valor.strip()
+        if valor == 0:
+            return f"{simbolo} 0" if simbolo else "0"
+
+        try:
+            if not isinstance(valor, Decimal):
+                valor = Decimal(str(valor))
+
+            with localcontext() as ctx:
+                ctx.prec = 12
+                valor = +valor
+
+            # Si es entero exacto, no mostrar parte decimal
+            if valor == valor.to_integral():
+                texto = f"{valor:.0f}"  # fuerza entero sin decimales
+            else:
+                texto = format(valor, 'f').rstrip('0').rstrip('.')
+
+            return f"{simbolo} {texto}" if simbolo else texto
+        except (InvalidOperation, ValueError):
+            return f"{simbolo} {valor}" if simbolo else str(valor)
+
 
 
     def log(self, mensaje):

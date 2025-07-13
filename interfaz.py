@@ -735,13 +735,13 @@ class BotInterfaz(AnimationMixin):
             except:
                 pass  # la ventana ya no existe
 
-
-
+    # En la interfaz (no en el bot):
     def format_var(self, valor, simbolo=""):
+        
         if valor is None:
             return ""
         if isinstance(valor, str):
-            return valor
+            return valor.strip()
         if valor == 0:
             return f"{simbolo} 0" if simbolo else "0"
 
@@ -763,35 +763,13 @@ class BotInterfaz(AnimationMixin):
         return f"{simbolo} {texto}" if simbolo else texto
 
     def format_fijo(self, clave, valor):
-        """
-        Devuelve el string formateado final para mostrar en pantalla.
-        Se encarga de símbolos, decimales y valores enteros si aplica.
-        """
-        # Si viene con símbolo
         if isinstance(valor, tuple):
             valor_real, simbolo = valor
         else:
             valor_real, simbolo = valor, ""
-
-        # Si es contador entero
-        if clave in (
-            "compras_realizadas", "ventas_realizadas",
-            "compras_fantasma", "ventas_fantasma"
-        ):
-            return str(int(valor_real))
-
-        # Si es texto plano
-        if isinstance(valor_real, str):
-            return valor_real
-
-        # Si es None
-        if valor_real is None:
-            return ""
-
-        # En todos los demás casos
         return self.format_var(valor_real, simbolo)
 
- 
+
 
     def actualizar_ui(self):
         try:
@@ -895,17 +873,17 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(END, f"Id: {t['id']}\n")
             self.historial.insert(END, f"Número de compra: {t['numcompra']}\n")
             self.historial.insert(END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(END, f"Objetivo de venta: {self.format_var(t['venta_obj'], '$')}\n")
+            self.historial.insert(END, f"Objetivo de venta: {self.format_fijo(t['venta_obj'], '$')}\n")
             self.historial.insert(END, "-"*40 + "\n")
 
         # ——— VENTAS ———
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
             self.historial.insert(END, "🟩 Venta realizada:\n", 'venta_tag')
-            self.historial.insert(END, f"Precio de compra: {self.format_var(v['compra'], '$')}\n")
-            self.historial.insert(END, f"Precio de venta: {self.format_var(v['venta'], '$')}\n")
+            self.historial.insert(END, f"Precio de compra: {self.format_fijo(v['compra'], '$')}\n")
+            self.historial.insert(END, f"Precio de venta: {self.format_fijo(v['venta'], '$')}\n")
             self.historial.insert(END, f"Id compra: {v['id_compra']}\n")
-            self.historial.insert(END, f"Ganancia: {self.format_var(v['ganancia'], '$')}\n")
+            self.historial.insert(END, f"Ganancia: {self.format_fijo(v['ganancia'], '$')}\n")
             self.historial.insert(END, f"Número de venta: {v['venta_numero']}\n")
             self.historial.insert(END, f"Fecha y hora: {ts}\n")
             self.historial.insert(END, "-"*40 + "\n")
