@@ -29,8 +29,8 @@ class TradingBot:
 
         self.inv_inic = Decimal("5000")
         self.usdt = self.inv_inic
-        self.btc = None      
-        self.btc_comprado = None
+        self.btc = Decimal('0')      
+        self.btc_comprado = Decimal('0')
         
 
         self.precio_actual = self._fetch_precio()
@@ -59,19 +59,19 @@ class TradingBot:
         self.compras_fantasma = []
         self.transacciones = []
         self.kant_usdt_vendido = None       
-        self.varCompra = None
-        self.varVenta = None       
+        self.varCompra = Decimal('0')
+        self.varVenta = Decimal('0')       
         self.btc_vendido = None
         self.precio_objetivo_venta = None
         self.precio_ingreso = None
-        self.var_inicio = None
+        self.var_inicio = Decimal('0')
         self.log_fn = None
         self.usdt_obtenido = None
         self.contador_compras_fantasma = 0
         self.contador_ventas_fantasma = 0
         self.parametro_compra_fantasma = False
-        self.total_ganancia = None
-        self.ganancia_neta = None
+        self.total_ganancia = Decimal('0')
+        self.ganancia_neta = Decimal('0')
         self.reportado_trabajando = False 
         self.hold_btc_var = self.hold_btc()
         self.hold_usdt_var = self.hold_usdt()
@@ -85,16 +85,11 @@ class TradingBot:
         self.activar_compra_tras_vta_fantasma = False
         self.venta_fantasma_ocurrida = False
 
-        self.var_total = None
+        self.var_total = Decimal('0')
         self.ghost_ratio = self.calcular_ghost_ratio()
         self.format_fn = lambda x, s="": f"{s} {x}"  # Por defecto, sin formato especial
 
-    def set_formatter(self, format_fn):
-        """
-        Asigna una función para formatear valores.
-        La función debe aceptar (valor, simbolo) y devolver texto.
-        """
-        self.format_fn = format_fn
+    
 
 
     def log(self, mensaje):
@@ -521,7 +516,7 @@ class TradingBot:
         if self.precio_actual is None:
             return
         if self.condiciones_para_comprar():
-            self.log(f"🧪 Init check: precio_actual={self.precio_actual}, fixed_buyer={self.fixed_buyer}, usdt={self.usdt}")
+            #self.log(f"🧪 Init check: precio_actual={self.precio_actual}, fixed_buyer={self.fixed_buyer}, usdt={self.usdt}")
 
             self.precio_ingreso = self.precio_actual
             self.precio_ult_comp = self.precio_actual

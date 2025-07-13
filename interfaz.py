@@ -26,7 +26,7 @@ class BotInterfaz(AnimationMixin):
         self.bot = bot
         self.was_offline = False
         
-        self.bot.set_formatter(self.format_var)
+        #self.bot.set_formatter(self.format_var)
 
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
@@ -88,11 +88,11 @@ class BotInterfaz(AnimationMixin):
         self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
-        self.bot.set_formatter(self.format_var)
+        #self.bot.set_formatter(self.format_var)
         self.actualizar_ui()
         self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
-        #self.inicializar_valores_iniciales()
+        self.inicializar_valores_iniciales()
         
         self.sound_enabled = True
         self.bot.sound_enabled = True
@@ -143,7 +143,7 @@ class BotInterfaz(AnimationMixin):
         self.center_panel()
         self.init_animation()  
 
-        self.bot.set_formatter(self.format_var)
+        #self.bot.set_formatter(self.format_var)
         self.actualizar_ui()
 
     def ajustar_fuente_por_vista(self):
@@ -515,7 +515,7 @@ class BotInterfaz(AnimationMixin):
         self.init_animation()
 
         
-        self.bot.set_formatter(self.format_var)
+        #self.bot.set_formatter(self.format_var)
 
         # 8) Redibujar datos actuales (aunque estén vacíos)
         self.actualizar_ui()
@@ -873,7 +873,7 @@ class BotInterfaz(AnimationMixin):
                 if prev is None and actual is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
-                    #self.inicializar_valores_iniciales()
+                    self.inicializar_valores_iniciales()
                 self._prev_price_ui = actual
 
                 # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading
@@ -914,28 +914,34 @@ class BotInterfaz(AnimationMixin):
         if valor_actual is None or key not in self.info_canvas:
             return
 
-        # Extraer valor real (para comparación) si es tupla
-        valor_real = valor_actual[0] if isinstance(valor_actual, tuple) else valor_actual
+        try:
+            # 🛠️ Desempaquetar si viene con símbolo
+            if isinstance(valor_actual, tuple):
+                val_act_raw, _ = valor_actual
+            else:
+                val_act_raw = valor_actual
 
-        inicial = self.valores_iniciales.get(key, 0)
-        color = "Gold"
-        if valor_real > inicial:
-            color = "lime"
-        elif valor_real < inicial:
-            color = "Crimson"
+            val_act = Decimal(val_act_raw)
+
+            val_ini = Decimal(self.valores_iniciales.get(key, Decimal('0')))
+
+            if val_act > val_ini:
+                color = "lime"
+            elif val_act < val_ini:
+                color = "Crimson"
+            else:
+                color = "Gold"
+        except (InvalidOperation, TypeError, ValueError):
+            color = "Gold"
 
         self.colores_actuales[key] = color
 
         canvas, item_id = self.info_canvas[key]
         coords = canvas.coords(item_id)
-        if not coords or len(coords) != 2:
-            x, y = 20, 10
-        else:
-            x, y = coords
+        x, y = coords if coords and len(coords) == 2 else (20, 10)
 
         canvas.delete(item_id)
         texto = self.format_fijo(key, valor_actual)
-
         text_id = canvas.create_text(
             x, y,
             text=texto,
@@ -945,6 +951,7 @@ class BotInterfaz(AnimationMixin):
         )
 
         self.info_canvas[key] = (canvas, text_id)
+
 
     
         
@@ -956,17 +963,24 @@ class BotInterfaz(AnimationMixin):
         self.bot.actualizar_balance()
         if self.bot.precio_actual is None:
             return  # No inicializar con datos vacíos
-        # Guarda el primer snapshot para colorear luego
+
+        def safe(val, fallback="0"):
+            try:
+                return Decimal(val)
+            except:
+                return Decimal(fallback)
+
         self.valores_iniciales = {
-            'precio_actual': self.bot.precio_actual or 0,
-            'balance': self.bot.usdt_mas_btc,
-            'desde_ult_comp': self.bot.varCompra,
-            'ult_vent': self.bot.varVenta,
-            'variacion_desde_inicio': self.bot.var_inicio,
-            'variacion_total_inv': self.bot.var_total,
-            'hold_usdt': self.bot.hold_usdt_var if self.bot.hold_usdt_var > 0 else self.bot.inv_inic,
-            'hold_btc': self.bot.hold_btc_var,
+            'precio_actual': safe(self.bot.precio_actual),
+            'balance': safe(self.bot.usdt_mas_btc),
+            'desde_ult_comp': safe(self.bot.varCompra),
+            'ult_vent': safe(self.bot.varVenta),
+            'variacion_desde_inicio': safe(self.bot.var_inicio),
+            'variacion_total_inv': safe(self.bot.var_total),
+            'hold_usdt': safe(self.bot.hold_usdt_var if self.bot.hold_usdt_var > 0 else self.bot.inv_inic),
+            'hold_btc': safe(self.bot.hold_btc_var),
         }
+
 
     def run(self):
         try:
