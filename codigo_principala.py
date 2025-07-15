@@ -386,7 +386,13 @@ class TradingBot:
 
                 self.total_ganancia += self.ganancia_neta
                         
-                
+                excedente_pct = Decimal("0")
+                if self.precio_actual > venta_obj:
+                    try:
+                        excedente_pct = ((self.precio_actual - venta_obj) / venta_obj) * Decimal("100")
+                    except (InvalidOperation, DivisionByZero):
+                        excedente_pct = Decimal("0")
+
                 
                 self.contador_ventas_reales += 1
                 self.param_b_enabled = True  # 🔓 Habilitar B nuevamente tras una venta real
@@ -417,6 +423,8 @@ class TradingBot:
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: {self.format_fn(btc_vender, '₿')}")
                 self.log(f"💹 Ganancia de esta operacion: {self.format_fn(self.ganancia_neta, '$')}")
+                if excedente_pct > 0:
+                    self.log(f"📊 Excedente sobre objetivo: {self.format_fn(excedente_pct, '%')}")
                 self.log("- - - - - - - - - -")
                 ejecutadas.append(transaccion)
                 
