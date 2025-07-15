@@ -216,6 +216,10 @@ class BotInterfaz(AnimationMixin):
         self.hold_usdt_str = StringVar()
         self.hold_btc_str = StringVar()
         self.var_total_str = StringVar() 
+        self.excedente_compras_str = StringVar()
+        self.excedente_ventas_str = StringVar()
+        self.excedente_total_str = StringVar()
+
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
 
@@ -300,6 +304,9 @@ class BotInterfaz(AnimationMixin):
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_fantasma")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_fantasma")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
+        add("Excedente total en compras:", self.excedente_compras_str, "excedente_compras")
+        add("Excedente total en ventas:",  self.excedente_ventas_str, "excedente_ventas")
+        add("Excedente acumulado total:",  self.excedente_total_str, "excedente_total")
 
         
     def center_panel(self):
@@ -813,6 +820,9 @@ class BotInterfaz(AnimationMixin):
                 "ganancia_neta": (self.bot.total_ganancia, "$"),
                 "hold_btc": (self.bot.hold_btc_var, "₿"),
                 "btcnusdt": (self.bot.btc_usdt, "$"),
+                "excedente_compras": (self.bot.excedente_total_compras, "%"),
+                "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
+                "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%")
             }
 
             for clave, valor in texto_fijo.items():

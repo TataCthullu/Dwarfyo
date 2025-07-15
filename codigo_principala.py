@@ -78,7 +78,9 @@ class TradingBot:
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
-        
+        self.excedente_total_compras = Decimal("0")
+        self.excedente_total_ventas = Decimal("0")
+
         self.timestamp = None
          
         self.compra_en_venta_fantasma = False
@@ -102,8 +104,7 @@ class TradingBot:
             if not isinstance(valor, Decimal):
                 valor = Decimal(str(valor))
 
-            with localcontext() as ctx:
-                ctx.prec = 12
+            with localcontext():
                 valor = +valor
 
             # Si es entero exacto, no mostrar parte decimal
@@ -243,7 +244,7 @@ class TradingBot:
     
 
 
-    def comprar(self):
+    def comprar(self, trigger=None):
             nuevo_precio = self._fetch_precio()
             if nuevo_precio is None:
                 return
@@ -286,8 +287,19 @@ class TradingBot:
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")
-             
-           
+
+            # Excedente de bajada 
+            if trigger == 'A':
+                exceso = abs(self.varCompra) - self.porc_desde_compra
+                if exceso > 0:               
+                    self.excedente_total_compras += exceso
+                    self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
+            elif trigger == 'B':
+                exceso = abs(self.varVenta) - self.porc_desde_venta
+                if exceso > 0:
+                    self.excedente_total_compras += exceso
+                    self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
+
 
             if self.sound_enabled:          
                 reproducir_sonido("Sounds/soundcompra.wav")            
@@ -300,7 +312,7 @@ class TradingBot:
         if self.varCompra <= -self.porc_desde_compra:
             if self.condiciones_para_comprar():
                                    
-                self.comprar()
+                self.comprar(trigger='A')
                 self.log("🔵 [Parametro A].") 
                 self.log("- - - - - - - - - -")
                 self.precio_ult_comp = self.precio_actual   
@@ -324,7 +336,7 @@ class TradingBot:
             return
         if self.varVenta <= -self.porc_desde_venta:            
             if self.condiciones_para_comprar():                     
-                self.comprar()
+                self.comprar(trigger='B')
                 self.log("🔵 [Parametro B].")
                 self.log("- - - - - - - - - -")
                 self.precio_ult_comp = self.precio_actual
@@ -390,6 +402,7 @@ class TradingBot:
                 if self.precio_actual > venta_obj:
                     try:
                         excedente_pct = ((self.precio_actual - venta_obj) / venta_obj) * Decimal("100")
+                        self.excedente_total_ventas += excedente_pct
                     except (InvalidOperation, DivisionByZero):
                         excedente_pct = Decimal("0")
 
