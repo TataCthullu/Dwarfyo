@@ -410,7 +410,8 @@ class TradingBot:
                                 
                 self.log(f"✅ Venta realizada.")
                 self.log(f"Fecha y hora: {self.timestamp}")
-                self.log(f"🕒 Compra original: {precio_compra}")
+                self.log(f"🕒 Compra original: {self.format_fn(precio_compra, '$')}")
+
                 self.log(f"🆔 Id: {id_compra}")
                 self.log(f"📈 Precio de venta: {self.format_fn(self.precio_actual, '$')}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")

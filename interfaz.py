@@ -643,12 +643,12 @@ class BotInterfaz(AnimationMixin):
                 if not self.bot.running:
                     self.bot.usdt = usdtinit
 
-                """self.bot.fixed_buyer = (
-                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
-                )"""
+                self.bot.fixed_buyer = (
+                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100'))
+                
 
                  # 5) Calculamos fixed_buyer y validamos
-                #self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
+                self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
                 if self.bot.fixed_buyer <= 0:
                     self.log_en_consola("⚠️ El monto de compra fijo debe ser mayor que 0.")
                     return
@@ -838,7 +838,7 @@ class BotInterfaz(AnimationMixin):
                 self.info_canvas[clave] = (canvas, new_id)
 
             # Finalmente, refrescamos historial y consola
-            #self.actualizar_historial_consola()
+            self.actualizar_historial_consola()
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")
@@ -862,7 +862,7 @@ class BotInterfaz(AnimationMixin):
         except Exception as exc_ui:
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
-    """def actualizar_historial_consola(self):
+    def actualizar_historial_consola(self):
         self.historial.delete('1.0', END)
 
         # ——— COMPRAS ———
@@ -873,24 +873,22 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(END, f"Id: {t['id']}\n")
             self.historial.insert(END, f"Número de compra: {t['numcompra']}\n")
             self.historial.insert(END, f"Fecha y hora: {ts}\n")
-            venta_obj = t.get("venta_obj")
-            if venta_obj is not None:
-                self.historial.insert(END, f"Objetivo de venta: {self.format_fijo(venta_obj, '$')}\n")
-
-
+            if "venta_obj" in t:
+                self.historial.insert(END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")
             self.historial.insert(END, "-"*40 + "\n")
 
         # ——— VENTAS ———
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
             self.historial.insert(END, "🟩 Venta realizada:\n", 'venta_tag')
-            self.historial.insert(END, f"Precio de compra: {self.format_fijo(v['compra'], '$')}\n")
-            self.historial.insert(END, f"Precio de venta: {self.format_fijo(v['venta'], '$')}\n")
+            self.historial.insert(END, f"Precio de compra: {self.format_fijo('compra', v['compra'])}\n")
+            self.historial.insert(END, f"Precio de venta: {self.format_fijo('venta', v['venta'])}\n")
             self.historial.insert(END, f"Id compra: {v['id_compra']}\n")
-            self.historial.insert(END, f"Ganancia: {self.format_fijo(v['ganancia'], '$')}\n")
+            self.historial.insert(END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
             self.historial.insert(END, f"Número de venta: {v['venta_numero']}\n")
             self.historial.insert(END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(END, "-"*40 + "\n")"""
+            self.historial.insert(END, "-"*40 + "\n")
+
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
