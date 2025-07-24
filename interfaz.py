@@ -139,10 +139,12 @@ class BotInterfaz(AnimationMixin):
         try:
             self.left_frame.destroy()
             self.center_frame.destroy()
+            self.animation_frame.destroy()
         except Exception:
             pass
         self.left_panel()
         self.center_panel()
+        self.animation_panel()
         self.init_animation()  
 
         #self.bot.set_formatter(self.format_var)
@@ -291,12 +293,13 @@ class BotInterfaz(AnimationMixin):
         add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
         add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")
-        add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio")
+        
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
-        add("Fecha de inicio:", self.start_time_str, "start_time")
-        add("Tiempo activo:", self.runtime_str, "runtime")
+        add("Usdt Disponible:", self.cant_usdt_str, "usdt")
+
+        
         add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
-        add("Hold Btc Guía:", self.hold_btc_str, "hold_btc")
+        
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
@@ -346,7 +349,7 @@ class BotInterfaz(AnimationMixin):
             y_offset += row_height
 
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
-        add("Usdt Disponible:", self.cant_usdt_str, "usdt")
+        
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
         add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")
         add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")
@@ -407,6 +410,48 @@ class BotInterfaz(AnimationMixin):
         self.canvas_animation.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=3)
 
+        y_offset = 10
+        row_height = 30
+
+        def add(label_text, var, key=None, simbolo=""):
+            nonlocal y_offset
+
+            label_var = tk.StringVar(value=label_text)
+            val_var = var
+
+            # Texto fijo (etiqueta)
+            lbl_id = self.canvas_animation.create_text(
+                10, y_offset,
+                text=label_var.get(),
+                fill="White",
+                font=self._font_normal,
+                anchor="nw"
+            )
+
+            self.nd_canvas.append((label_var, self.canvas_animation, lbl_id, 10, y_offset, ""))
+
+            bbox = self.canvas_animation.bbox(lbl_id)
+            x_val = bbox[2] + self.espaciado_horizontal
+
+            # Texto dinámico (valor)
+            txt_id = self.canvas_animation.create_text(
+                x_val, y_offset,
+                text=val_var.get(),
+                fill="gold",
+                font=self._font_normal,
+                anchor="nw"
+            )
+
+            self.nd_canvas.append((val_var, self.canvas_animation, txt_id, x_val, y_offset, simbolo))
+            if key:
+                self.info_canvas[key] = (self.canvas_animation, txt_id)
+
+            y_offset += row_height
+
+        add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio", "$")
+        add("Fecha de inicio:", self.start_time_str, "start_time")
+        add("Tiempo activo:", self.runtime_str, "runtime")
+        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")
         
 
     def various_panel(self):
