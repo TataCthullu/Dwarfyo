@@ -300,10 +300,10 @@ class AnimationMixin:
         
         # Crear imagen inicial
         initial_g = self.abyss_static_img or (self.abyss_frames[0] if self.abyss_frames else "")
-        self.abyss_item = self.canvas_uno.create_image(350, 800, image=initial_g, anchor='nw')
+        self.abyss_item = self.canvas_center.create_image(590, 350, image=initial_g, anchor='nw')
 
         # Garantizar que esté al frente después de que todo cargue
-        self.canvas_uno.tag_raise(self.abyss_item)
+        #self.canvas_uno.tag_raise(self.abyss_item)
 
 
         # ─── BUQUES INDEPENDIENTES ───
@@ -351,9 +351,9 @@ class AnimationMixin:
         usar_animacion = getattr(self.bot, 'compra_en_venta_fantasma', False)
         if usar_animacion and self.abyss_frames:
             frame, self.abyss_frame_index = self._safe_next_frame(self.abyss_frames, self.abyss_frame_index)
-            self.canvas_uno.itemconfig(self.abyss_item, image=frame)
+            self.canvas_center.itemconfig(self.abyss_item, image=frame)
         elif self.abyss_static_img:
-            self.canvas_uno.itemconfig(self.abyss_item, image=self.abyss_static_img)
+            self.canvas_center.itemconfig(self.abyss_item, image=self.abyss_static_img)
 
         self.animar(500, self._update_abyss)
 
