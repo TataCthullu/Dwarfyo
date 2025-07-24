@@ -89,10 +89,12 @@ class BotInterfaz(AnimationMixin):
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
         #self.bot.set_formatter(self.format_var)
+        
         self.actualizar_ui()
+        self.root.after(100, self.inicializar_valores_iniciales)
         self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
-        self.inicializar_valores_iniciales()
+        
         
         self.sound_enabled = True
         self.bot.sound_enabled = True
@@ -749,9 +751,7 @@ class BotInterfaz(AnimationMixin):
             return ""
         if isinstance(valor, str):
             return valor.strip()
-        if valor == 0:
-            return f"{simbolo} 0" if simbolo else "0"
-
+       
         modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
         prec = self.float_precision if hasattr(self, 'float_precision') else 2
 
@@ -903,26 +903,44 @@ class BotInterfaz(AnimationMixin):
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
             return
-
+        
+        """if key == "hold_usdt":
+            print("🔍 Entrando a actualizar_color para hold_usdt")
+            print(f"🔸 key: {key}")
+            print(f"🔸 valor_actual: {valor_actual}")
+            print(f"🔸 valor_inicial guardado: {self.valores_iniciales.get(key)}")
+"""
         try:
-            # 🛠️ Desempaquetar si viene con símbolo
             if isinstance(valor_actual, tuple):
                 val_act_raw, _ = valor_actual
             else:
                 val_act_raw = valor_actual
 
-            val_act = Decimal(val_act_raw)
+            val_act = Decimal(str(val_act_raw).strip())
 
-            val_ini = Decimal(self.valores_iniciales.get(key, Decimal('0')))
-
-            if val_act > val_ini:
-                color = "lime"
-            elif val_act < val_ini:
-                color = "Crimson"
-            else:
+            val_ini_raw = self.valores_iniciales.get(key)
+            if val_ini_raw is None:
                 color = "Gold"
-        except (InvalidOperation, TypeError, ValueError):
+            else:
+                val_ini = Decimal(str(val_ini_raw).strip())
+                """if key == "hold_usdt":
+                    print(f"🧪 Comparando hold_usdt → actual: {val_act}, inicial: {val_ini}")
+"""
+                if val_ini is None:
+                    color = "Gold"
+                else:
+                    if val_act > val_ini:
+                        color = "lime"
+                    elif val_act < val_ini:
+                        color = "Crimson"
+                    else:
+                        color = "Gold"
+
+
+        except Exception as e:
+            print(f"[ERROR COLOR] key={key}, error={e}, val_act_raw={valor_actual}")
             color = "Gold"
+
 
         self.colores_actuales[key] = color
 
@@ -942,7 +960,6 @@ class BotInterfaz(AnimationMixin):
 
         self.info_canvas[key] = (canvas, text_id)
 
-
     
         
     def log_en_consola(self, msg):
@@ -951,25 +968,32 @@ class BotInterfaz(AnimationMixin):
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
+
+        def safe(val):
+            try:
+                return Decimal(str(val)) if val is not None else Decimal("0")
+            except:
+                return Decimal("0")
+
         if self.bot.precio_actual is None:
             return  # No inicializar con datos vacíos
-
-        def safe(val, fallback="0"):
-            try:
-                return Decimal(val)
-            except:
-                return Decimal(fallback)
-
+        self.bot.hold_usdt_var = self.bot.hold_usdt()
+        self.bot.hold_btc_var = self.bot.hold_btc()
         self.valores_iniciales = {
-            'precio_actual': safe(self.bot.precio_actual),
-            'balance': safe(self.bot.usdt_mas_btc),
-            'desde_ult_comp': safe(self.bot.varCompra),
-            'ult_vent': safe(self.bot.varVenta),
+            'precio_actual':         safe(self.bot.precio_actual),
+            'balance':               safe(self.bot.usdt_mas_btc),
+            'desde_ult_comp':        safe(self.bot.varCompra),
+            'ult_vent':              safe(self.bot.varVenta),
             'variacion_desde_inicio': safe(self.bot.var_inicio),
-            'variacion_total_inv': safe(self.bot.var_total),
-            'hold_usdt': safe(self.bot.hold_usdt_var if self.bot.hold_usdt_var > 0 else self.bot.inv_inic),
-            'hold_btc': safe(self.bot.hold_btc_var),
+            'variacion_total_inv':   safe(self.bot.var_total),
+            'hold_usdt':             safe(self.bot.hold_usdt_var),
+            'hold_btc':              safe(self.bot.hold_btc_var),
+            'btc_disponible':        safe(self.bot.btc_comprado),
         }
+
+        #print("🟡 Inicializando valores...")
+        """for k, v in self.valores_iniciales.items():
+            print(f"   🔹 {k} = {v} ({type(v)})")"""
 
 
     def run(self):

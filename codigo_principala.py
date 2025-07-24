@@ -73,13 +73,13 @@ class TradingBot:
         self.total_ganancia = Decimal('0')
         self.ganancia_neta = Decimal('0')
         self.reportado_trabajando = False 
-        self.hold_btc_var = self.hold_btc()
-        self.hold_usdt_var = self.hold_usdt()
+        self.hold_btc_var = Decimal('0')
+        self.hold_usdt_var = Decimal('0')
         self.contador_compras_reales = 0
         self.contador_ventas_reales = 0
         self.param_b_enabled = True  
-        self.excedente_total_compras = Decimal("0")
-        self.excedente_total_ventas = Decimal("0")
+        self.excedente_total_compras = Decimal('0')
+        self.excedente_total_ventas = Decimal('0')
 
         self.timestamp = None
          
@@ -88,7 +88,7 @@ class TradingBot:
         self.venta_fantasma_ocurrida = False
 
         self.var_total = Decimal('0')
-        self.ghost_ratio = self.calcular_ghost_ratio()
+        self.ghost_ratio = Decimal('0')
         
     
 
@@ -117,6 +117,7 @@ class TradingBot:
         except (InvalidOperation, ValueError):
             return f"{simbolo} {valor}" if simbolo else str(valor)
 
+   
 
 
     def log(self, mensaje):
@@ -527,27 +528,38 @@ class TradingBot:
 
 
     
-    def hold_usdt(self) -> Decimal:
-        """
-        Cuánto USDT tendrías haciendo HODL vs inversión activa.
-        Si falta precio de ingreso o actual, devolvemos 0.
-        """
-        if not self.precio_ingreso or not self.precio_actual:
-            return Decimal('0')
-        
-        resultado = (self.inv_inic / self.precio_ingreso) * self.precio_actual
-        return resultado if resultado != 0 else Decimal('0')
+    
+    def hold_usdt(self):
+        try:
+            if not self.running or self.contador_compras_reales == 0:
+                return Decimal("0")
+            if not self.precio_ingreso or not self.precio_actual or not self.inv_inic:
+                return Decimal("0")
+
+            btc_hold = self.inv_inic / self.precio_ingreso
+            return btc_hold * self.precio_actual
+
+        except (InvalidOperation, ZeroDivisionError, TypeError):
+            return Decimal("0")
+
 
     def hold_btc(self) -> Decimal:
         """
-        Cuánto BTC (en sats) tendrías haciendo HODL.
-        Si falta precio de ingreso o inv_inic es cero, devolvemos 0.
+        Devuelve cuánto BTC habrías comprado con la inversión inicial y el precio de ingreso.
         """
-        if not self.precio_ingreso or self.inv_inic == Decimal('0'):
-            return Decimal('0')
-        resultado = self.inv_inic / self.precio_ingreso
-        return resultado if resultado != 0 else Decimal('0')
-                             
+        try:
+            if not self.precio_ingreso or self.inv_inic == Decimal("0"):
+                return Decimal("0")
+
+            ingreso = self.precio_ingreso if isinstance(self.precio_ingreso, Decimal) else Decimal(str(self.precio_ingreso))
+            inv     = self.inv_inic       if isinstance(self.inv_inic, Decimal)       else Decimal(str(self.inv_inic))
+
+            btc_resultado = inv / ingreso
+            return btc_resultado if btc_resultado != 0 else Decimal("0")
+
+        except (InvalidOperation, ZeroDivisionError, TypeError, ValueError) as e:
+            self.log(f"❌ Error en hold_btc: {e}")
+            return Decimal("0")    
                    
     def calcular_ghost_ratio(self) -> Decimal:
         total = (self.contador_compras_reales + self.contador_ventas_reales +

@@ -261,9 +261,9 @@ class AnimationMixin:
 
         
 
-        # Guardián en canvas_uno
+        # Guardián en canvas_various
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
-        self.guard_item = self.canvas_uno.create_image(0,835, image=guard0, anchor='nw')
+        self.guard_item = self.canvas_various.create_image(1800,0, image=guard0, anchor='nw')
 
          # 2) Crea el item en el canvas
         if self.dithmenos_frames:
@@ -403,8 +403,8 @@ class AnimationMixin:
         frames = self.guard_open_frames if self.bot and self.bot.running else self.guard_closed_frames
         if frames:
             frame, self.guard_frame_index = self._safe_next_frame(frames, self.guard_frame_index)
-            if frame and self.canvas_uno.type(self.guard_item) == 'image':
-                self.canvas_uno.itemconfig(self.guard_item, image=frame)
+            if frame and self.canvas_various.type(self.guard_item) == 'image':
+                self.canvas_various.itemconfig(self.guard_item, image=frame)
         self.animar(100, self._animate_guard)
 
     def _sales_index(self, cnt):
