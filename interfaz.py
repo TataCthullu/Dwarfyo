@@ -38,7 +38,7 @@ class BotInterfaz(AnimationMixin):
             "compras_realizadas": "LightSteelBlue",
             "ventas_realizadas": "Cyan",
             "compras_fantasma": "Magenta",
-            "ventas_fantasma": "MediumAquamarine",
+            "ventas_fantasma": "MediumSpringGreen",
 
             "ghost_ratio": "Plum",
             "balance": "Orange",
