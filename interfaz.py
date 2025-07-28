@@ -29,17 +29,28 @@ class BotInterfaz(AnimationMixin):
         self.config_ventana = None
         
         self.colores_fijos = {
-            "usdt": "MediumPurple",
+            "usdt": "SpringGreen",
             "btc_dispo": "SkyBlue",
-            "btcnusdt": "LightSteelBlue",
-            "ganancia_neta": "LightGreen",
+            "btcnusdt": "DodgerBlue",
+            "ganancia_neta": "LightSeaGreen",
             "start_time": "Khaki",
             "runtime": "Khaki",
-            "compras_realizadas": "DodgerBlue",
-            "ventas_realizadas": "LimeGreen",
-            "compras_fantasma": "DeepPink",
-            "ventas_fantasma": "OrangeRed",
-            "ghost_ratio": "DarkOrange"
+            "compras_realizadas": "LightSteelBlue",
+            "ventas_realizadas": "Cyan",
+            "compras_fantasma": "Magenta",
+            "ventas_fantasma": "MediumAquamarine",
+
+            "ghost_ratio": "Plum",
+            "balance": "Orange",
+            "variacion_total_inv": "Lightgreen",
+            "variacion_desde_inicio": "LightCoral",
+            "precio_actual": "LemonChiffon",
+            "desde_ult_comp": "IndianRed",
+            "ult_vent": "MediumSeaGreen",
+            "excedente_compras": "MediumTurquoise",
+            "excedente_ventas": "lightblue",
+            "excedente_total": "Pink",
+            "hold_usdt": "MediumPurple"
         }
         
         self._font_normal = ("LondonBetween", 16)
@@ -334,7 +345,7 @@ class BotInterfaz(AnimationMixin):
             # 1) etiqueta fija
             lbl_id = self.canvas_center.create_text(10, y_offset,
                                                     text=label_text,
-                                                    fill="White",
+                                                    fill="MediumSpringGreen",
                                                     font=self._font_normal,
                                                     anchor="nw")
             # 2) medir y posicionar valor
@@ -425,7 +436,7 @@ class BotInterfaz(AnimationMixin):
             lbl_id = self.canvas_animation.create_text(
                 10, y_offset,
                 text=label_var.get(),
-                fill="White",
+                fill="Orange",
                 font=self._font_normal,
                 anchor="nw"
             )
@@ -567,12 +578,7 @@ class BotInterfaz(AnimationMixin):
         # 9) Reconstruir paneles
         self.left_panel()
         self.center_panel()
-               
         self.init_animation()
-
-        
-        #self.bot.set_formatter(self.format_var)
-
         # 8) Redibujar datos actuales (aunque estén vacíos)
         self.actualizar_ui()
 
