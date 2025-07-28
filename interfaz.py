@@ -1,7 +1,6 @@
-# © 2025 Dungeon Market Trading Bot
+# © 2025 Dungeon Market (Khazâd - Trading Bot)
 # Todos los derechos reservados.
 import tkinter as tk
-from tkinter import *
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar
 from codigo_principala import TradingBot
@@ -11,12 +10,12 @@ from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
-import os
+
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
          # Main window setup
-        self.root = Tk()
+        self.root = tk.Tk()
         self.root.title("Dungeon Market")
         self.root.config(cursor="@imagenes/deco/cursor/stone_arrow.cur")
         self.root.configure(bg="pink")
@@ -25,12 +24,24 @@ class BotInterfaz(AnimationMixin):
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.was_offline = False
-        
-        #self.bot.set_formatter(self.format_var)
-
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
+        
+        self.colores_fijos = {
+            "usdt": "MediumPurple",
+            "btc_dispo": "SkyBlue",
+            "btcnusdt": "LightSteelBlue",
+            "ganancia_neta": "LightGreen",
+            "start_time": "Khaki",
+            "runtime": "Khaki",
+            "compras_realizadas": "DodgerBlue",
+            "ventas_realizadas": "LimeGreen",
+            "compras_fantasma": "DeepPink",
+            "ventas_fantasma": "OrangeRed",
+            "ghost_ratio": "DarkOrange"
+        }
+        
         self._font_normal = ("LondonBetween", 16)
         self.espaciado_horizontal = 5
         self.espaciado_vertical = 35
@@ -52,12 +63,6 @@ class BotInterfaz(AnimationMixin):
             "ventas_fantasma": self.bot.contador_ventas_fantasma
         }
         
-        
-
-            
-
-        
-
         # Frames
         self.left_panel()
         self.center_panel()
@@ -67,11 +72,8 @@ class BotInterfaz(AnimationMixin):
         self.various_panel()
         self.init_animation()
         
-
-        
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
-        
         
         # —————— Barra de menú unificada ——————
         self.menubar       = tk.Menu(self.root)
@@ -88,10 +90,8 @@ class BotInterfaz(AnimationMixin):
         self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
-        #self.bot.set_formatter(self.format_var)
-        
         self.actualizar_ui()
-        self.root.after(100, self.inicializar_valores_iniciales)
+        self.inicializar_valores_iniciales()
         self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
         
@@ -195,34 +195,34 @@ class BotInterfaz(AnimationMixin):
 
     def _create_stringvars(self):
         # Display and config variables
-        self.precio_act_str = StringVar()
-        self.balance_str = StringVar()
-        self.start_time_str = StringVar()
-        self.runtime_str = StringVar()
-        self.cant_btc_str = StringVar()
-        self.btc_en_usdt = StringVar()
-        self.varpor_set_compra_str = StringVar()
-        self.varpor_set_venta_str = StringVar()
-        self.precio_de_ingreso_str = StringVar()
-        self.var_inicio_str = StringVar()
-        self.ganancia_total_str = StringVar()
-        self.cont_compras_fantasma_str = StringVar()
-        self.cont_ventas_fantasma_str = StringVar()
-        self.ghost_ratio_var = StringVar()
-        self.compras_realizadas_str = StringVar()
-        self.ventas_realizadas_str = StringVar()
-        self.porc_objetivo_venta_str = StringVar()
-        self.cant_usdt_str = StringVar()
-        self.porc_desde_compra_str = StringVar()
-        self.porc_desde_venta_str = StringVar()
-        self.inv_por_compra_str = StringVar()
-        self.fixed_buyer_str = StringVar()
-        self.hold_usdt_str = StringVar()
-        self.hold_btc_str = StringVar()
-        self.var_total_str = StringVar() 
-        self.excedente_compras_str = StringVar()
-        self.excedente_ventas_str = StringVar()
-        self.excedente_total_str = StringVar()
+        self.precio_act_str = tk.StringVar()
+        self.balance_str = tk.StringVar()
+        self.start_time_str = tk.StringVar()
+        self.runtime_str = tk.StringVar()
+        self.cant_btc_str = tk.StringVar()
+        self.btc_en_usdt = tk.StringVar()
+        self.varpor_set_compra_str = tk.StringVar()
+        self.varpor_set_venta_str = tk.StringVar()
+        self.precio_de_ingreso_str = tk.StringVar()
+        self.var_inicio_str = tk.StringVar()
+        self.ganancia_total_str = tk.StringVar()
+        self.cont_compras_fantasma_str = tk.StringVar()
+        self.cont_ventas_fantasma_str = tk.StringVar()
+        self.ghost_ratio_var = tk.StringVar()
+        self.compras_realizadas_str = tk.StringVar()
+        self.ventas_realizadas_str = tk.StringVar()
+        self.porc_objetivo_venta_str = tk.StringVar()
+        self.cant_usdt_str = tk.StringVar()
+        self.porc_desde_compra_str = tk.StringVar()
+        self.porc_desde_venta_str = tk.StringVar()
+        self.inv_por_compra_str = tk.StringVar()
+        self.fixed_buyer_str = tk.StringVar()
+        self.hold_usdt_str = tk.StringVar()
+        self.hold_btc_str = tk.StringVar()
+        self.var_total_str = tk.StringVar() 
+        self.excedente_compras_str = tk.StringVar()
+        self.excedente_ventas_str = tk.StringVar()
+        self.excedente_total_str = tk.StringVar()
 
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
@@ -250,12 +250,12 @@ class BotInterfaz(AnimationMixin):
         
     #Frames
     def left_panel(self):
-        self.left_frame = Frame(self.root, bd=0,                 # sin borde
+        self.left_frame = tk.Frame(self.root, bd=0,                 # sin borde
     highlightthickness=0, # sin “resaltado” al enfoque
     relief='flat')
         self.left_frame.place(x=0, y=0, width=600, height=900)
 
-        self.canvas_uno = Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
+        self.canvas_uno = tk.Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
         
@@ -271,9 +271,11 @@ class BotInterfaz(AnimationMixin):
         def add(label_text, var, key=None):
             nonlocal y_offset
             # 1) etiqueta fija
+            color_etiqueta = self.colores_fijos.get(key, "White") if key else "White"
+
             lbl_id = self.canvas_uno.create_text(10, y_offset,
                                                  text=label_text,
-                                                 fill="White",
+                                                 fill=color_etiqueta,
                                                  font=self._font_normal,
                                                  anchor="nw")
             # 2) medir y posicionar valor a la derecha
@@ -315,10 +317,10 @@ class BotInterfaz(AnimationMixin):
 
         
     def center_panel(self):
-        self.center_frame = Frame(self.root, bd=0, relief='flat')
+        self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
         self.center_frame.place(x=600, y=0, width=700, height=450)
 
-        self.canvas_center = Canvas(self.center_frame, width=700, height=450, highlightthickness=0, bd=0, relief='flat')
+        self.canvas_center = tk.Canvas(self.center_frame, width=700, height=450, highlightthickness=0, bd=0, relief='flat')
         self.canvas_center.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_center, "imagenes/decoa/wall/wall_vines_1.png", escala=2)
         
@@ -358,11 +360,11 @@ class BotInterfaz(AnimationMixin):
         
 
     def right_panel(self):
-        self.right_frame = Frame(self.root, bd=0, # sin “resaltado” al enfoque
+        self.right_frame = tk.Frame(self.root, bd=0, # sin “resaltado” al enfoque
     relief='flat')
         self.right_frame.place(x=1300, y=0, width=650, height=450)
 
-        self.canvas_right = Canvas(self.right_frame, width=650, height=450, highlightthickness=0)
+        self.canvas_right = tk.Canvas(self.right_frame, width=650, height=450, highlightthickness=0)
         self.canvas_right.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
         
@@ -375,10 +377,10 @@ class BotInterfaz(AnimationMixin):
    
 
     def right_panel_b(self):
-        self.right_frame_b = Frame(self.root)
+        self.right_frame_b = tk.Frame(self.root)
         self.right_frame_b.place(x=1300, y=450, width=620, height=450)
 
-        self.canvas_right_b = Canvas(self.right_frame_b, width=640, height=450, highlightthickness=0)
+        self.canvas_right_b = tk.Canvas(self.right_frame_b, width=640, height=450, highlightthickness=0)
         self.canvas_right_b.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)
         
@@ -403,10 +405,10 @@ class BotInterfaz(AnimationMixin):
         
 
     def animation_panel(self):
-        self.animation_frame = Frame(self.root)
+        self.animation_frame = tk.Frame(self.root)
         self.animation_frame.place(x=600, y=450, width=700, height=450)
 
-        self.canvas_animation = Canvas(self.animation_frame, width=700, height=450, highlightthickness=0)
+        self.canvas_animation = tk.Canvas(self.animation_frame, width=700, height=450, highlightthickness=0)
         self.canvas_animation.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=3)
 
@@ -455,25 +457,25 @@ class BotInterfaz(AnimationMixin):
         
 
     def various_panel(self):
-        self.various_frame = Frame(self.root)
+        self.various_frame = tk.Frame(self.root)
         self.various_frame.place(x=0, y=900, width=2000, height=100)
 
-        self.canvas_various = Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
+        self.canvas_various = tk.Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
         self.canvas_various.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=3)
         
         # Crear botones pero solo mostrar "Iniciar" al principio
-        self.btn_inicio = Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
+        self.btn_inicio = tk.Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
 
-        self.btn_limpiar = Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
+        self.btn_limpiar = tk.Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_limpiar_id = self.canvas_various.create_window(250, 50, window=self.btn_limpiar)
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
 
-        self.btn_calc = Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
+        self.btn_calc = tk.Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.canvas_various.create_window(400, 50, window=self.btn_calc)
 
-        self.btn_confi = Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
+        self.btn_confi = tk.Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_confi_id = self.canvas_various.create_window(600, 50, window=self.btn_confi)
 
     def toggle_bot(self):
@@ -548,8 +550,8 @@ class BotInterfaz(AnimationMixin):
 
         
         # 6) Vaciar historial y consola
-        self.historial.delete("1.0", END)
-        self.consola.delete("1.0", END)
+        self.historial.delete("1.0", tk.END)
+        self.consola.delete("1.0", tk.END)
 
         # 7) Guardar la vista actual del usuario
         self.reset_animaciones()
@@ -607,7 +609,7 @@ class BotInterfaz(AnimationMixin):
             self.config_ventana.focus_force()
             return  # No abrir otra
 
-        self.config_ventana = Toplevel(self.root)
+        self.config_ventana = tk.Toplevel(self.root)
         self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
@@ -630,26 +632,26 @@ class BotInterfaz(AnimationMixin):
         ]
 
         # ── Check para activar compra tras venta fantasma
-        self.var_ghost = BooleanVar(value=self.bot.compra_en_venta_fantasma)
-        cb_frame = Frame(self.config_ventana, bg="DarkGoldenRod")
-        cb_frame.pack(fill=X, pady=4, padx=8)
-        Checkbutton(cb_frame,
+        self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)
+        cb_frame = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
+        cb_frame.pack(fill=tk.X, pady=4, padx=8)
+        tk.Checkbutton(cb_frame,
                     text="Habilitar compra tras venta fantasma",
                     variable=self.var_ghost,
                     bg="DarkGoldenRod",
                     font=("LondonBetween", 16),
-                    fg="DarkSlateGray").pack(side=LEFT)  
+                    fg="DarkSlateGray").pack(side=tk.LEFT)  
 
         entries = []
 
         for etiqueta, valor in campos:
-            frame = Frame(self.config_ventana, bg="DarkGoldenRod")
-            frame.pack(fill=X, pady=4, padx=8)
-            Label(frame, text=etiqueta, bg="DarkGoldenRod",
-                font=("LondonBetween", 16), fg="DarkSlateGray").pack(side=LEFT)
-            var = StringVar(value=str(valor))
-            Entry(frame, textvariable=var, bg="DarkGoldenRod",
-                font=("LondonBetween", 16), fg="Gold").pack(side=LEFT, padx=6)
+            frame = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
+            frame.pack(fill=tk.X, pady=4, padx=8)
+            tk.Label(frame, text=etiqueta, bg="DarkGoldenRod",
+                font=("LondonBetween", 16), fg="DarkSlateGray").pack(side=tk.LEFT)
+            var = tk.StringVar(value=str(valor))
+            tk.Entry(frame, textvariable=var, bg="DarkGoldenRod",
+                font=("LondonBetween", 16), fg="Gold").pack(side=tk.LEFT, padx=6)
             entries.append(var)
 
         def guardar_config():
@@ -716,7 +718,7 @@ class BotInterfaz(AnimationMixin):
             except (InvalidOperation, IndexError):
                 self.log_en_consola("Error: ingresa valores numericos validos.")
 
-        Button(self.config_ventana, text="Guardar",
+        tk.Button(self.config_ventana, text="Guardar",
             bg="Goldenrod", command=guardar_config,
             font=("LondonBetween", 16), fg="PaleGoldenRod").pack(pady=8)
 
@@ -870,6 +872,8 @@ class BotInterfaz(AnimationMixin):
                 "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%")
             }
 
+            
+
             for clave, valor in texto_fijo.items():
                 if clave not in self.info_canvas:
                     continue
@@ -878,19 +882,27 @@ class BotInterfaz(AnimationMixin):
                 if coords and len(coords) == 2:
                     x, y = coords
                 else:
-                    # fallback: no pintamos si no hay coords
-                    continue
+                    continue  # No redibujar si no hay coordenadas
 
+                # 🔁 Redibujar sólo el nuevo texto (valor) pero no cambiar el color aquí
                 canvas.delete(item_id)
                 texto = self.format_fijo(clave, valor)
+
+                # Usamos el color actual ya calculado o default oro (evita colisiones)
+                color = self.colores_actuales.get(clave, "Gold")
+
+                # Reescribimos sólo el valor
                 new_id = canvas.create_text(
                     x, y,
                     text=texto,
-                    fill="Gold",
+                    fill=color,
                     font=self._font_normal,
                     anchor="nw"
                 )
+
+                # Actualizamos la referencia
                 self.info_canvas[clave] = (canvas, new_id)
+
 
             # Finalmente, refrescamos historial y consola
             self.actualizar_historial_consola()
@@ -918,31 +930,31 @@ class BotInterfaz(AnimationMixin):
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
     def actualizar_historial_consola(self):
-        self.historial.delete('1.0', END)
+        self.historial.delete('1.0', tk.END)
 
         # ——— COMPRAS ———
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
-            self.historial.insert(END, "🟦 Compra realizada:\n", 'compra_tag')
-            self.historial.insert(END, f"Precio de compra: {self.format_var(t['compra'], '$')}\n")
-            self.historial.insert(END, f"Id: {t['id']}\n")
-            self.historial.insert(END, f"Número de compra: {t['numcompra']}\n")
-            self.historial.insert(END, f"Fecha y hora: {ts}\n")
+            self.historial.insert(tk.END, "🟦 Compra realizada:\n", 'compra_tag')
+            self.historial.insert(tk.END, f"Precio de compra: {self.format_var(t['compra'], '$')}\n")
+            self.historial.insert(tk.END, f"Id: {t['id']}\n")
+            self.historial.insert(tk.END, f"Número de compra: {t['numcompra']}\n")
+            self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
             if "venta_obj" in t:
-                self.historial.insert(END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")
-            self.historial.insert(END, "-"*40 + "\n")
+                self.historial.insert(tk.END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")
+            self.historial.insert(tk.END, "-"*40 + "\n")
 
         # ——— VENTAS ———
         for v in self.bot.precios_ventas:
             ts = v.get("timestamp", "")
-            self.historial.insert(END, "🟩 Venta realizada:\n", 'venta_tag')
-            self.historial.insert(END, f"Precio de compra: {self.format_fijo('compra', v['compra'])}\n")
-            self.historial.insert(END, f"Precio de venta: {self.format_fijo('venta', v['venta'])}\n")
-            self.historial.insert(END, f"Id compra: {v['id_compra']}\n")
-            self.historial.insert(END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
-            self.historial.insert(END, f"Número de venta: {v['venta_numero']}\n")
-            self.historial.insert(END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(END, "-"*40 + "\n")
+            self.historial.insert(tk.END, "🟩 Venta realizada:\n", 'venta_tag')
+            self.historial.insert(tk.END, f"Precio de compra: {self.format_fijo('compra', v['compra'])}\n")
+            self.historial.insert(tk.END, f"Precio de venta: {self.format_fijo('venta', v['venta'])}\n")
+            self.historial.insert(tk.END, f"Id compra: {v['id_compra']}\n")
+            self.historial.insert(tk.END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
+            self.historial.insert(tk.END, f"Número de venta: {v['venta_numero']}\n")
+            self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
+            self.historial.insert(tk.END, "-"*40 + "\n")
 
 
     def actualizar_color(self, key, valor_actual):
@@ -1008,8 +1020,8 @@ class BotInterfaz(AnimationMixin):
     
         
     def log_en_consola(self, msg):
-        self.consola.insert(END, msg+"\n")
-        self.consola.see(END)
+        self.consola.insert(tk.END, msg+"\n")
+        self.consola.see(tk.END)
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
@@ -1033,13 +1045,7 @@ class BotInterfaz(AnimationMixin):
             'variacion_total_inv':   safe(self.bot.var_total),
             'hold_usdt':             safe(self.bot.hold_usdt_var),
             'hold_btc':              safe(self.bot.hold_btc_var),
-            'btc_disponible':        safe(self.bot.btc_comprado),
         }
-
-        #print("🟡 Inicializando valores...")
-        """for k, v in self.valores_iniciales.items():
-            print(f"   🔹 {k} = {v} ({type(v)})")"""
-
 
     def run(self):
         try:
@@ -1047,4 +1053,3 @@ class BotInterfaz(AnimationMixin):
         except KeyboardInterrupt:
             # Puedes optar por destruir la ventana o simplemente ignorar
             pass
-

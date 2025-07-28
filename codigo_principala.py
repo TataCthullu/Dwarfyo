@@ -1,10 +1,9 @@
-# © 2025 Khazâd Trading Bot
+# © 2025 Dungeon Market (Khazâd - Trading Bot)
 # Todos los derechos reservados.
 
 import ccxt
 from utils import reproducir_sonido
 import datetime
-#import uuid
 from decimal import Decimal, InvalidOperation, DivisionByZero, localcontext
 from secrets import token_hex
 
