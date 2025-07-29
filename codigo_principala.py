@@ -709,12 +709,16 @@ class TradingBot:
         
         return False
 
-    def detener(self):
-        self.running = False  
-        self.log("🔴 Khazâd detenido.")
+    def detener(self, motivo=None):
+        self.running = False
+        if motivo:
+            self.log(f"🔴 Khazâd detenido. Motivo: {motivo}")
+        else:
+            self.log("🔴 Khazâd detenido.")
         self.log("- - - - - - - - - -")
         if self.ui_callback_on_stop:
-            self.ui_callback_on_stop()
+            self.ui_callback_on_stop(motivo)
+
     def reiniciar(self):
         # 1) Guarda lo que queremos preservar
         _exchange = self.exchange
@@ -733,36 +737,32 @@ class TradingBot:
             self.log("- - - - - - - - - -")
         
     def check_take_profit_stop_loss(self):
-        """
-        Revisa si se alcanzó take profit o stop loss global.
-        """
-        # Variación total actual (%)
         variacion = self.variacion_total()
 
-        # Take Profit
+        # nada que hacer si no hay compras reales
+        if self.contador_compras_reales == 0:
+            return False
+
         if self.take_profit_pct and variacion >= self.take_profit_pct:
             self.log(f"🎯 Take Profit alcanzado: {variacion:.2f}%")
-            self.log("- - - - - - - - - -")
-            # vender todo
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual
-                self.log(f"💰 Se vendió todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
-                self.log("- - - - - - - - - -")
+                self.log(f"💰 Vendido todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
                 self.btc = Decimal("0")
-            self.detener()
+            self.detener(motivo="TP/SL")
             return True
 
-        # Stop Loss (lo dejamos listo pero sin usar todavía)
         if self.stop_loss_pct and variacion <= -self.stop_loss_pct:
             self.log(f"🛑 Stop Loss alcanzado: {variacion:.2f}%")
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual
-                self.log(f"💰 Se vendió todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
+                self.log(f"💰 Vendido todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
                 self.btc = Decimal("0")
-            self.detener()
+            self.detener(motivo="TP/SL")
             return True
 
         return False
+
 
 
 

@@ -23,6 +23,7 @@ class BotInterfaz(AnimationMixin):
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
         self.bot = bot
+        self.bot.ui_callback_on_stop = self._on_bot_stop
         self.was_offline = False
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
@@ -110,22 +111,28 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = True
         self.bot.sound_enabled = True
          
-        self.bot.ui_callback_on_stop = self._on_bot_stop()
+        
  
     def reset_animaciones(self):
-        self._animaciones_activas = False
-        # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
-        # Pero este flag impide que nuevas animaciones se dupliquen.
-    
-    def _on_bot_stop(self):
-        # Estado tras detenerse por TP/SL
+            self._animaciones_activas = False
+            # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
+            # Pero este flag impide que nuevas animaciones se dupliquen.
+        
+    def _on_bot_stop(self, motivo=None):
+        # 🔁 Siempre resetear botones a un estado "limpio"
         self.btn_inicio.config(text="Iniciar")
-        # Ocultar "Iniciar" para obligar a limpiar primero
         self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
-        # Mostrar "Limpiar"
-        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
-        # Ocultar "Configurar" (igual que cuando se detiene manualmente)
+        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
+
+        if motivo == "TP/SL":
+            # Caso de parada automática → solo mostrar limpiar
+            self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
+            self.log_en_consola("📌 Bot detenido por Take Profit / Stop Loss. Usa 'Limpiar' antes de reiniciar.")
+        else:
+            # Caso manual o error → volver a flujo normal
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+            self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
 
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
@@ -646,7 +653,9 @@ class BotInterfaz(AnimationMixin):
             ("% Desde venta, para compra: %", self.bot.porc_desde_venta),
             ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
-            ("Total Usdt: $", self.bot.inv_inic)
+            ("Total Usdt: $", self.bot.inv_inic),
+            ("Take Profit Global (%):", self.bot.take_profit_pct or Decimal("0")),
+            ("Stop Loss Global (%):", self.bot.stop_loss_pct or Decimal("0")),
         ]
 
         # ── Check para activar compra tras venta fantasma
@@ -680,7 +689,8 @@ class BotInterfaz(AnimationMixin):
                 txt_profit  = entries[2].get().strip()
                 txt_porc_inv = entries[3].get().strip()
                 txt_usdt_inic = entries[4].get().strip()
-                
+                txt_tp  = entries[5].get().strip()
+                txt_sl  = entries[6].get().strip()
 
                 # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
                 porc_compra = Decimal(txt_compra)
@@ -688,7 +698,9 @@ class BotInterfaz(AnimationMixin):
                 porc_profit  = Decimal(txt_profit)
                 porc_inv = Decimal(txt_porc_inv)
                 usdtinit = Decimal(txt_usdt_inic)
-                
+                tp = Decimal(txt_tp)
+                sl = Decimal(txt_sl)
+
                 # 3) Validaciones > 0
                 if porc_compra <= 0:
                     self.log_en_consola("⚠️ El porcentaje desde compra debe ser mayor que 0.")
@@ -705,6 +717,12 @@ class BotInterfaz(AnimationMixin):
                 if usdtinit <= 0:
                     self.log_en_consola("⚠️ El capital inicial debe ser mayor que 0.")
                     return
+                if tp < 0:
+                    self.log_en_consola("⚠️ El Take Profit debe ser 0 o mayor.")
+                    return
+                if sl < 0:
+                    self.log_en_consola("⚠️ El Stop Loss debe ser 0 o mayor.")
+                    return
 
 
                 # 3) Asignamos al bot (para los cálculos internos)
@@ -713,6 +731,9 @@ class BotInterfaz(AnimationMixin):
                 self.bot.porc_profit_x_venta = porc_profit
                 self.bot.porc_inv_por_compra = porc_inv
                 self.bot.inv_inic = usdtinit
+                self.bot.take_profit_pct = tp if tp > 0 else None
+                self.bot.stop_loss_pct = sl if sl > 0 else None
+
 
                 if not self.bot.running:
                     self.bot.usdt = usdtinit
