@@ -253,6 +253,9 @@ class BotInterfaz(AnimationMixin):
         self.excedente_compras_str = tk.StringVar()
         self.excedente_ventas_str = tk.StringVar()
         self.excedente_total_str = tk.StringVar()
+        self.take_profit_str = tk.StringVar()
+        self.stop_loss_str = tk.StringVar()
+
 
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
@@ -386,6 +389,8 @@ class BotInterfaz(AnimationMixin):
         add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")
         add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
+        add("Take Profit:", self.take_profit_str, "take_profit")
+        add("Stop Loss:", self.stop_loss_str, "stop_loss")
 
         
 
@@ -886,8 +891,8 @@ class BotInterfaz(AnimationMixin):
 
             # —— Fijos (texto) —— 
             texto_fijo = {
-                "start_time": self.bot.get_start_time_str()  or "",
-                "runtime": self.bot.get_runtime_str()     or "",
+                "start_time": self.bot.get_start_time_str() or "",
+                "runtime": self.bot.get_runtime_str() or "",
                 "porc_inv_por_compra": (self.bot.porc_inv_por_compra, "%"),
                 "usdt": (self.bot.usdt, "$"),
                 "btc_dispo": (self.bot.btc, "₿"),
@@ -908,7 +913,10 @@ class BotInterfaz(AnimationMixin):
                 "btcnusdt": (self.bot.btc_usdt, "$"),
                 "excedente_compras": (self.bot.excedente_total_compras, "%"),
                 "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
-                "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%")
+                "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),
+                "take_profit": (self.bot.take_profit_pct or Decimal("0"), "%"),
+                "stop_loss": (self.bot.stop_loss_pct or Decimal("0"), "%"),
+
             }
 
             
