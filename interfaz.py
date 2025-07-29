@@ -110,10 +110,22 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = True
         self.bot.sound_enabled = True
          
+        self.bot.ui_callback_on_stop = self._on_bot_stop()
+ 
     def reset_animaciones(self):
         self._animaciones_activas = False
         # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
         # Pero este flag impide que nuevas animaciones se dupliquen.
+    
+    def _on_bot_stop(self):
+        # Estado tras detenerse por TP/SL
+        self.btn_inicio.config(text="Iniciar")
+        # Ocultar "Iniciar" para obligar a limpiar primero
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
+        # Mostrar "Limpiar"
+        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
+        # Ocultar "Configurar" (igual que cuando se detiene manualmente)
+        self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
 
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)

@@ -30,8 +30,9 @@ class TradingBot:
         self.usdt = self.inv_inic
         self.btc = Decimal('0')      
         self.btc_comprado = Decimal('0')
-        self.take_profit_pct = Decimal("0.05")   # % de ganancia total donde cerrar
-        self.stop_loss_pct   = Decimal("0.05")            # lo dejamos para más adelante
+        self.take_profit_pct = Decimal("0.005")   # % de ganancia total donde cerrar
+        self.stop_loss_pct   = Decimal("0.005")            # lo dejamos para más adelante
+        self.ui_callback_on_stop = None
 
 
         self.precio_actual = self._fetch_precio()
@@ -712,7 +713,8 @@ class TradingBot:
         self.running = False  
         self.log("🔴 Khazâd detenido.")
         self.log("- - - - - - - - - -")
-
+        if self.ui_callback_on_stop:
+            self.ui_callback_on_stop()
     def reiniciar(self):
         # 1) Guarda lo que queremos preservar
         _exchange = self.exchange
@@ -740,10 +742,12 @@ class TradingBot:
         # Take Profit
         if self.take_profit_pct and variacion >= self.take_profit_pct:
             self.log(f"🎯 Take Profit alcanzado: {variacion:.2f}%")
+            self.log("- - - - - - - - - -")
             # vender todo
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual
                 self.log(f"💰 Se vendió todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
+                self.log("- - - - - - - - - -")
                 self.btc = Decimal("0")
             self.detener()
             return True
