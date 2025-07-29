@@ -30,7 +30,9 @@ class TradingBot:
         self.usdt = self.inv_inic
         self.btc = Decimal('0')      
         self.btc_comprado = Decimal('0')
-        
+        self.take_profit_pct = Decimal("0.05")   # % de ganancia total donde cerrar
+        self.stop_loss_pct   = Decimal("0.05")            # lo dejamos para más adelante
+
 
         self.precio_actual = self._fetch_precio()
         self.btc_usdt = Decimal('0')
@@ -647,20 +649,21 @@ class TradingBot:
                     self.hold_btc_var = self.hold_btc()
                     self.hold_usdt_var = self.hold_usdt()
                     self.var_total = self.variacion_total()
+
+                    # Check global TP/SL
+                    if self.check_take_profit_stop_loss():
+                        return
+
                     self.vender()                
                     self.parametro_compra_desde_compra = self.parametro_compra_A()                
                     self.parametro_compra_desde_venta = self.parametro_compra_B()
                     self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
                     self.parametro_venta_fantasma = self.venta_fantasma()              
+                    
                     if self.precio_ingreso is None:
                         self.var_inicio = Decimal("0")
                     else:
                         self.var_inicio = self.varpor_ingreso()
-
-
-                    
-
-                    
 
                     if self.reportado_trabajando == False:                        
                         self.log("🟡 Trabajando...")   
@@ -727,6 +730,35 @@ class TradingBot:
             self.log("🔄 Khazâd reiniciado")
             self.log("- - - - - - - - - -")
         
+    def check_take_profit_stop_loss(self):
+        """
+        Revisa si se alcanzó take profit o stop loss global.
+        """
+        # Variación total actual (%)
+        variacion = self.variacion_total()
+
+        # Take Profit
+        if self.take_profit_pct and variacion >= self.take_profit_pct:
+            self.log(f"🎯 Take Profit alcanzado: {variacion:.2f}%")
+            # vender todo
+            if self.btc > 0:
+                self.usdt += self.btc * self.precio_actual
+                self.log(f"💰 Se vendió todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
+                self.btc = Decimal("0")
+            self.detener()
+            return True
+
+        # Stop Loss (lo dejamos listo pero sin usar todavía)
+        if self.stop_loss_pct and variacion <= -self.stop_loss_pct:
+            self.log(f"🛑 Stop Loss alcanzado: {variacion:.2f}%")
+            if self.btc > 0:
+                self.usdt += self.btc * self.precio_actual
+                self.log(f"💰 Se vendió todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
+                self.btc = Decimal("0")
+            self.detener()
+            return True
+
+        return False
 
 
 

@@ -322,9 +322,9 @@ class BotInterfaz(AnimationMixin):
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_fantasma")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_fantasma")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
-        add("Excedente total en compras:", self.excedente_compras_str, "excedente_compras")
-        add("Excedente total en ventas:",  self.excedente_ventas_str, "excedente_ventas")
-        add("Excedente acumulado total:",  self.excedente_total_str, "excedente_total")
+        add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
+        add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
+        add("Excedente total:",  self.excedente_total_str, "excedente_total")
 
         
     def center_panel(self):
