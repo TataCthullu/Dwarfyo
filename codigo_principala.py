@@ -48,6 +48,8 @@ class TradingBot:
         self.porc_desde_venta = Decimal("0.05")
         self.porc_inv_por_compra = Decimal("10")
         self.porc_profit_x_venta = Decimal("0.05")
+        self.rebalance_threshold = 2
+        self.rebalance_pct = Decimal("50")  # porcentaje del BTC a vender
 
 
         self.fixed_buyer = self.cant_inv()
@@ -244,8 +246,41 @@ class TradingBot:
         # Genera 4 dígitos hex aleatorios
         return token_hex(2)  # e.g. '9f3b'
     
-    
+    def check_rebalance(self):
+        """
+        Si el número de compras fantasma supera el umbral,
+        vende un % del valor total de la cartera (en USDT) como rebalance.
+        """
+        if self.contador_compras_fantasma >= self.rebalance_threshold:
+            if self.btc > 0 and self.precio_actual:
+                # Valor total en USDT
+                valor_total = self.usdt + (self.btc * self.precio_actual)
+                
+                # Cuánto vender (en USDT)
+                monto_a_vender_usdt = (valor_total * self.rebalance_pct) / Decimal("100")
+                
+                # Convertir a BTC
+                cantidad_a_vender = monto_a_vender_usdt / self.precio_actual
 
+                # Ajustar a lo disponible
+                if cantidad_a_vender > self.btc:
+                    cantidad_a_vender = self.btc
+
+                # Efectuar rebalance
+                self.usdt += cantidad_a_vender * self.precio_actual
+                self.btc -= cantidad_a_vender
+
+                self.log(f"⚖️ Rebalance activado: vendiendo {self.rebalance_pct}% del valor total → {self.format_fn(cantidad_a_vender, '₿')}")
+                self.log(f"💰 USDT después del rebalance: {self.format_fn(self.usdt, '$')}")
+                self.log("- - - - - - - - - -")
+
+                # Resetear contador
+                self.contador_compras_fantasma = 0
+
+                if self.sound_enabled:
+                    reproducir_sonido("Sounds/soundventa.wav")
+            else:
+                self.log("⚠️ Rebalance no ejecutado: no hay BTC disponible.")
 
     def comprar(self, trigger=None):
             nuevo_precio = self._fetch_precio()
@@ -660,7 +695,8 @@ class TradingBot:
                     self.parametro_compra_desde_venta = self.parametro_compra_B()
                     self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
                     self.parametro_venta_fantasma = self.venta_fantasma()              
-                    
+                    self.check_rebalance()
+
                     if self.precio_ingreso is None:
                         self.var_inicio = Decimal("0")
                     else:
