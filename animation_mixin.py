@@ -22,7 +22,7 @@ class AnimationMixin:
 
         # 2) Carga de la estatua
         stat_path = os.path.join(ruta_ele, "elephant_statue.png")
-        self.elephant_statue = PhotoImage(file=stat_path).zoom(2, 2) if os.path.exists(stat_path) else None
+        self.elephant_statue = PhotoImage(file=stat_path).zoom(3, 3) if os.path.exists(stat_path) else None
 
         # 3) Carga de los elefantes numerados 0..5
         self.elephants = []
@@ -30,7 +30,7 @@ class AnimationMixin:
             p = os.path.join(ruta_ele, f"elephant_{i}.png")
             if os.path.exists(p):
                 # Aumentamos de tamaño con zoom, si lo deseas
-                img = PhotoImage(file=p).zoom(2, 2)
+                img = PhotoImage(file=p).zoom(3, 3)
             else:
                 img = None
             self.elephants.append(img)

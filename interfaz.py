@@ -474,7 +474,7 @@ class BotInterfaz(AnimationMixin):
             txt_id = self.canvas_animation.create_text(
                 x_val, y_offset,
                 text=val_var.get(),
-                fill="gold",
+                fill="Red",
                 font=self._font_normal,
                 anchor="nw"
             )
