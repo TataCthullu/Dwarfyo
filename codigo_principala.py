@@ -48,7 +48,7 @@ class TradingBot:
         self.porc_desde_venta = Decimal("0.005")
         self.porc_inv_por_compra = Decimal("10")
         self.porc_profit_x_venta = Decimal("0.005")
-        self.rebalance_threshold = int(2)
+        self.rebalance_threshold = int(6)
         self.rebalance_pct = int(50)  # porcentaje del BTC a vender
 
 
