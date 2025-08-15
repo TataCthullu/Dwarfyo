@@ -19,7 +19,6 @@ class TradingBot:
         self.sound_enabled = True
         self.start_time = None
         self.run_time = self.get_runtime_str()
-
         self.inv_inic = Decimal("5000")
         self.usdt = self.inv_inic
         self.btc = Decimal('0')      
@@ -27,26 +26,20 @@ class TradingBot:
         self.take_profit_pct = Decimal("3")   # % de ganancia total donde cerrar
         self.stop_loss_pct   = Decimal("1")            # lo dejamos para más adelante
         self.ui_callback_on_stop = None
-
-
         self.precio_actual = self._fetch_precio()
         self.btc_usdt = Decimal('0')
-
         self.parametro_compra_desde_compra = False
         self.parametro_compra_desde_venta = False
         self.parametro_compra_desde_venta_fantasma = False
         self.parametro_venta_fantasma = False
         self.param_a_enabled = True 
         self.precio_ult_venta = Decimal('0')
-
         self.porc_desde_compra = Decimal("0.005")
         self.porc_desde_venta = Decimal("0.005")
         self.porc_inv_por_compra = Decimal("10")
         self.porc_profit_x_venta = Decimal("0.005")
         self.rebalance_threshold = int(6)
         self.rebalance_pct = int(50)  # porcentaje del BTC a vender
-
-
         self.fixed_buyer = self.cant_inv()
         self.running = False
         self.valores_iniciales = {}
@@ -79,17 +72,15 @@ class TradingBot:
         self.param_b_enabled = True  
         self.excedente_total_compras = Decimal('0')
         self.excedente_total_ventas = Decimal('0')
-
         self.timestamp = None
-         
         self.compra_en_venta_fantasma = False
         self.activar_compra_tras_vta_fantasma = False
         self.venta_fantasma_ocurrida = False
-
         self.var_total = Decimal('0')
         self.ghost_ratio = Decimal('0')
-        
-    
+        self.sl_enabled = False
+        self.tp_enabled = False
+        self.rebalance_enabled = False
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -111,8 +102,8 @@ class TradingBot:
                 texto = f"{valor:.0f}"  # fuerza entero sin decimales
             else:
                 texto = format(valor, 'f').rstrip('0').rstrip('.')
-
             return f"{simbolo} {texto}" if simbolo else texto
+        
         except (InvalidOperation, ValueError):
             return f"{simbolo} {valor}" if simbolo else str(valor)
 
@@ -121,8 +112,6 @@ class TradingBot:
     
     def es_activa(self, transaccion):
         return transaccion.get("estado", "activa") == "activa"
-
-
 
     def log(self, mensaje):
         if self.log_fn:
@@ -135,14 +124,13 @@ class TradingBot:
         try:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
             info = ticker.get('info', {}) or {}
-
             raw = info.get('lastPrice')
             
             if raw is None:
                 # No usamos str(ticker['last']) que es float, sino que fallamos.
                 self.log("⚠️ No se encontró lastPrice en la respuesta cruda; precio no actualizado.")
                 return None
-
+            
             # Convertimos directamente el string ("12345.67000000") a Decimal
             try:
                 return Decimal(raw)
@@ -169,20 +157,18 @@ class TradingBot:
             # Convertir btc y usdt a Decimal si no lo son ya
             btc = self.btc if isinstance(self.btc, Decimal) else Decimal(self.btc or "0")
             usdt = self.usdt if isinstance(self.usdt, Decimal) else Decimal(self.usdt or "0")
-
             # precio_actual puede ser None o float/int; lo convertimos o damos cero
             if self.precio_actual is None:
                 precio = Decimal('0')
             else:
                 precio = self.precio_actual if isinstance(self.precio_actual, Decimal) else Decimal(self.precio_actual)
-            
             # Cálculo principal
-            self.btc_usdt     = btc * precio
+            self.btc_usdt = btc * precio
             self.usdt_mas_btc = usdt + self.btc_usdt
 
         except (InvalidOperation, TypeError, ValueError):
             # En caso de cualquier error de conversión, reiniciamos a cero
-            self.btc_usdt     = Decimal('0')
+            self.btc_usdt = Decimal('0')
             self.usdt_mas_btc = Decimal('0')
 
     def cant_inv(self) -> Decimal:
@@ -247,25 +233,29 @@ class TradingBot:
         return token_hex(2)  # e.g. '9f3b'
     
     def check_rebalance(self):
+        # Si el rebalance está desactivado, no hacemos nada
+        if not getattr(self, "rebalance_enabled", False):
+            return
+        rebalance_pct_dec = Decimal(str(self.rebalance_pct))
         """
         Rebalanceo dual:
         - Si hay varias transacciones: elimina un % de las más antiguas (por numcompra).
         - Si hay 1 sola transacción: vende un % proporcional de esa compra.
         - Si no hay transacciones: vende % del valor actual de la cartera.
         """
-        if self.contador_compras_fantasma >= self.rebalance_threshold:
+        if self.contador_compras_fantasma == self.rebalance_threshold:
             if self.transacciones and self.precio_actual:
                 n_total = len(self.transacciones)
 
                 if n_total > 1:
                     # --- Caso 1: purgar transacciones antiguas ---
-                    n_a_vender = int(n_total * (self.rebalance_pct / Decimal("100")))
+                    n_a_vender = int(n_total * (rebalance_pct_dec / Decimal("100")))
+
                     if n_a_vender <= 0 and n_total > 0:
                         n_a_vender = 1  # al menos una
 
                     transacciones_ordenadas = sorted(self.transacciones, key=lambda tx: tx.get("numcompra", 0))
                     a_vender = transacciones_ordenadas[:n_a_vender]
-
                     total_btc_vendido = Decimal("0")
                     total_usdt_obtenido = Decimal("0")
 
@@ -291,8 +281,9 @@ class TradingBot:
                     # --- Caso 1bis: solo una transacción ---
                     tx = self.transacciones[0]
                     btc_total_tx = tx.get("btc", Decimal("0"))
+
                     if btc_total_tx > 0:
-                        cantidad_a_vender = (btc_total_tx * self.rebalance_pct) / Decimal("100")
+                        cantidad_a_vender = (btc_total_tx * rebalance_pct_dec) / Decimal("100")
                         usdt_obtenido = cantidad_a_vender * self.precio_actual
 
                         # aplicar venta parcial
@@ -309,7 +300,7 @@ class TradingBot:
             elif self.btc > 0 and self.precio_actual:
                 # --- Caso 2: no hay transacciones, vender % de cartera ---
                 valor_total = self.usdt + (self.btc * self.precio_actual)
-                monto_a_vender_usdt = (valor_total * self.rebalance_pct) / Decimal("100")
+                monto_a_vender_usdt = (valor_total * rebalance_pct_dec) / Decimal("100")
                 cantidad_a_vender = monto_a_vender_usdt / self.precio_actual
 
                 if cantidad_a_vender > self.btc:
@@ -330,38 +321,41 @@ class TradingBot:
 
             # 🔄 Recalcular fixed_buyer tras rebalance          
             self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')
-
-            # Resetear contador de fantasmas SIEMPRE
+            # Resetear contador de fantasmas 
             self.contador_compras_fantasma = 0
+
             if self.sound_enabled:
                 reproducir_sonido("Sounds/soundventa.wav")
 
-
     def comprar(self, trigger=None):
             nuevo_precio = self._fetch_precio()
+
             if nuevo_precio is None:
                 return
+            
             self.precio_actual = nuevo_precio
+            
             if not self.condiciones_para_comprar():
                 self.log("Condiciones inválidas. No se realiza compra")
                 return
+            
             if self.usdt is None or self.usdt < self.fixed_buyer:
                 self.log("⚠️ Usdt insuficiente para comprar.")
                 return
+            
             if self.precio_actual is None or self.precio_actual == 0:
                 self.log("⚠️ Precio actual inválido para calcular BTC comprado.")
                 return
+            
             id_op = self._new_id()
             self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.usdt -= self.fixed_buyer             
-            self.precio_ult_comp = self.precio_actual
-            
+            self.precio_ult_comp = self.precio_actual       
             self.btc_comprado = self.fixed_buyer / self.precio_actual
             self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
             self.btc = (self.btc or Decimal("0")) + self.btc_comprado
-
             self.contador_compras_reales += 1 
-            
+
             self.transacciones.append({
                     "compra": self.precio_ult_comp,
                     "id": id_op,     
@@ -394,7 +388,6 @@ class TradingBot:
                     self.excedente_total_compras += exceso
                     self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
 
-
             if self.sound_enabled:          
                 reproducir_sonido("Sounds/soundcompra.wav")            
             self.reportado_trabajando = False
@@ -407,17 +400,14 @@ class TradingBot:
             return False
         #Compra con referencia a la ultima compra
         if self.varCompra <= -self.porc_desde_compra:
-            if self.condiciones_para_comprar():
-                                   
+            if self.condiciones_para_comprar():                                   
                 self.comprar(trigger='A')
                 self.log("🔵 [Parametro A].") 
                 self.log("- - - - - - - - - -")
                 self.precio_ult_comp = self.precio_actual   
-
             else:                               
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
-                
                 self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.format_fn(self.precio_actual, '$')}, Num: {self.contador_compras_fantasma}.")
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual                                
@@ -453,13 +443,14 @@ class TradingBot:
     def vender(self):
         # refrescar precio
         nuevo_precio = self._fetch_precio()
+       
         if nuevo_precio is None:
             return
+       
         self.precio_actual = nuevo_precio
         self.actualizar_balance()
         ejecutadas = []
        
-        
         for transaccion in self.transacciones:
             # ⚠️ Aseguramos que haya BTC válido
             if self.btc is None or self.btc <= Decimal('0'):
@@ -473,20 +464,18 @@ class TradingBot:
                 continue  # Evita vender más BTC del disponible  
 
             venta_obj = transaccion.get('venta_obj')
+       
             if not isinstance(venta_obj, Decimal):
                 continue
 
-            if self.precio_actual >= venta_obj:
-                               
+            if self.precio_actual >= venta_obj:                        
                 btc_vender = transaccion["btc"]
-                
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
                 id_compra = transaccion["id"]     
                 usdt_obtenido = btc_vender * self.precio_actual                              
                 self.usdt = (self.usdt or Decimal("0")) + usdt_obtenido
                 self.btc = (self.btc or Decimal("0")) - btc_vender
-
                 self.precio_ult_venta = self.precio_actual  
                 invertido_usdt = transaccion.get("invertido_usdt", self.fixed_buyer)
                 self.ganancia_neta = usdt_obtenido - invertido_usdt
@@ -495,8 +484,8 @@ class TradingBot:
                     self.total_ganancia = Decimal("0")
 
                 self.total_ganancia += self.ganancia_neta
-                        
                 excedente_pct = Decimal("0")
+
                 if self.precio_actual > venta_obj:
                     try:
                         excedente_pct = ((self.precio_actual - venta_obj) / venta_obj) * Decimal("100")
@@ -504,11 +493,8 @@ class TradingBot:
                     except (InvalidOperation, DivisionByZero):
                         excedente_pct = Decimal("0")
 
-                
                 self.contador_ventas_reales += 1
-                self.param_b_enabled = True  # 🔓 Habilitar B nuevamente tras una venta real
-                self.param_a_enabled = False
-
+                
                 self.precios_ventas.append({
                     "compra": transaccion["compra"],
                     "venta": self.precio_actual,
@@ -521,21 +507,19 @@ class TradingBot:
                 })
                 
                 precio_compra = transaccion.get('compra', Decimal('0'))
-                transaccion["ejecutado"] = True
-
-                
-                                
+                transaccion["ejecutado"] = True                                
                 self.log(f"✅ Venta realizada.")
                 self.log(f"Fecha y hora: {self.timestamp}")
                 self.log(f"🕒 Compra original: {self.format_fn(precio_compra, '$')}")
-
                 self.log(f"🆔 Id: {id_compra}")
                 self.log(f"📈 Precio de venta: {self.format_fn(self.precio_actual, '$')}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: {self.format_fn(btc_vender, '₿')}")
                 self.log(f"💹 Ganancia de esta operacion: {self.format_fn(self.ganancia_neta, '$')}")
+                
                 if excedente_pct > 0:
                     self.log(f"📊 Excedente sobre objetivo: {self.format_fn(excedente_pct, '%')}")
+                
                 self.log("- - - - - - - - - -")
                 ejecutadas.append(transaccion)
                 
@@ -543,18 +527,17 @@ class TradingBot:
                     reproducir_sonido("Sounds/soundventa.wav")
                 self.reportado_trabajando = False
                 break
+
         # eliminar transacciones ejecutadas y reactivar parámetro B
         for tx in ejecutadas:
             if tx in self.transacciones:
                 self.transacciones.remove(tx)
+
         if ejecutadas:
             self.param_b_enabled = True
-            
+            self.param_a_enabled = False
 
-        
         self.actualizar_balance()               
-
-         
 
     def venta_fantasma(self) -> bool:
         if self.precio_ult_venta is None:
@@ -566,10 +549,8 @@ class TradingBot:
         if self.btc is not None and self.btc_comprado is not None and self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
             id_f = token_hex(2)
             self.contador_ventas_fantasma += 1
-
             self.venta_fantasma_ocurrida = True
             self.activar_compra_tras_vta_fantasma = True
-
             # Actualiza el punto de referencia para el próximo umbral
             self.precio_ult_venta = self.precio_actual
             self.ventas_fantasma.append({
@@ -578,6 +559,7 @@ class TradingBot:
             })
             self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
             self.log(f"---------------------------------------------------------")
+            
             if self.sound_enabled:
                 reproducir_sonido("Sounds/ghostven.wav")
             return True
@@ -595,12 +577,12 @@ class TradingBot:
         # validaciones iniciales
         if not self.precio_ingreso or self.inv_inic == Decimal('0'):
             return Decimal('0')
+        
         # calculamos el valor actual de la cartera en USDT
         usdt = self.usdt or Decimal("0")
         btc = self.btc or Decimal("0")
         precio = self.precio_actual or Decimal("0")
         actual = usdt + (btc * precio)
-
         # porcentaje
         delta = (actual - self.inv_inic) * Decimal('100') / self.inv_inic
         # si por redondeo diera 0, devolvemos explícitamente Decimal('0')
@@ -619,13 +601,11 @@ class TradingBot:
             if Decimal(self.precio_actual) <= 0:
                 return False
             return True
+
         except Exception as e:
             self.log(f"❌ Error en condiciones_para_comprar: {e}")
             return False
 
-
-    
-    
     def hold_usdt(self):
         try:
             if not self.running or self.contador_compras_reales == 0:
@@ -639,7 +619,6 @@ class TradingBot:
         except (InvalidOperation, ZeroDivisionError, TypeError):
             return Decimal("0")
 
-
     def hold_btc(self) -> Decimal:
         """
         Devuelve cuánto BTC habrías comprado con la inversión inicial y el precio de ingreso.
@@ -650,7 +629,6 @@ class TradingBot:
 
             ingreso = self.precio_ingreso if isinstance(self.precio_ingreso, Decimal) else Decimal(str(self.precio_ingreso))
             inv     = self.inv_inic       if isinstance(self.inv_inic, Decimal)       else Decimal(str(self.inv_inic))
-
             btc_resultado = inv / ingreso
             return btc_resultado if btc_resultado != 0 else Decimal("0")
 
@@ -684,14 +662,11 @@ class TradingBot:
             self.precio_ult_comp = self.precio_actual
             self.inv_inic = self.usdt
             self.start_time = datetime.datetime.now()
-            
             self.running = True
-
             self.log("🟡 Khazâd iniciado.")
             self.log("- - - - - - - - - -")
             self.realizar_primera_compra()
 
-        
         else:
             self.log("No se puede iniciar por montos invalidos")    
             return
@@ -739,8 +714,7 @@ class TradingBot:
                         self.varVenta = Decimal("0")
                     else:
                         self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
-                        
-                     
+                                             
                     self.actualizar_balance()
                     self.hold_btc_var = self.hold_btc()
                     self.hold_usdt_var = self.hold_usdt()
@@ -770,9 +744,12 @@ class TradingBot:
                 if self.btc < 0:
                     self.log("🔴Error: btc negativo")
                     self.reportado_trabajando = False
+                    
                     if self.sound_enabled: 
                         reproducir_sonido("Sounds/error.wav")
+                    
                     self.detener()
+            
             except Exception as e:
                 self.log(f"🔴 Excepción en bucle: {e}")
                 reproducir_sonido("Sounds/error.wav")    
@@ -784,9 +761,7 @@ class TradingBot:
     def parametro_compra_C(self):
         if not self.compra_en_venta_fantasma:
             return False
-
         #self.log(f"🧪 Parametro C: habilitado={self.compra_en_venta_fantasma}, activado={self.activar_compra_tras_vta_fantasma}, ocurrida={self.venta_fantasma_ocurrida}")
-
         if self.activar_compra_tras_vta_fantasma and self.venta_fantasma_ocurrida:
             
             if self.condiciones_para_comprar():
@@ -818,18 +793,18 @@ class TradingBot:
     def reiniciar(self):
         # 1) Guarda lo que queremos preservar
         _exchange = self.exchange
-        _logfn    = self.log_fn
+        _logfn = self.log_fn
 
         # 2) Re-inicializa 
         self.__init__()
 
         # 3) Restaura exchange y callback
         self.exchange = _exchange
-        self.log_fn   = _logfn
+        self.log_fn = _logfn
 
         # 4) Anota el reinicio
         if self.log_fn:
-            self.log("🔄 Khazâd reiniciado")
+            self.log("🔄 Khazâd reseteado")
             self.log("- - - - - - - - - -")
         
     def check_take_profit_stop_loss(self):
@@ -839,7 +814,7 @@ class TradingBot:
         if self.contador_compras_reales == 0:
             return False
 
-        if self.take_profit_pct and variacion >= self.take_profit_pct:
+        if self.tp_enabled and self.take_profit_pct and variacion >= self.take_profit_pct:
             self.log(f"🎯 Take Profit alcanzado: {variacion:.2f}%")
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual
@@ -848,7 +823,7 @@ class TradingBot:
             self.detener(motivo="TP/SL")
             return True
 
-        if self.stop_loss_pct and variacion <= -self.stop_loss_pct:
+        if self.sl_enabled and self.stop_loss_pct and variacion <= -self.stop_loss_pct:
             self.log(f"🛑 Stop Loss alcanzado: {variacion:.2f}%")
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual

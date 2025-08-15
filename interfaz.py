@@ -673,6 +673,54 @@ class BotInterfaz(AnimationMixin):
                     bg="DarkGoldenRod",
                     font=("LondonBetween", 16),
                     fg="DarkSlateGray").pack(side=tk.LEFT)  
+        
+        # ── Checks para activar/desactivar TP y SL globales
+        self.var_tp_enabled = tk.BooleanVar(value=getattr(self.bot, "tp_enabled", False))
+        self.var_sl_enabled = tk.BooleanVar(value=getattr(self.bot, "sl_enabled", False))
+        cb_frame_tp_sl = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
+        cb_frame_tp_sl.pack(fill=tk.X, pady=2, padx=8)
+        tk.Checkbutton(cb_frame_tp_sl,
+                    text="Activar Take Profit",
+                    variable=self.var_tp_enabled,
+                    bg="DarkGoldenRod",
+                    font=("LondonBetween", 16),
+                    fg="DarkSlateGray").pack(side=tk.LEFT, padx=(0,12))
+        tk.Checkbutton(cb_frame_tp_sl,
+                    text="Activar Stop Loss",
+                    variable=self.var_sl_enabled,
+                    bg="DarkGoldenRod",
+                    font=("LondonBetween", 16),
+                    fg="DarkSlateGray").pack(side=tk.LEFT)
+        
+        # ── Check para activar/desactivar Rebalance (reequilibrio)
+        self.var_rebalance_enabled = tk.BooleanVar(
+            value=getattr(self.bot, "rebalance_enabled", False)
+        )
+        cb_frame_reb = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
+        cb_frame_reb.pack(fill=tk.X, pady=2, padx=8)
+        tk.Checkbutton(cb_frame_reb,
+                    text="Activar Rebalance",
+                    variable=self.var_rebalance_enabled,
+                    bg="DarkGoldenRod",
+                    font=("LondonBetween", 16),
+                    fg="DarkSlateGray").pack(side=tk.LEFT)
+
+        # ── Rebalance: umbral de compras y % a vender
+        frm_rb = tk.LabelFrame(self.config_ventana, text="Rebalance", bg="DarkGoldenRod",
+                               fg="DarkSlateGray", font=("LondonBetween", 16))
+        frm_rb.pack(fill=tk.X, padx=8, pady=6)
+
+        tk.Label(frm_rb, text="Compras (umbral):", bg="DarkGoldenRod",
+                 font=("LondonBetween", 14), fg="DarkSlateGray").grid(row=0, column=0, padx=4, pady=4, sticky="w")
+        self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
+        tk.Entry(frm_rb, textvariable=self.var_rebalance_threshold, width=8,
+                 font=("LondonBetween", 14)).grid(row=0, column=1, padx=4, pady=4, sticky="w")
+
+        tk.Label(frm_rb, text="Porcentaje a vender (%):", bg="DarkGoldenRod",
+                 font=("LondonBetween", 14), fg="DarkSlateGray").grid(row=0, column=2, padx=12, pady=4, sticky="w")
+        self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
+        tk.Entry(frm_rb, textvariable=self.var_rebalance_pct, width=8,
+                 font=("LondonBetween", 14)).grid(row=0, column=3, padx=4, pady=4, sticky="w")
 
         entries = []
 
@@ -706,6 +754,24 @@ class BotInterfaz(AnimationMixin):
                 tp = Decimal(txt_tp)
                 sl = Decimal(txt_sl)
 
+                # Validaciones Rebalance
+                try:
+                    rb_thr = int(self.var_rebalance_threshold.get())
+                except (TypeError, ValueError):
+                    self.log_en_consola("⚠️ Umbral de rebalance inválido (debe ser entero).")
+                    return
+                try:
+                    rb_pct = int(self.var_rebalance_pct.get())
+                except (TypeError, ValueError):
+                    self.log_en_consola("⚠️ % de rebalance inválido (debe ser entero).")
+                    return
+                if rb_thr < 0:
+                    self.log_en_consola("⚠️ El umbral de rebalance no puede ser negativo.")
+                    return
+                if not (1 <= rb_pct <= 100):
+                    self.log_en_consola("⚠️ El % de rebalance debe estar entre 1 y 100.")
+                    return
+                
                 # 3) Validaciones > 0
                 if porc_compra <= 0:
                     self.log_en_consola("⚠️ El porcentaje desde compra debe ser mayor que 0.")
@@ -728,7 +794,13 @@ class BotInterfaz(AnimationMixin):
                 if sl < 0:
                     self.log_en_consola("⚠️ El Stop Loss debe ser 0 o mayor.")
                     return
-
+                # Si se activan, deben ser > 0 (evitar detener instantáneamente)
+                if self.var_tp_enabled.get() and tp <= 0:
+                    self.log_en_consola("⚠️ Si activás el Take Profit, debe ser mayor que 0.")
+                    return
+                if self.var_sl_enabled.get() and sl <= 0:
+                    self.log_en_consola("⚠️ Si activás el Stop Loss, debe ser mayor que 0.")
+                    return
 
                 # 3) Asignamos al bot (para los cálculos internos)
                 self.bot.porc_desde_compra = porc_compra
@@ -736,9 +808,13 @@ class BotInterfaz(AnimationMixin):
                 self.bot.porc_profit_x_venta = porc_profit
                 self.bot.porc_inv_por_compra = porc_inv
                 self.bot.inv_inic = usdtinit
-                self.bot.take_profit_pct = tp if tp > 0 else None
-                self.bot.stop_loss_pct = sl if sl > 0 else None
-
+                self.bot.take_profit_pct = (tp if tp > 0 else None)
+                self.bot.stop_loss_pct = (sl if sl > 0 else None)
+                self.bot.tp_enabled = self.var_tp_enabled.get()
+                self.bot.sl_enabled = self.var_sl_enabled.get()
+                self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
+                self.bot.rebalance_threshold = rb_thr
+                self.bot.rebalance_pct = rb_pct
 
                 if not self.bot.running:
                     self.bot.usdt = usdtinit
@@ -755,7 +831,18 @@ class BotInterfaz(AnimationMixin):
                 
                 self.bot.compra_en_venta_fantasma = self.var_ghost.get()
    
-                self.log_en_consola("Configuracion actualizada")
+                self.log_en_consola(
+                    f"Configuracion actualizada · TP: "
+                    f"{'ON' if self.bot.tp_enabled else 'OFF'} "
+                    f"({self.bot.take_profit_pct or Decimal('0')}%) · SL: "
+                    f"{'ON' if self.bot.sl_enabled else 'OFF'} "
+                    f"({self.bot.stop_loss_pct or Decimal('0')}%)"
+                )
+                self.log_en_consola(
+                    f" · Rebalance: "
+                    f"{'ON' if self.bot.rebalance_enabled else 'OFF'} "
+                    f"(umbral={self.bot.rebalance_threshold}, pct={self.bot.rebalance_pct})"
+                )
                 self.log_en_consola("-------------------------")
                 cerrar_config()
 
