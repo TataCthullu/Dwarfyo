@@ -7,12 +7,6 @@ import datetime
 from decimal import Decimal, InvalidOperation, DivisionByZero, localcontext
 from secrets import token_hex
 
-"""Azul (\033[94m) para información general.
-Amarillo (\033[93m) para valores clave como precios de ingreso.
-Verde (\033[92m) para operaciones exitosas como compras y ventas.
-Rojo (\033[91m) para advertencias y errores.
-Cian (\033[96m) para detalles adicionales."""
-
 class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance({
@@ -42,6 +36,7 @@ class TradingBot:
         self.parametro_compra_desde_venta = False
         self.parametro_compra_desde_venta_fantasma = False
         self.parametro_venta_fantasma = False
+        self.param_a_enabled = True 
         self.precio_ult_venta = Decimal('0')
 
         self.porc_desde_compra = Decimal("0.005")
@@ -57,7 +52,7 @@ class TradingBot:
         self.valores_iniciales = {}
         self.precio_ult_comp = None
         self.usdt_mas_btc = Decimal('0')
-        
+        self.estado_compra = self.estado_compra_func()
         self.precios_ventas = []
         self.ventas_fantasma = []
         self.compras_fantasma = []
@@ -121,7 +116,12 @@ class TradingBot:
         except (InvalidOperation, ValueError):
             return f"{simbolo} {valor}" if simbolo else str(valor)
 
-   
+    def estado_compra_func(self):
+        return "activa"
+    
+    def es_activa(self, transaccion):
+        return transaccion.get("estado", "activa") == "activa"
+
 
 
     def log(self, mensaje):
@@ -370,7 +370,8 @@ class TradingBot:
                     "invertido_usdt": self.fixed_buyer,
                     "ejecutado": False,
                     "numcompra": self.contador_compras_reales,
-                    "timestamp": self.timestamp
+                    "timestamp": self.timestamp,
+                    "estado": self.estado_compra_func()
                 })
                             
             self.actualizar_balance()            
@@ -399,6 +400,9 @@ class TradingBot:
             self.reportado_trabajando = False
 
     def parametro_compra_A(self):
+        if not self.param_a_enabled:
+            return False
+    
         if self.porc_desde_compra <= Decimal('0'):
             return False
         #Compra con referencia a la ultima compra
@@ -433,6 +437,7 @@ class TradingBot:
                 self.log("🔵 [Parametro B].")
                 self.log("- - - - - - - - - -")
                 self.precio_ult_comp = self.precio_actual
+                self.param_a_enabled = True
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
             else:                          
                 self.log(f"⚠️ERROR (B) Fondos insuficientes, nueva compra fantasma registrada a: {self.format_fn(self.precio_actual, '$')}")
@@ -502,7 +507,7 @@ class TradingBot:
                 
                 self.contador_ventas_reales += 1
                 self.param_b_enabled = True  # 🔓 Habilitar B nuevamente tras una venta real
-
+                self.param_a_enabled = False
 
                 self.precios_ventas.append({
                     "compra": transaccion["compra"],
@@ -787,7 +792,7 @@ class TradingBot:
             if self.condiciones_para_comprar():
                 self.comprar()
                 self.param_b_enabled = False  # 🔒 Desactivar B luego de C
-
+                self.param_a_enabled = True
                 self.log("🔵 [Parametro C] Compra tras venta fantasma.")
             else:
                 self.log("⚠️ Fondos o condiciones insuficientes para Parametro C.")
