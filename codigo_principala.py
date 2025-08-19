@@ -110,8 +110,12 @@ class TradingBot:
     def estado_compra_func(self):
         return "activa"
     
-    def es_activa(self, transaccion):
-        return transaccion.get("estado", "activa") == "activa"
+    def es_activa(self, tx) -> bool:
+        try:
+            return tx.get("estado", "activa") == "activa" and tx.get("btc", Decimal("0")) > 0
+        except Exception:
+            return False
+
 
     def log(self, mensaje):
         if self.log_fn:
@@ -233,99 +237,74 @@ class TradingBot:
         return token_hex(2)  # e.g. '9f3b'
     
     def check_rebalance(self):
-        # Si el rebalance está desactivado, no hacemos nada
-        if not getattr(self, "rebalance_enabled", False):
+        # dispara solo si corresponde
+        if self.contador_compras_fantasma < self.rebalance_threshold or not self.precio_actual:
             return
-        rebalance_pct_dec = Decimal(str(self.rebalance_pct))
-        """
-        Rebalanceo dual:
-        - Si hay varias transacciones: elimina un % de las más antiguas (por numcompra).
-        - Si hay 1 sola transacción: vende un % proporcional de esa compra.
-        - Si no hay transacciones: vende % del valor actual de la cartera.
-        """
-        if self.contador_compras_fantasma == self.rebalance_threshold:
-            if self.transacciones and self.precio_actual:
-                n_total = len(self.transacciones)
 
-                if n_total > 1:
-                    # --- Caso 1: purgar transacciones antiguas ---
-                    n_a_vender = int(n_total * (rebalance_pct_dec / Decimal("100")))
+        # usar SOLO compras activas con BTC > 0
+        activos = [tx for tx in self.transacciones
+                if self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0]
+        n_total = len(activos)
 
-                    if n_a_vender <= 0 and n_total > 0:
-                        n_a_vender = 1  # al menos una
+        if n_total == 0:
+            self.log("⚖️ Rebalance: no hay transacciones activas. Se omite.")
+            self.contador_compras_fantasma = 0  # evita loops
+            return
 
-                    transacciones_ordenadas = sorted(self.transacciones, key=lambda tx: tx.get("numcompra", 0))
-                    a_vender = transacciones_ordenadas[:n_a_vender]
-                    total_btc_vendido = Decimal("0")
-                    total_usdt_obtenido = Decimal("0")
+        if n_total > 1:
+            # purgar % de las más antiguas
+            n_a_vender = int(n_total * (self.rebalance_pct / Decimal("100")))
+            if n_a_vender <= 0:
+                n_a_vender = 1
 
-                    for tx in a_vender:
-                        btc_vender = tx.get("btc", Decimal("0"))
-                        if btc_vender <= 0:
-                            continue
-                        usdt_obtenido = btc_vender * self.precio_actual
-                        self.usdt += usdt_obtenido
-                        self.btc -= btc_vender
-                        total_btc_vendido += btc_vender
-                        total_usdt_obtenido += usdt_obtenido
-                        if tx in self.transacciones:
-                            self.transacciones.remove(tx)
+            activos_ordenados = sorted(activos, key=lambda tx: tx.get("numcompra", 0))
+            a_vender = activos_ordenados[:n_a_vender]
 
-                    self.log(f"⚖️ Rebalance activado: cerradas {n_a_vender} transacciones más antiguas.")
-                    self.log(f"📉 BTC vendido: {self.format_fn(total_btc_vendido, '₿')}")
-                    self.log(f"💰 USDT recibido: {self.format_fn(total_usdt_obtenido, '$')}")
-                    self.log(f"📊 Transacciones restantes: {len(self.transacciones)}")
-                    self.log("- - - - - - - - - -")
-
-                else:
-                    # --- Caso 1bis: solo una transacción ---
-                    tx = self.transacciones[0]
-                    btc_total_tx = tx.get("btc", Decimal("0"))
-
-                    if btc_total_tx > 0:
-                        cantidad_a_vender = (btc_total_tx * rebalance_pct_dec) / Decimal("100")
-                        usdt_obtenido = cantidad_a_vender * self.precio_actual
-
-                        # aplicar venta parcial
-                        self.usdt += usdt_obtenido
-                        self.btc -= cantidad_a_vender
-                        tx["btc"] = btc_total_tx - cantidad_a_vender  # 👈 actualizar lo que queda en la transacción
-
-                        self.log(f"⚖️ Rebalance activado: vendiendo {self.rebalance_pct}% de la única transacción activa.")
-                        self.log(f"📉 BTC vendido: {self.format_fn(cantidad_a_vender, '₿')}")
-                        self.log(f"💰 USDT recibido: {self.format_fn(usdt_obtenido, '$')}")
-                        self.log(f"📊 BTC restante en la transacción: {self.format_fn(tx['btc'], '₿')}")
-                        self.log("- - - - - - - - - -")
-
-            elif self.btc > 0 and self.precio_actual:
-                # --- Caso 2: no hay transacciones, vender % de cartera ---
-                valor_total = self.usdt + (self.btc * self.precio_actual)
-                monto_a_vender_usdt = (valor_total * rebalance_pct_dec) / Decimal("100")
-                cantidad_a_vender = monto_a_vender_usdt / self.precio_actual
-
-                if cantidad_a_vender > self.btc:
-                    cantidad_a_vender = self.btc
-
-                usdt_obtenido = cantidad_a_vender * self.precio_actual
+            total_btc_vendido = Decimal("0")
+            total_usdt_obtenido = Decimal("0")
+            for tx in a_vender:
+                btc_vender = tx.get("btc", Decimal("0"))
+                if btc_vender <= 0:
+                    continue
+                usdt_obtenido = btc_vender * self.precio_actual
                 self.usdt += usdt_obtenido
-                self.btc -= cantidad_a_vender
+                self.btc  -= btc_vender
+                # marcar estado y vaciar btc
+                tx["estado"] = "anulada"
+                tx["btc"]    = Decimal("0")
+                self.log(f"🗑️ Anulada por rebalance → id {tx.get('id')} (# {tx.get('numcompra')})")
 
-                self.log(f"⚖️ Rebalance sin transacciones: vendido {self.rebalance_pct}% del valor actual de cartera.")
+                total_btc_vendido += btc_vender
+                total_usdt_obtenido += usdt_obtenido
+
+            self.log(f"⚖️ Rebalance: purga {n_a_vender}/{n_total} compras antiguas.")
+            self.log(f"📉 BTC vendido: {self.format_fn(total_btc_vendido, '₿')}")
+            self.log(f"💰 USDT recibido: {self.format_fn(total_usdt_obtenido, '$')}")
+            self.log("- - - - - - - - - -")
+
+        else:
+            # una sola compra activa: vender % de esa compra
+            tx = activos[0]
+            btc_total_tx = tx.get("btc", Decimal("0"))
+            if btc_total_tx > 0:
+                cantidad_a_vender = (btc_total_tx * self.rebalance_pct) / Decimal("100")
+                usdt_obtenido = cantidad_a_vender * self.precio_actual
+
+                self.usdt += usdt_obtenido
+                self.btc  -= cantidad_a_vender
+                tx["btc"]   = btc_total_tx - cantidad_a_vender
+
+                self.log(f"⚖️ Rebalance: vendiendo {self.rebalance_pct}% de la única compra activa.")
                 self.log(f"📉 BTC vendido: {self.format_fn(cantidad_a_vender, '₿')}")
                 self.log(f"💰 USDT recibido: {self.format_fn(usdt_obtenido, '$')}")
-                self.log(f"📊 Valor de cartera tras rebalance: {self.format_fn(self.usdt + self.btc * self.precio_actual, '$')}")
                 self.log("- - - - - - - - - -")
 
-            else:
-                self.log("⚠️ Rebalance no ejecutado: no hay BTC disponible.")
+        # reset del trigger para no rebotar
+        self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')
+        self.contador_compras_fantasma = 0
 
-            # 🔄 Recalcular fixed_buyer tras rebalance          
-            self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')
-            # Resetear contador de fantasmas 
-            self.contador_compras_fantasma = 0
-
-            if self.sound_enabled:
-                reproducir_sonido("Sounds/soundventa.wav")
+    def hay_base_rebalance(self):
+        return any(self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0 for tx in self.transacciones)
 
     def comprar(self, trigger=None):
             nuevo_precio = self._fetch_precio()
@@ -374,6 +353,7 @@ class TradingBot:
             self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
+            self.log(f"📜 Estado: {self.transacciones[-1].get('estado', 'activa')}")
             self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")
 
             # Excedente de bajada 
@@ -452,11 +432,14 @@ class TradingBot:
         ejecutadas = []
        
         for transaccion in self.transacciones:
-            # ⚠️ Aseguramos que haya BTC válido
+            #  Aseguramos que haya BTC válido
             if self.btc is None or self.btc <= Decimal('0'):
                 continue
+#  Solo transacciones ACTIVAS
+            if transaccion.get("estado", "activa") != "activa":
+                continue
 
-            # ⚠️ Validamos también que la transacción tenga BTC válido
+            #  Validamos también que la transacción tenga BTC válido
             if "btc" not in transaccion or not isinstance(transaccion["btc"], Decimal):
                 continue
 
@@ -464,7 +447,6 @@ class TradingBot:
                 continue  # Evita vender más BTC del disponible  
 
             venta_obj = transaccion.get('venta_obj')
-       
             if not isinstance(venta_obj, Decimal):
                 continue
 
@@ -512,6 +494,7 @@ class TradingBot:
                 self.log(f"Fecha y hora: {self.timestamp}")
                 self.log(f"🕒 Compra original: {self.format_fn(precio_compra, '$')}")
                 self.log(f"🆔 Id: {id_compra}")
+                self.log(f"🪙 Compra Num: {transaccion.get('numcompra')}")
                 self.log(f"📈 Precio de venta: {self.format_fn(self.precio_actual, '$')}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: {self.format_fn(btc_vender, '₿')}")
@@ -521,6 +504,10 @@ class TradingBot:
                     self.log(f"📊 Excedente sobre objetivo: {self.format_fn(excedente_pct, '%')}")
                 
                 self.log("- - - - - - - - - -")
+
+                # marcar y luego remover fuera del loop
+                transaccion["estado"] = "vendida"
+                transaccion["btc"]    = Decimal("0")
                 ejecutadas.append(transaccion)
                 
                 if self.sound_enabled:               
@@ -528,16 +515,16 @@ class TradingBot:
                 self.reportado_trabajando = False
                 break
 
-        # eliminar transacciones ejecutadas y reactivar parámetro B
-        for tx in ejecutadas:
-            if tx in self.transacciones:
-                self.transacciones.remove(tx)
+         # ----- remover transacciones vendidas (FUERA DEL LOOP) -----
+        for transaccion in ejecutadas:
+            if transaccion in self.transacciones:
+                self.transacciones.remove(transaccion)
 
         if ejecutadas:
             self.param_b_enabled = True
             self.param_a_enabled = False
 
-        self.actualizar_balance()               
+        self.actualizar_balance()             
 
     def venta_fantasma(self) -> bool:
         if self.precio_ult_venta is None:
@@ -728,8 +715,10 @@ class TradingBot:
                     self.parametro_compra_desde_compra = self.parametro_compra_A()                
                     self.parametro_compra_desde_venta = self.parametro_compra_B()
                     self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
-                    self.parametro_venta_fantasma = self.venta_fantasma()              
-                    self.check_rebalance()
+                    self.parametro_venta_fantasma = self.venta_fantasma() 
+
+                    if self.contador_compras_fantasma >= self.rebalance_threshold and self.hay_base_rebalance():
+                        self.check_rebalance()
 
                     if self.precio_ingreso is None:
                         self.var_inicio = Decimal("0")
