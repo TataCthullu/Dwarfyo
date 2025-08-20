@@ -1064,7 +1064,11 @@ class BotInterfaz(AnimationMixin):
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
     def actualizar_historial_consola(self):
+        first, last = self.historial.yview()
+        estaba_al_fondo = (1.0 - last) < 1e-3
+
         self.historial.delete('1.0', tk.END)
+
 
         # ——— COMPRAS ———
         for t in self.bot.transacciones:
@@ -1090,17 +1094,17 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
             self.historial.insert(tk.END, "-"*40 + "\n")
 
+        # ← Recién acá restaurás la intención del usuario
+        if estaba_al_fondo:
+            self.historial.see(tk.END)
+        else:
+            self.historial.yview_moveto(first)
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
             return
         
-        """if key == "hold_usdt":
-            print("🔍 Entrando a actualizar_color para hold_usdt")
-            print(f"🔸 key: {key}")
-            print(f"🔸 valor_actual: {valor_actual}")
-            print(f"🔸 valor_inicial guardado: {self.valores_iniciales.get(key)}")
-"""
+        
         try:
             if isinstance(valor_actual, tuple):
                 val_act_raw, _ = valor_actual
@@ -1154,8 +1158,19 @@ class BotInterfaz(AnimationMixin):
     
         
     def log_en_consola(self, msg):
-        self.consola.insert(tk.END, msg+"\n")
-        self.consola.see(tk.END)
+        first, last = self.consola.yview()     # guardar posición
+        estaba_al_fondo = (1.0 - last) < 1e-3
+
+        self.consola.configure(state='normal')
+        self.consola.insert(tk.END, msg + "\n")
+        self.consola.configure(state='disabled')
+
+
+        if estaba_al_fondo:
+            self.consola.see(tk.END)           # solo si ya estaba abajo
+        else:
+            self.consola.yview_moveto(first)   # restaurar donde estaba
+
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
