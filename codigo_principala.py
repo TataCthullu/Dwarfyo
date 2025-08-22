@@ -81,6 +81,7 @@ class TradingBot:
         self.sl_enabled = False
         self.tp_enabled = False
         self.rebalance_enabled = False
+        
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -355,6 +356,8 @@ class TradingBot:
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"📜 Estado: {self.transacciones[-1].get('estado', 'activa')}")
             self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")
+            
+            
 
             # Excedente de bajada 
             if trigger == 'A':
@@ -500,6 +503,8 @@ class TradingBot:
                 self.log(f"📤 Btc vendido: {self.format_fn(btc_vender, '₿')}")
                 self.log(f"💹 Ganancia de esta operacion: {self.format_fn(self.ganancia_neta, '$')}")
                 
+                
+
                 if excedente_pct > 0:
                     self.log(f"📊 Excedente sobre objetivo: {self.format_fn(excedente_pct, '%')}")
                 

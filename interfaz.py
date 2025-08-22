@@ -28,6 +28,9 @@ class BotInterfaz(AnimationMixin):
         self.bot.log_fn = self.log_en_consola
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
+        # Fuentes específicas para consolas
+        self._font_historial = ("LondonBetween", 16)  # o la que quieras
+        self._font_consola   = ("LondonBetween", 16)  # o distinta si preferís
         
         self.colores_fijos = {
             "usdt": "SpringGreen",
@@ -54,6 +57,7 @@ class BotInterfaz(AnimationMixin):
             "hold_usdt": "MediumPurple"
         }
         
+        self._consola_buffer = []  # guarda todo lo impreso en consola
         self._font_normal = ("LondonBetween", 16)
         self.espaciado_horizontal = 5
         self.espaciado_vertical = 35
@@ -179,6 +183,8 @@ class BotInterfaz(AnimationMixin):
 
         #self.bot.set_formatter(self.format_var)
         self.actualizar_ui()
+        self.actualizar_consola()
+        self.actualizar_historial()
 
     def ajustar_fuente_por_vista(self):
         modo = self.display_mode.get()
@@ -198,8 +204,27 @@ class BotInterfaz(AnimationMixin):
 
         self._font_normal = ("LondonBetween", size)
 
-   
-        
+        # Tamaños FIJOS para consolas según la vista
+        if modo == 'decimal':
+            hist_size = 16   # ej.: si estabas en 14, pasa a 16
+            cons_size = 16
+        elif modo == 'float' and self.float_precision == 2:
+            hist_size = 20
+            cons_size = 20
+        elif modo == 'float' and self.float_precision == 4:
+            hist_size = 18
+            cons_size = 18
+        else:
+            hist_size = 16
+            cons_size = 16
+
+        self._font_historial = (self._font_normal[0], hist_size)
+        self._font_consola   = (self._font_normal[0], cons_size)
+
+        # aplicar inmediatamente a los widgets existentes
+        self._aplicar_fuente_consolas()
+       
+
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -404,7 +429,7 @@ class BotInterfaz(AnimationMixin):
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
         
 
-        self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=("LondonBetween", 16))
+        self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_historial)
 
         self.historial.place(x=70, y=70, width=500, height=310)
 
@@ -426,7 +451,7 @@ class BotInterfaz(AnimationMixin):
             bg="DarkGoldenRod",
             relief="flat",
             bd=0,
-            font=("LondonBetween", 16)
+            font=self._font_consola
         )
         self.consola_window = self.canvas_right_b.create_window(
             70, 70,
@@ -436,8 +461,9 @@ class BotInterfaz(AnimationMixin):
             height=310
         )
 
-        
-        
+      
+
+   
 
     def animation_panel(self):
         self.animation_frame = tk.Frame(self.root)
@@ -579,14 +605,12 @@ class BotInterfaz(AnimationMixin):
         # 4) Reset variables visuales
         self.valores_iniciales.clear()
         self.colores_actuales.clear()
-       
 
-        
-
-        
         # 6) Vaciar historial y consola
         self.historial.delete("1.0", tk.END)
         self.consola.delete("1.0", tk.END)
+       
+        self._consola_buffer.clear()
 
         # 7) Guardar la vista actual del usuario
         self.reset_animaciones()
@@ -831,18 +855,23 @@ class BotInterfaz(AnimationMixin):
                 
                 self.bot.compra_en_venta_fantasma = self.var_ghost.get()
    
+                tp_txt     = self.format_var(self.bot.take_profit_pct or Decimal('0'), '%')
+                sl_txt     = self.format_var(self.bot.stop_loss_pct  or Decimal('0'), '%')
+                rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')
+
                 self.log_en_consola(
                     f"Configuracion actualizada · TP: "
                     f"{'ON' if self.bot.tp_enabled else 'OFF'} "
-                    f"({self.bot.take_profit_pct or Decimal('0')}%) · SL: "
+                    f"({tp_txt}) · SL: "
                     f"{'ON' if self.bot.sl_enabled else 'OFF'} "
-                    f"({self.bot.stop_loss_pct or Decimal('0')}%)"
+                    f"({sl_txt})"
                 )
                 self.log_en_consola(
                     f" · Rebalance: "
                     f"{'ON' if self.bot.rebalance_enabled else 'OFF'} "
-                    f"(umbral={self.bot.rebalance_threshold}, pct={self.bot.rebalance_pct})"
+                    f"(umbral={self.bot.rebalance_threshold}, pct={rb_pct_txt})"
                 )
+
                 self.log_en_consola("-------------------------")
                 cerrar_config()
 
@@ -922,6 +951,20 @@ class BotInterfaz(AnimationMixin):
             except:
                 pass  # la ventana ya no existe
 
+    def _precision_para_simbolo(self, modo, prec, simbolo):
+        """
+        Decide cuántos decimales mostrar según la vista y el símbolo.
+        - 'decimal' => None  (usa Decimal.normalize() y recorta ceros)
+        - 'float'   => usa 'prec' (2 o 4), salvo ₿ que forzamos más precisión
+        """
+        if modo == 'decimal':
+            return None
+        if simbolo == "₿":
+            # más precisión para BTC cuando estás en float
+            return 8 if prec >= 4 else 6
+        return prec
+
+
     # En la interfaz (no en el bot):
     def format_var(self, valor, simbolo=""):
         
@@ -941,9 +984,12 @@ class BotInterfaz(AnimationMixin):
             if '.' in texto:
                 texto = texto.rstrip('0').rstrip('.')
         else:
-            valor_f = float(valor)
-            texto_raw = f"{valor_f:.{prec}f}"
-            texto = texto_raw.rstrip('0').rstrip('.') if '.' in texto_raw else texto_raw
+            # Modo float: EXACTAMENTE 'prec' decimales (2 o 4 según la vista)
+            try:
+                valor_f = float(valor)
+            except Exception:
+                valor_f = float(str(valor))
+            texto = f"{valor_f:.{prec}f}"   # ← sin rstrip: fija los dígitos
 
         return f"{simbolo} {texto}" if simbolo else texto
 
@@ -1037,9 +1083,9 @@ class BotInterfaz(AnimationMixin):
                 # Actualizamos la referencia
                 self.info_canvas[clave] = (canvas, new_id)
 
+                self.actualizar_historial()
 
-            # Finalmente, refrescamos historial y consola
-            self.actualizar_historial_consola()
+            
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")
@@ -1063,12 +1109,12 @@ class BotInterfaz(AnimationMixin):
         except Exception as exc_ui:
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
-    def actualizar_historial_consola(self):
+    def actualizar_historial(self):
+        # recordar scroll
         first, last = self.historial.yview()
         estaba_al_fondo = (1.0 - last) < 1e-3
 
         self.historial.delete('1.0', tk.END)
-
 
         # ——— COMPRAS ———
         for t in self.bot.transacciones:
@@ -1089,22 +1135,56 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, f"Precio de compra: {self.format_fijo('compra', v['compra'])}\n")
             self.historial.insert(tk.END, f"Precio de venta: {self.format_fijo('venta', v['venta'])}\n")
             self.historial.insert(tk.END, f"Id compra: {v['id_compra']}\n")
-            self.historial.insert(tk.END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
+            if 'ganancia' in v:
+                self.historial.insert(tk.END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
             self.historial.insert(tk.END, f"Número de venta: {v['venta_numero']}\n")
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
             self.historial.insert(tk.END, "-"*40 + "\n")
 
-        # ← Recién acá restaurás la intención del usuario
+        # restaurar scroll
         if estaba_al_fondo:
             self.historial.see(tk.END)
         else:
             self.historial.yview_moveto(first)
 
+    def actualizar_consola(self):
+        try:
+            first, last = self.consola.yview()
+            estaba_al_fondo = (1.0 - last) < 1e-3
+        except Exception:
+            estaba_al_fondo, first = True, 0.0
+
+        def _fmt(v):
+            if isinstance(v, tuple):
+                val, sim = v
+            else:
+                val, sim = v, ""
+            return self.format_var(val, sim)
+
+        self.consola.configure(state='normal')
+        self.consola.delete("1.0", tk.END)
+
+        for entry in self._consola_buffer:
+            kind = entry[0]
+            if kind == "raw":
+                _, msg = entry
+                self.consola.insert(tk.END, msg + "\n")
+            elif kind == "fmt":
+                _, tpl, vals = entry
+                linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
+                self.consola.insert(tk.END, linea + "\n")
+
+        self.consola.configure(state='disabled')
+
+        if estaba_al_fondo:
+            self.consola.see(tk.END)
+        else:
+            self.consola.yview_moveto(first)
+
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
             return
-        
-        
+    
         try:
             if isinstance(valor_actual, tuple):
                 val_act_raw, _ = valor_actual
@@ -1118,9 +1198,7 @@ class BotInterfaz(AnimationMixin):
                 color = "Gold"
             else:
                 val_ini = Decimal(str(val_ini_raw).strip())
-                """if key == "hold_usdt":
-                    print(f"🧪 Comparando hold_usdt → actual: {val_act}, inicial: {val_ini}")
-"""
+                
                 if val_ini is None:
                     color = "Gold"
                 else:
@@ -1155,22 +1233,46 @@ class BotInterfaz(AnimationMixin):
 
         self.info_canvas[key] = (canvas, text_id)
 
-    
+    def _aplicar_fuente_consolas(self):
+        try:
+            self.consola.configure(font=self._font_consola)
+        except Exception:
+            pass
+        try:
+            self.historial.configure(font=self._font_historial)
+        except Exception:
+            pass
+
         
     def log_en_consola(self, msg):
-        first, last = self.consola.yview()     # guardar posición
+        self._consola_buffer.append(("raw", msg))  # registrar sin tocar el texto
+
+        first, last = self.consola.yview()
         estaba_al_fondo = (1.0 - last) < 1e-3
 
         self.consola.configure(state='normal')
         self.consola.insert(tk.END, msg + "\n")
         self.consola.configure(state='disabled')
 
-
         if estaba_al_fondo:
-            self.consola.see(tk.END)           # solo si ya estaba abajo
+            self.consola.see(tk.END)
         else:
-            self.consola.yview_moveto(first)   # restaurar donde estaba
+            self.consola.yview_moveto(first)
 
+
+            
+    def log_en_consola_fmt(self, tpl, **vals):
+        self._consola_buffer.append(("fmt", tpl, vals))
+
+        def _fmt(v):
+            if isinstance(v, tuple):
+                val, sim = v
+            else:
+                val, sim = v, ""
+            return self.format_var(val, sim)
+
+        linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
+        self.log_en_consola(linea)
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
