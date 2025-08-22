@@ -10,6 +10,7 @@ from tkinter import filedialog
 from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
+import re
 
 
 class BotInterfaz(AnimationMixin):
@@ -25,7 +26,8 @@ class BotInterfaz(AnimationMixin):
         self.bot = bot
         self.bot.ui_callback_on_stop = self._on_bot_stop
         self.was_offline = False
-        self.bot.log_fn = self.log_en_consola
+        self.bot.log_fn = self.logf
+
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
         # Fuentes específicas para consolas
@@ -462,8 +464,68 @@ class BotInterfaz(AnimationMixin):
         )
 
       
+    def logf(self, tpl, **vals):
+        # Guarda la entrada como formateable
+        self._consola_buffer.append(("fmt", tpl, vals))
 
-   
+        # Pintar ahora mismo usando format_var (mismo criterio que paneles)
+        def _fmt(v):
+            if isinstance(v, tuple):
+                val, sim = v
+            else:
+                val, sim = v, ""
+            return self.format_var(val, sim)
+
+        linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
+        linea = self._reformat_line(linea)
+
+        try:
+            first, last = self.consola.yview()
+            estaba_al_fondo = (1.0 - last) < 1e-3
+        except Exception:
+            estaba_al_fondo = True
+
+        self.consola.configure(state='normal')
+        self.consola.insert(tk.END, linea + "\n")
+        self.consola.configure(state='disabled')
+
+        if estaba_al_fondo:
+            self.consola.see(tk.END)
+        else:
+            self.consola.yview_moveto(first)
+
+    def _reformat_line(self, s: str) -> str:
+        # Reaplica el formateo para $, ₿ y % usando la vista actual
+        def sub_money(m):
+            try:
+                return self.format_var(Decimal(m.group(1)), '$')
+            except Exception:
+                return m.group(0)
+
+        def sub_btc(m):
+            try:
+                return self.format_var(Decimal(m.group(1)), '₿')
+            except Exception:
+                return m.group(0)
+
+        def sub_pct_sufijo(m):
+            try:
+                return self.format_var(Decimal(m.group(1)), '%')
+            except Exception:
+                return m.group(0)
+
+        def sub_pct_prefijo(m):
+            try:
+                return self.format_var(Decimal(m.group(1)), '%')
+            except Exception:
+                return m.group(0)
+
+        s = re.sub(r'\$ ?(-?\d+(?:\.\d+)?)', sub_money, s)
+        s = re.sub(r'₿ ?(-?\d+(?:\.\d+)?)', sub_btc, s)
+        s = re.sub(r'(-?\d+(?:\.\d+)?)\s*%', sub_pct_sufijo, s)
+        s = re.sub(r'%\s*(-?\d+(?:\.\d+)?)', sub_pct_prefijo, s)
+        return s
+
 
     def animation_panel(self):
         self.animation_frame = tk.Frame(self.root)
@@ -577,7 +639,8 @@ class BotInterfaz(AnimationMixin):
         self.bot.reiniciar()
         
 
-        self.bot.log_fn = self.log_en_consola
+        self.bot.log_fn = self.logf
+
         #self.bot.sound_enabled = self.sound_enabled
         modo_vista_actual = self.display_mode.get()
         precision_actual = self.float_precision
@@ -859,18 +922,20 @@ class BotInterfaz(AnimationMixin):
                 sl_txt     = self.format_var(self.bot.stop_loss_pct  or Decimal('0'), '%')
                 rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')
 
-                self.log_en_consola(
-                    f"Configuracion actualizada · TP: "
-                    f"{'ON' if self.bot.tp_enabled else 'OFF'} "
-                    f"({tp_txt}) · SL: "
-                    f"{'ON' if self.bot.sl_enabled else 'OFF'} "
-                    f"({sl_txt})"
+                self.logf(
+                    "Configuracion actualizada · TP: {tp_state} ({tp}) · SL: {sl_state} ({sl})",
+                    tp_state='ON' if self.bot.tp_enabled else 'OFF',
+                    tp=(self.bot.take_profit_pct or Decimal('0'), '%'),
+                    sl_state='ON' if self.bot.sl_enabled else 'OFF',
+                    sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),
                 )
-                self.log_en_consola(
-                    f" · Rebalance: "
-                    f"{'ON' if self.bot.rebalance_enabled else 'OFF'} "
-                    f"(umbral={self.bot.rebalance_threshold}, pct={rb_pct_txt})"
+                self.logf(
+                    " · Rebalance: {rb_state} (umbral={thr}, pct={pct})",
+                    rb_state='ON' if self.bot.rebalance_enabled else 'OFF',
+                    thr=self.bot.rebalance_threshold,
+                    pct=(self.bot.rebalance_pct, '%'),
                 )
+
 
                 self.log_en_consola("-------------------------")
                 cerrar_config()
@@ -951,47 +1016,44 @@ class BotInterfaz(AnimationMixin):
             except:
                 pass  # la ventana ya no existe
 
-    def _precision_para_simbolo(self, modo, prec, simbolo):
-        """
-        Decide cuántos decimales mostrar según la vista y el símbolo.
-        - 'decimal' => None  (usa Decimal.normalize() y recorta ceros)
-        - 'float'   => usa 'prec' (2 o 4), salvo ₿ que forzamos más precisión
-        """
-        if modo == 'decimal':
-            return None
-        if simbolo == "₿":
-            # más precisión para BTC cuando estás en float
-            return 8 if prec >= 4 else 6
-        return prec
+    
 
-
-    # En la interfaz (no en el bot):
     def format_var(self, valor, simbolo=""):
-        
         if valor is None:
             return ""
         if isinstance(valor, str):
-            return valor.strip()
-       
+            s = valor.strip()
+            return f"{simbolo} {s}" if simbolo and s else s
+
         modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
         prec = self.float_precision if hasattr(self, 'float_precision') else 2
 
         if modo == 'decimal':
-            # Asegurar que sea Decimal
+            # Mostrar “inteligente” con Decimal, sin ceros basura
             if not isinstance(valor, Decimal):
                 valor = Decimal(str(valor))
             texto = format(valor.normalize(), 'f')
             if '.' in texto:
                 texto = texto.rstrip('0').rstrip('.')
         else:
-            # Modo float: EXACTAMENTE 'prec' decimales (2 o 4 según la vista)
+            # Mostrar HASTA 'prec' decimales y recortar ceros sobrantes
             try:
-                valor_f = float(valor)
+                v = float(valor)
             except Exception:
-                valor_f = float(str(valor))
-            texto = f"{valor_f:.{prec}f}"   # ← sin rstrip: fija los dígitos
+                v = float(str(valor))
+            texto = f"{v:.{prec}f}"
+            if '.' in texto:
+                texto = texto.rstrip('0').rstrip('.')
+
+        # Normalizar -0 → 0
+        try:
+            if float(texto) == 0.0:
+                texto = "0"
+        except Exception:
+            pass
 
         return f"{simbolo} {texto}" if simbolo else texto
+
 
     def format_fijo(self, clave, valor):
         if isinstance(valor, tuple):
@@ -1083,9 +1145,7 @@ class BotInterfaz(AnimationMixin):
                 # Actualizamos la referencia
                 self.info_canvas[clave] = (canvas, new_id)
 
-                self.actualizar_historial()
-
-            
+            self.actualizar_historial()
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")
@@ -1108,6 +1168,8 @@ class BotInterfaz(AnimationMixin):
                 
         except Exception as exc_ui:
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
+
+
 
     def actualizar_historial(self):
         # recordar scroll
@@ -1168,10 +1230,11 @@ class BotInterfaz(AnimationMixin):
             kind = entry[0]
             if kind == "raw":
                 _, msg = entry
-                self.consola.insert(tk.END, msg + "\n")
+                self.consola.insert(tk.END, self._reformat_line(msg) + "\n")
             elif kind == "fmt":
                 _, tpl, vals = entry
                 linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
+                linea = self._reformat_line(linea)
                 self.consola.insert(tk.END, linea + "\n")
 
         self.consola.configure(state='disabled')
@@ -1251,7 +1314,7 @@ class BotInterfaz(AnimationMixin):
         estaba_al_fondo = (1.0 - last) < 1e-3
 
         self.consola.configure(state='normal')
-        self.consola.insert(tk.END, msg + "\n")
+        self.consola.insert(tk.END, self._reformat_line(msg) + "\n")
         self.consola.configure(state='disabled')
 
         if estaba_al_fondo:
@@ -1261,18 +1324,7 @@ class BotInterfaz(AnimationMixin):
 
 
             
-    def log_en_consola_fmt(self, tpl, **vals):
-        self._consola_buffer.append(("fmt", tpl, vals))
-
-        def _fmt(v):
-            if isinstance(v, tuple):
-                val, sim = v
-            else:
-                val, sim = v, ""
-            return self.format_var(val, sim)
-
-        linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
-        self.log_en_consola(linea)
+    
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
