@@ -683,12 +683,14 @@ class BotInterfaz(AnimationMixin):
         try:
             self.left_frame.destroy()
             self.center_frame.destroy()
+            self.animation_frame.destroy()
         except Exception:
             pass
 
         # 9) Reconstruir paneles
         self.left_panel()
         self.center_panel()
+        self.animation_panel() 
         self.init_animation()
         # 8) Redibujar datos actuales (aunque estén vacíos)
         self.actualizar_ui()

@@ -550,7 +550,7 @@ class TradingBot:
                 'precio': self.precio_actual
             })
             self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
-            self.log(f"---------------------------------------------------------")
+            self.log("- - - - - - - - - -")
             
             if self.sound_enabled:
                 reproducir_sonido("Sounds/ghostven.wav")
