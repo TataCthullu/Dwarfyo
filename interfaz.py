@@ -221,6 +221,7 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
         estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
+        self.log("- - - - - - - - - -")
         self.log_en_consola(estado)
         # Actualizamos también el texto del menú:
         nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
@@ -1251,24 +1252,25 @@ class BotInterfaz(AnimationMixin):
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
             return
-    
+
         try:
+            # desempaquetar si viene como (valor, simbolo)
             if isinstance(valor_actual, tuple):
                 val_act_raw, _ = valor_actual
             else:
                 val_act_raw = valor_actual
 
-            val_act = Decimal(str(val_act_raw).strip())
-
-            val_ini_raw = self.valores_iniciales.get(key)
-            if val_ini_raw is None:
+            # 🔒 si no hay valor numérico, no comparo ni convierto
+            if val_act_raw in (None, ""):
                 color = "Gold"
             else:
-                val_ini = Decimal(str(val_ini_raw).strip())
-                
-                if val_ini is None:
+                val_act = Decimal(str(val_act_raw).strip())
+
+                val_ini_raw = self.valores_iniciales.get(key)
+                if val_ini_raw in (None, ""):
                     color = "Gold"
                 else:
+                    val_ini = Decimal(str(val_ini_raw).strip())
                     if val_act > val_ini:
                         color = "lime"
                     elif val_act < val_ini:
@@ -1276,20 +1278,18 @@ class BotInterfaz(AnimationMixin):
                     else:
                         color = "Gold"
 
-
-        except Exception as e:
-            print(f"[ERROR COLOR] key={key}, error={e}, val_act_raw={valor_actual}")
+        except Exception:
+            # antes imprimía el error; lo silenciamo s para no ensuciar la consola
             color = "Gold"
 
-
+        # redibujar el texto con el color decidido
         self.colores_actuales[key] = color
-
         canvas, item_id = self.info_canvas[key]
         coords = canvas.coords(item_id)
         x, y = coords if coords and len(coords) == 2 else (20, 10)
 
         canvas.delete(item_id)
-        texto = self.format_fijo(key, valor_actual)
+        texto = self.format_fijo(key, valor_actual)  # si el valor es None, ya devuelve ""
         text_id = canvas.create_text(
             x, y,
             text=texto,
@@ -1297,8 +1297,8 @@ class BotInterfaz(AnimationMixin):
             font=self._font_normal,
             anchor="nw"
         )
-
         self.info_canvas[key] = (canvas, text_id)
+
 
     def _aplicar_fuente_consolas(self):
         try:

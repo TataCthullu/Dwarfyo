@@ -82,6 +82,7 @@ class TradingBot:
         self.tp_enabled = False
         self.rebalance_enabled = False
         self.rebalance_count = 0 
+        self.rebalance_loss_total = Decimal('0')  # pérdidas acumuladas por rebalances
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -246,6 +247,7 @@ class TradingBot:
         activos = [tx for tx in self.transacciones
                 if self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0]
         n_total = len(activos)
+        rebalance_loss_event = Decimal("0")  # 🔻 pérdida total SOLO de este rebalance
 
         if n_total == 0:
             self.log("⚖️ Rebalance: no hay transacciones activas. Se omite.")
@@ -276,6 +278,17 @@ class TradingBot:
                 tx["estado"] = "anulada"
                 tx["btc"]    = Decimal("0")
                 self.log(f"🗑️ Anulada por rebalance → id {tx.get('id')} (# {tx.get('numcompra')})")
+            
+            # 🔻 Pérdida de esta compra
+                precio_compra_tx = tx.get("compra", None)
+                if isinstance(precio_compra_tx, Decimal) and btc_vender > 0:
+                    costo_base = btc_vender * precio_compra_tx
+                    perdida = costo_base - usdt_obtenido
+                    rebalance_loss_event += perdida
+                    self.log(
+                        f"   • Pérdida por rebalance en esta compra: "
+                        f"{self.format_fn(perdida, '$')} (base {self.format_fn(costo_base, '$')} → "
+                    )
 
                 total_btc_vendido += btc_vender
                 total_usdt_obtenido += usdt_obtenido
@@ -297,6 +310,18 @@ class TradingBot:
                 self.usdt += usdt_obtenido
                 self.btc  -= cantidad_a_vender
                 tx["btc"]   = btc_total_tx - cantidad_a_vender
+
+                
+            # 🔻 NUEVO: pérdida parcial
+            precio_compra_tx = tx.get("compra", None)
+            if isinstance(precio_compra_tx, Decimal) and cantidad_a_vender > 0:
+                costo_base = cantidad_a_vender * precio_compra_tx
+                perdida = costo_base - usdt_obtenido
+                rebalance_loss_event += perdida
+                self.log(
+                    f" • Pérdida por rebalance (parcial): "
+                    f"{self.format_fn(perdida, '$')} (base {self.format_fn(costo_base, '$')} → "
+                )
                 
                 self.log(f"   • Estado se mantiene: activa (parcialmente reducida)")
                 self.log(f"⚖️ Rebalance: vendiendo {self.rebalance_pct}% de la única compra activa.")
@@ -312,8 +337,12 @@ class TradingBot:
         if '_rebalance_done' in locals() and _rebalance_done:
             self.rebalance_count += 1
             self.log(f"📊 Rebalance #{self.rebalance_count} ejecutado")
-
-
+    # 🔻 NUEVO: totales de pérdida
+        if rebalance_loss_event > 0:
+            self.rebalance_loss_total = (self.rebalance_loss_total or Decimal("0")) + rebalance_loss_event
+            self.log(f"🔻 Pérdida total en este rebalance: {self.format_fn(rebalance_loss_event, '$')}")
+            self.log(f"📉 Pérdida acumulada por rebalances: {self.format_fn(self.rebalance_loss_total, '$')}")
+            self.log("- - - - - - - - - -")
     def hay_base_rebalance(self):
         return any(self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0 for tx in self.transacciones)
 
@@ -773,8 +802,10 @@ class TradingBot:
                 self.param_b_enabled = False  # 🔒 Desactivar B luego de C
                 self.param_a_enabled = True
                 self.log("🔵 [Parametro C] Compra tras venta fantasma.")
+                self.log("- - - - - - - - - -")
             else:
                 self.log("⚠️ Fondos o condiciones insuficientes para Parametro C.")
+                self.log("- - - - - - - - - -")
                 self.precio_ult_venta = self.precio_actual  # ✅ Siempre actualizamos
                 self.param_b_enabled = True  # 🟢 B vuelve a activarse si no se pudo comprar
 
