@@ -56,8 +56,9 @@ class BotInterfaz(AnimationMixin):
             "excedente_compras": "MediumTurquoise",
             "excedente_ventas": "lightblue",
             "excedente_total": "Pink",
-            "hold_usdt": "MediumPurple"
-        }
+            "hold_usdt": "MediumPurple",
+            "rebalances": "IndianRed",
+        }   
         
         self._consola_buffer = []  # guarda todo lo impreso en consola
         self._font_normal = ("LondonBetween", 16)
@@ -73,14 +74,8 @@ class BotInterfaz(AnimationMixin):
         self.colores_actuales = {}  # key -> "Gold", "Green" o "Crimson"
 
         self.limpiar_visible = False
-        self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
-        self.valores_a_mostrar = {
-            "compras_realizadas": self.bot.contador_compras_reales,
-            "ventas_realizadas": self.bot.contador_ventas_reales,
-            "compras_fantasma": self.bot.contador_compras_fantasma,
-            "ventas_fantasma": self.bot.contador_ventas_fantasma
-        }
-        
+        #self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
+      
         # Frames
         self.left_panel()
         self.center_panel()
@@ -94,9 +89,9 @@ class BotInterfaz(AnimationMixin):
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         
         # —————— Barra de menú unificada ——————
-        self.menubar       = tk.Menu(self.root)
+        self.menubar = tk.Menu(self.root)
         # Estado de vista: 'decimal' o 'float'
-        self.display_mode  = tk.StringVar(value='decimal')
+        self.display_mode = tk.StringVar(value='decimal')
         self.float_precision = 2
         self.ajustar_fuente_por_vista()
         # 3) Submenú Vista
@@ -112,13 +107,9 @@ class BotInterfaz(AnimationMixin):
         self.inicializar_valores_iniciales()
         self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
-        
-        
         self.sound_enabled = True
         self.bot.sound_enabled = True
          
-        
- 
     def reset_animaciones(self):
             self._animaciones_activas = False
             # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
@@ -208,7 +199,7 @@ class BotInterfaz(AnimationMixin):
 
         # Tamaños FIJOS para consolas según la vista
         if modo == 'decimal':
-            hist_size = 16   # ej.: si estabas en 14, pasa a 16
+            hist_size = 16   
             cons_size = 16
         elif modo == 'float' and self.float_precision == 2:
             hist_size = 20
@@ -225,8 +216,6 @@ class BotInterfaz(AnimationMixin):
 
         # aplicar inmediatamente a los widgets existentes
         self._aplicar_fuente_consolas()
-       
-
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -282,7 +271,7 @@ class BotInterfaz(AnimationMixin):
         self.excedente_total_str = tk.StringVar()
         self.take_profit_str = tk.StringVar()
         self.stop_loss_str = tk.StringVar()
-
+        self.cont_rebalances_str = tk.StringVar() 
 
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
@@ -374,6 +363,7 @@ class BotInterfaz(AnimationMixin):
         add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
         add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
         add("Excedente total:",  self.excedente_total_str, "excedente_total")
+        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
 
         
     def center_panel(self):
@@ -418,9 +408,7 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         add("Take Profit:", self.take_profit_str, "take_profit")
         add("Stop Loss:", self.stop_loss_str, "stop_loss")
-
-        
-
+   
     def right_panel(self):
         self.right_frame = tk.Frame(self.root, bd=0, # sin “resaltado” al enfoque
     relief='flat')
@@ -645,6 +633,7 @@ class BotInterfaz(AnimationMixin):
         modo_vista_actual = self.display_mode.get()
         precision_actual = self.float_precision
         self.ajustar_fuente_por_vista()
+        self.rebalance_count = 0
 
 # 5) Reset StringVars
         for attr in vars(self).values():
@@ -670,8 +659,19 @@ class BotInterfaz(AnimationMixin):
         self.colores_actuales.clear()
 
         # 6) Vaciar historial y consola
-        self.historial.delete("1.0", tk.END)
-        self.consola.delete("1.0", tk.END)
+        try:
+            self.historial.delete("1.0", tk.END)
+        except Exception:
+            pass
+
+        try:
+            # habilitar, borrar y volver a deshabilitar la consola
+            self.consola.configure(state='normal')
+            self.consola.delete("1.0", tk.END)
+            self.consola.configure(state='disabled')
+        except Exception:
+            pass
+
        
         self._consola_buffer.clear()
 
@@ -1113,7 +1113,7 @@ class BotInterfaz(AnimationMixin):
                 "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),
                 "take_profit": (self.bot.take_profit_pct or Decimal("0"), "%"),
                 "stop_loss": (self.bot.stop_loss_pct or Decimal("0"), "%"),
-
+                "rebalances": self.bot.rebalance_count,
             }
 
             
@@ -1183,10 +1183,12 @@ class BotInterfaz(AnimationMixin):
         # ——— COMPRAS ———
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
+            estado = t.get("estado", "activa")
             self.historial.insert(tk.END, "🟦 Compra realizada:\n", 'compra_tag')
             self.historial.insert(tk.END, f"Precio de compra: {self.format_var(t['compra'], '$')}\n")
             self.historial.insert(tk.END, f"Id: {t['id']}\n")
             self.historial.insert(tk.END, f"Número de compra: {t['numcompra']}\n")
+            self.historial.insert(tk.END, f"Estado: {estado}\n")
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
             if "venta_obj" in t:
                 self.historial.insert(tk.END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")

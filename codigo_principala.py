@@ -81,7 +81,7 @@ class TradingBot:
         self.sl_enabled = False
         self.tp_enabled = False
         self.rebalance_enabled = False
-        
+        self.rebalance_count = 0 
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -251,7 +251,9 @@ class TradingBot:
             self.log("⚖️ Rebalance: no hay transacciones activas. Se omite.")
             self.contador_compras_fantasma = 0  # evita loops
             return
-
+        
+        _rebalance_done = False
+        
         if n_total > 1:
             # purgar % de las más antiguas
             n_a_vender = int(n_total * (self.rebalance_pct / Decimal("100")))
@@ -277,7 +279,8 @@ class TradingBot:
 
                 total_btc_vendido += btc_vender
                 total_usdt_obtenido += usdt_obtenido
-
+                _rebalance_done = True
+            self.log(f"   • Estado actualizado: anulada")
             self.log(f"⚖️ Rebalance: purga {n_a_vender}/{n_total} compras antiguas.")
             self.log(f"📉 BTC vendido: {self.format_fn(total_btc_vendido, '₿')}")
             self.log(f"💰 USDT recibido: {self.format_fn(total_usdt_obtenido, '$')}")
@@ -294,15 +297,22 @@ class TradingBot:
                 self.usdt += usdt_obtenido
                 self.btc  -= cantidad_a_vender
                 tx["btc"]   = btc_total_tx - cantidad_a_vender
-
+                
+                self.log(f"   • Estado se mantiene: activa (parcialmente reducida)")
                 self.log(f"⚖️ Rebalance: vendiendo {self.rebalance_pct}% de la única compra activa.")
                 self.log(f"📉 BTC vendido: {self.format_fn(cantidad_a_vender, '₿')}")
                 self.log(f"💰 USDT recibido: {self.format_fn(usdt_obtenido, '$')}")
                 self.log("- - - - - - - - - -")
+                _rebalance_done = True
 
         # reset del trigger para no rebotar
         self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')
         self.contador_compras_fantasma = 0
+        
+        if '_rebalance_done' in locals() and _rebalance_done:
+            self.rebalance_count += 1
+            self.log(f"📊 Rebalance #{self.rebalance_count} ejecutado")
+
 
     def hay_base_rebalance(self):
         return any(self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0 for tx in self.transacciones)
