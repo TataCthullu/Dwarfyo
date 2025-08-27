@@ -297,7 +297,7 @@ class TradingBot:
             self.log(f"⚖️ Rebalance: purga {n_a_vender}/{n_total} compras antiguas.")
             self.log(f"📉 BTC vendido: {self.format_fn(total_btc_vendido, '₿')}")
             self.log(f"💰 USDT recibido: {self.format_fn(total_usdt_obtenido, '$')}")
-            self.log("- - - - - - - - - -")
+            
 
         else:
             # una sola compra activa: vender % de esa compra

@@ -58,6 +58,7 @@ class BotInterfaz(AnimationMixin):
             "excedente_total": "Pink",
             "hold_usdt": "MediumPurple",
             "rebalances": "IndianRed",
+            "rebalance_loss_total": "Tomato"
         }   
         
         self._consola_buffer = []  # guarda todo lo impreso en consola
@@ -221,7 +222,7 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
         estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
-        self.log("- - - - - - - - - -")
+        self.log_en_consola("- - - - - - - - - -")
         self.log_en_consola(estado)
         # Actualizamos también el texto del menú:
         nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
@@ -273,7 +274,7 @@ class BotInterfaz(AnimationMixin):
         self.take_profit_str = tk.StringVar()
         self.stop_loss_str = tk.StringVar()
         self.cont_rebalances_str = tk.StringVar() 
-
+        self.rebalance_loss_total_str = tk.StringVar()
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
 
@@ -365,7 +366,7 @@ class BotInterfaz(AnimationMixin):
         add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
         add("Excedente total:",  self.excedente_total_str, "excedente_total")
         add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
-
+        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
@@ -1115,6 +1116,7 @@ class BotInterfaz(AnimationMixin):
                 "take_profit": (self.bot.take_profit_pct or Decimal("0"), "%"),
                 "stop_loss": (self.bot.stop_loss_pct or Decimal("0"), "%"),
                 "rebalances": self.bot.rebalance_count,
+                "rebalance_loss_total": (getattr(self.bot, "rebalance_loss_total", Decimal("0")), "$"),
             }
 
             
