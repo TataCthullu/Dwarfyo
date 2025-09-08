@@ -88,7 +88,12 @@ class BotInterfaz(AnimationMixin):
         
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
-        
+        # 🎵 Música de fondo — definir estado ANTES de armar los menús
+        self._music_path = "Musica/epicbfinal.wav"
+        self.music_enabled = True  # estado inicial
+        if self.music_enabled:
+            reproducir_musica_fondo(self._music_path, loop=-1, volumen=0.25)
+
         # —————— Barra de menú unificada ——————
         self.menubar = tk.Menu(self.root)
         # Estado de vista: 'decimal' o 'float'
@@ -102,6 +107,19 @@ class BotInterfaz(AnimationMixin):
         self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)
         self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)
         self.menubar.add_cascade(label="Opciones", menu=self.config_menu)
+        # —— Menú Música (independiente)
+        self.music_menu = tk.Menu(self.menubar, tearoff=0)
+        self.music_menu.add_command(label="Habilitar", command=self.music_enable)
+        self.music_menu.add_command(label="Deshabilitar", command=self.music_disable)
+        self.menubar.add_cascade(label="Música", menu=self.music_menu)
+
+        # Ajustar coherencia inicial (deshabilitar el que no corresponda)
+        if self.music_enabled:
+            self.music_menu.entryconfig("Habilitar", state="disabled")
+        else:
+            self.music_menu.entryconfig("Deshabilitar", state="disabled")
+
+        
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
         self.actualizar_ui()
@@ -110,9 +128,7 @@ class BotInterfaz(AnimationMixin):
         # Baseline for color comparisons
         self.sound_enabled = True
         self.bot.sound_enabled = True
-        # 🎵 Música de fondo
-        reproducir_musica_fondo("epicbfinal.wav", loop=-1, volumen=0.25)
-
+        
     def reset_animaciones(self):
             self._animaciones_activas = False
             # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
@@ -219,6 +235,23 @@ class BotInterfaz(AnimationMixin):
 
         # aplicar inmediatamente a los widgets existentes
         self._aplicar_fuente_consolas()
+
+    def music_enable(self):
+        if not self.music_enabled:
+            reproducir_musica_fondo("Musica/epicbfinal.wav", loop=-1, volumen=0.25)
+            self.music_enabled = True
+            self.log_en_consola("🎵 Música habilitada.")
+            self.music_menu.entryconfig("Habilitar", state="disabled")
+            self.music_menu.entryconfig("Deshabilitar", state="normal")
+
+    def music_disable(self):
+        if self.music_enabled:
+            detener_musica_fondo()
+            self.music_enabled = False
+            self.log_en_consola("🔇 Música deshabilitada.")
+            self.music_menu.entryconfig("Deshabilitar", state="disabled")
+            self.music_menu.entryconfig("Habilitar", state="normal")
+
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -965,7 +998,7 @@ class BotInterfaz(AnimationMixin):
             font=("LondonBetween", 16), fg="PaleGoldenRod").pack(pady=8)
 
     def _on_close(self):
-        
+
         detener_musica_fondo()
 
         # 1) Cancelar after programado si existe
