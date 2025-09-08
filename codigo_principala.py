@@ -42,6 +42,7 @@ class TradingBot:
         self.rebalance_pct = int(50)  # porcentaje del BTC a vender
         self.fixed_buyer = self.cant_inv()
         self.running = False
+        self._stop_flag = False  # flag de parada “dura”
         self.valores_iniciales = {}
         self.precio_ult_comp = None
         self.usdt_mas_btc = Decimal('0')
@@ -239,6 +240,8 @@ class TradingBot:
         return token_hex(2)  # e.g. '9f3b'
     
     def check_rebalance(self):
+        if not self.running or self._stop_flag:
+            return
         # dispara solo si corresponde
         if self.contador_compras_fantasma < self.rebalance_threshold or not self.precio_actual:
             return
@@ -347,6 +350,8 @@ class TradingBot:
         return any(self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0 for tx in self.transacciones)
 
     def comprar(self, trigger=None):
+            if not self.running or self._stop_flag:
+                return
             nuevo_precio = self._fetch_precio()
 
             if nuevo_precio is None:
@@ -463,6 +468,8 @@ class TradingBot:
         return False
     
     def vender(self):
+        if not self.running or self._stop_flag:
+            return
         # refrescar precio
         nuevo_precio = self._fetch_precio()
        
@@ -693,6 +700,7 @@ class TradingBot:
             self.precio_ult_comp = self.precio_actual
             self.inv_inic = self.usdt
             self.start_time = datetime.datetime.now()
+            self._stop_flag = False
             self.running = True
             self.log("🟡 Khazâd iniciado.")
             self.log("- - - - - - - - - -")
@@ -729,7 +737,7 @@ class TradingBot:
                                         
     def loop(self, after_fn=None):
             try:    
-                if not self.running:
+                if not self.running or self._stop_flag:
                     return
                 self.precio_actual = self._fetch_precio()
                 if self.precio_actual is None:
@@ -817,6 +825,7 @@ class TradingBot:
 
     def detener(self, motivo=None):
         self.running = False
+        self._stop_flag = True
         if motivo:
             self.log(f"🔴 Khazâd detenido. Motivo: {motivo}")
         else:
@@ -826,6 +835,11 @@ class TradingBot:
             self.ui_callback_on_stop(motivo)
 
     def reiniciar(self):
+        # estado base
+        self.running = False
+        self._stop_flag = False
+        self.precio_actual = None
+
         # 1) Guarda lo que queremos preservar
         _exchange = self.exchange
         _logfn = self.log_fn

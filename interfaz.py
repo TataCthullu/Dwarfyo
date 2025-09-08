@@ -2,7 +2,7 @@
 # Todos los derechos reservados.
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
-from utils import reproducir_sonido, detener_sonido_y_cerrar
+from utils import reproducir_sonido, detener_sonido_y_cerrar, reproducir_musica_fondo, detener_musica_fondo
 from codigo_principala import TradingBot
 from calculador import CalculatorWindow
 from PIL import ImageGrab, Image, ImageTk
@@ -110,7 +110,9 @@ class BotInterfaz(AnimationMixin):
         # Baseline for color comparisons
         self.sound_enabled = True
         self.bot.sound_enabled = True
-         
+        # 🎵 Música de fondo
+        reproducir_musica_fondo("epicbfinal.wav", loop=-1, volumen=0.25)
+
     def reset_animaciones(self):
             self._animaciones_activas = False
             # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.
@@ -620,6 +622,12 @@ class BotInterfaz(AnimationMixin):
     def clear_bot(self):
         if self.bot.running:
             return
+# 🔒 bloquear cualquier ciclo residual
+        try:
+            self.bot._stop_flag = True
+            self.bot.running = False
+        except Exception:
+            pass
 
         # 1) Sonido y reinicio completo del bot
         if self.sound_enabled:
@@ -629,14 +637,19 @@ class BotInterfaz(AnimationMixin):
         self.bot.reiniciar()
         
 
-        self.bot.log_fn = self.logf
+        self.bot.log_fn = self.log_en_consola
 
         #self.bot.sound_enabled = self.sound_enabled
         modo_vista_actual = self.display_mode.get()
         precision_actual = self.float_precision
         self.ajustar_fuente_por_vista()
-        self.rebalance_count = 0
-
+       
+# 🟢 dejarlo “idle listo para iniciar”
+        try:
+            self.bot._stop_flag = False
+            self.bot.running = False
+        except Exception:
+            pass
 # 5) Reset StringVars
         for attr in vars(self).values():
             if isinstance(attr, tk.StringVar):
@@ -952,6 +965,9 @@ class BotInterfaz(AnimationMixin):
             font=("LondonBetween", 16), fg="PaleGoldenRod").pack(pady=8)
 
     def _on_close(self):
+        
+        detener_musica_fondo()
+
         # 1) Cancelar after programado si existe
         if hasattr(self, 'loop_id') and self.loop_id is not None:
             try:
@@ -1002,9 +1018,14 @@ class BotInterfaz(AnimationMixin):
 
     def _run_trading_cycle(self):
         try:
+            # ⛔️ si ya está detenido, no hacemos nada
+            if not self.bot.running or getattr(self.bot, "_stop_flag", False):
+                return
             # 1) Intentamos obtener el ticker
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
             price = ticker['last']
+            if not self.bot.running or getattr(self.bot, "_stop_flag", False):
+                return
             # – Si salió bien, guardamos el precio y ejecutamos el ciclo de trading:
             self.bot.precio_actual = price
             self.bot.loop()
