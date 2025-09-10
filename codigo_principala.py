@@ -240,9 +240,13 @@ class TradingBot:
         return token_hex(2)  # e.g. '9f3b'
     
     def check_rebalance(self):
+        if not getattr(self, "rebalance_enabled", False):
+            self.log("⚖️ Rebalance: desactivado.")
+            return
+        
         if not self.running or self._stop_flag:
             return
-        # dispara solo si corresponde
+        
         if self.contador_compras_fantasma < self.rebalance_threshold or not self.precio_actual:
             return
 
@@ -300,7 +304,10 @@ class TradingBot:
             self.log(f"⚖️ Rebalance: purga {n_a_vender}/{n_total} compras antiguas.")
             self.log(f"📉 BTC vendido: {self.format_fn(total_btc_vendido, '₿')}")
             self.log(f"💰 USDT recibido: {self.format_fn(total_usdt_obtenido, '$')}")
-            
+            self.log("- - - - - - - - - -")
+
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/rebalance.wav")
 
         else:
             # una sola compra activa: vender % de esa compra
@@ -333,9 +340,16 @@ class TradingBot:
                 self.log("- - - - - - - - - -")
                 _rebalance_done = True
 
+                if self.sound_enabled:
+                    reproducir_sonido("Sounds/rebalance.wav")
+
         # reset del trigger para no rebotar
         self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')
         self.contador_compras_fantasma = 0
+        # ✅ actualizar balances y dejar constancia
+        self.actualizar_balance()
+        self.log(f"💼 Balance tras rebalance → USDT: {self.format_fn(self.usdt, '$')} · BTC: {self.format_fn(self.btc, '₿')}")
+        self.log("- - - - - - - - - -")
         
         if '_rebalance_done' in locals() and _rebalance_done:
             self.rebalance_count += 1
@@ -416,7 +430,7 @@ class TradingBot:
                     self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
 
             if self.sound_enabled:          
-                reproducir_sonido("Sounds/soundcompra.wav")            
+                reproducir_sonido("Sounds/compra.wav")            
             self.reportado_trabajando = False
 
     def parametro_compra_A(self):
@@ -440,7 +454,7 @@ class TradingBot:
                 self.precio_ult_comp = self.precio_actual                                
                 self.reportado_trabajando = False
                 if self.sound_enabled:
-                    reproducir_sonido("Sounds/ghostcom.wav")
+                    reproducir_sonido("Sounds/compra_fantasma.wav")
             return False 
     def parametro_compra_B(self):
         if self.porc_desde_venta <= Decimal('0'):
@@ -463,7 +477,7 @@ class TradingBot:
                 self.param_b_enabled = False       
                 self.reportado_trabajando = False
                 if self.sound_enabled:
-                    reproducir_sonido("Sounds/ghostcom.wav")                                         
+                    reproducir_sonido("Sounds/compra_fantasma.wav")                                         
                 return      
         return False
     
@@ -562,7 +576,7 @@ class TradingBot:
                 ejecutadas.append(transaccion)
                 
                 if self.sound_enabled:               
-                    reproducir_sonido("Sounds/soundventa.wav")
+                    reproducir_sonido("Sounds/venta.wav")
                 self.reportado_trabajando = False
                 break
 
@@ -599,7 +613,7 @@ class TradingBot:
             self.log("- - - - - - - - - -")
             
             if self.sound_enabled:
-                reproducir_sonido("Sounds/ghostven.wav")
+                reproducir_sonido("Sounds/venta_fantasma.wav")
             return True
 
         # Aseguramos que no quede activa si no se cumplió la condición
@@ -769,7 +783,9 @@ class TradingBot:
                     self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
                     self.parametro_venta_fantasma = self.venta_fantasma() 
 
-                    if self.contador_compras_fantasma >= self.rebalance_threshold and self.hay_base_rebalance():
+                    if (self.rebalance_enabled 
+                        and self.contador_compras_fantasma >= self.rebalance_threshold 
+                        and self.hay_base_rebalance()):
                         self.check_rebalance()
 
                     if self.precio_ingreso is None:
@@ -865,6 +881,10 @@ class TradingBot:
 
         if self.tp_enabled and self.take_profit_pct and variacion >= self.take_profit_pct:
             self.log(f"🎯 Take Profit alcanzado: {variacion:.2f}%")
+            
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/take_profit.wav")
+
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual
                 self.log(f"💰 Vendido todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
@@ -874,6 +894,10 @@ class TradingBot:
 
         if self.sl_enabled and self.stop_loss_pct and variacion <= -self.stop_loss_pct:
             self.log(f"🛑 Stop Loss alcanzado: {variacion:.2f}%")
+            
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/stop_loss.wav")
+
             if self.btc > 0:
                 self.usdt += self.btc * self.precio_actual
                 self.log(f"💰 Vendido todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")

@@ -630,7 +630,7 @@ class BotInterfaz(AnimationMixin):
         if self.bot.running:
             self.bot.detener()
             if self.sound_enabled:
-                reproducir_sonido("Sounds/detner.wav")
+                reproducir_sonido("Sounds/detener.wav")
 
             self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
             self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
@@ -641,7 +641,7 @@ class BotInterfaz(AnimationMixin):
                 self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa configuración de operativa y coloca números válidos.")
                 return
             if self.sound_enabled:
-                reproducir_sonido("Sounds/soundinicio.wav")
+                reproducir_sonido("Sounds/inicio.wav")
 
             self.inicializar_valores_iniciales()
 
@@ -787,8 +787,8 @@ class BotInterfaz(AnimationMixin):
              
 
         self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
-        if self.sound_enabled:
-            reproducir_sonido("Sounds/antorchab.wav")
+        """if self.sound_enabled:
+            reproducir_sonido("Sounds/antorchab.wav")"""
 
         campos = [
             ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
