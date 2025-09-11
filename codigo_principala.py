@@ -152,7 +152,7 @@ class TradingBot:
             self.log(f"⚠️ Error del exchange al obtener precio: {e}")
         except Exception as e:
             self.log(f"❌ Error inesperado obteniendo el precio: {e}")
-        reproducir_sonido("Sounds/error.wav")
+
         return None
         
     def actualizar_balance(self):

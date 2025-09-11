@@ -1065,6 +1065,10 @@ class BotInterfaz(AnimationMixin):
         except Exception as exc:
             # Si falla, dejamos precio_actual en None para detectar desconexión
             self.bot.precio_actual = None
+
+            if self.sound_enabled:
+                reproducir_sonido("Sounds/sin_conexion.wav")
+
             self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading (sin precio): {exc}"))
         finally:
             # Solo aquí reprogramamos la actualización de la UI (una vez por ciclo)
@@ -1214,9 +1218,14 @@ class BotInterfaz(AnimationMixin):
                 # Detectar reconexión basándose en que precio anterior era None
                 prev = getattr(self, "_prev_price_ui", None)
                 actual = self.bot.precio_actual
+                
                 if prev is None and actual is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
                     self.log_en_consola("--------------------------------------------")
+                    
+                    if self.sound_enabled:
+                        reproducir_sonido("Sounds/reconexion.wav")
+                    
                     self.inicializar_valores_iniciales()
                 self._prev_price_ui = actual
 
