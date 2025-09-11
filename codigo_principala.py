@@ -282,10 +282,11 @@ class TradingBot:
                 self.usdt += usdt_obtenido
                 self.btc  -= btc_vender
                 # marcar estado y vaciar btc
+                
                 tx["estado"] = "anulada"
                 tx["btc"]    = Decimal("0")
-                self.log(f"🗑️ Anulada por rebalance → id {tx.get('id')} (# {tx.get('numcompra')})")
-            
+                self.log(f"📝 Estado de compra #{tx.get('numcompra')} (id {tx.get('id')}): activa → anulada")
+                self.log("- - - - - - - - - -")
             # 🔻 Pérdida de esta compra
                 precio_compra_tx = tx.get("compra", None)
                 if isinstance(precio_compra_tx, Decimal) and btc_vender > 0:
@@ -348,7 +349,7 @@ class TradingBot:
         self.contador_compras_fantasma = 0
         # ✅ actualizar balances y dejar constancia
         self.actualizar_balance()
-        self.log(f"💼 Balance tras rebalance → USDT: {self.format_fn(self.usdt, '$')} · BTC: {self.format_fn(self.btc, '₿')}")
+        self.log(f"💼 Balance tras rebalance → USDT: {self.format_fn(self.usdt, '$')}\n · BTC: {self.format_fn(self.btc, '₿')}")
         self.log("- - - - - - - - - -")
         
         if '_rebalance_done' in locals() and _rebalance_done:
@@ -571,8 +572,11 @@ class TradingBot:
                 self.log("- - - - - - - - - -")
 
                 # marcar y luego remover fuera del loop
+                
                 transaccion["estado"] = "vendida"
                 transaccion["btc"]    = Decimal("0")
+                self.log(f"📝 Estado de compra #{transaccion.get('numcompra')} (id {transaccion.get('id')}): activa → vendida")
+                self.log("- - - - - - - - - -")
                 ejecutadas.append(transaccion)
                 
                 if self.sound_enabled:               
@@ -581,9 +585,9 @@ class TradingBot:
                 break
 
          # ----- remover transacciones vendidas (FUERA DEL LOOP) -----
-        for transaccion in ejecutadas:
+        """for transaccion in ejecutadas:
             if transaccion in self.transacciones:
-                self.transacciones.remove(transaccion)
+                self.transacciones.remove(transaccion)"""
 
         if ejecutadas:
             self.param_b_enabled = True
@@ -611,7 +615,8 @@ class TradingBot:
             })
             self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
             self.log("- - - - - - - - - -")
-            
+            self.reportado_trabajando = False
+
             if self.sound_enabled:
                 reproducir_sonido("Sounds/venta_fantasma.wav")
             return True

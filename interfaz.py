@@ -33,7 +33,8 @@ class BotInterfaz(AnimationMixin):
         # Fuentes específicas para consolas
         self._font_historial = ("LondonBetween", 16)  # o la que quieras
         self._font_consola   = ("LondonBetween", 16)  # o distinta si preferís
-        
+        self._consola_buffer = []  # buffer de líneas de consola
+
         self.colores_fijos = {
             "usdt": "SpringGreen",
             "btc_dispo": "SkyBlue",
@@ -110,14 +111,14 @@ class BotInterfaz(AnimationMixin):
         # —— Menú Música (independiente)
         self.music_menu = tk.Menu(self.menubar, tearoff=0)
         self.music_menu.add_command(label="Habilitar", command=self.music_enable)
-        self.music_menu.add_command(label="Deshabilitar", command=self.music_disable)
+        self.music_menu.add_command(label="Desabilitar", command=self.music_disable)
         self.menubar.add_cascade(label="Música", menu=self.music_menu)
 
         # Ajustar coherencia inicial (deshabilitar el que no corresponda)
         if self.music_enabled:
             self.music_menu.entryconfig("Habilitar", state="disabled")
         else:
-            self.music_menu.entryconfig("Deshabilitar", state="disabled")
+            self.music_menu.entryconfig("Desabilitar", state="disabled")
 
         
         # ¡Solo aquí configuramos el menú completo!
@@ -242,14 +243,15 @@ class BotInterfaz(AnimationMixin):
             self.music_enabled = True
             self.log_en_consola("🎵 Música habilitada.")
             self.music_menu.entryconfig("Habilitar", state="disabled")
-            self.music_menu.entryconfig("Deshabilitar", state="normal")
+            self.music_menu.entryconfig("Desabilitar", state="normal")
 
     def music_disable(self):
         if self.music_enabled:
             detener_musica_fondo()
             self.music_enabled = False
-            self.log_en_consola("🔇 Música deshabilitada.")
-            self.music_menu.entryconfig("Deshabilitar", state="disabled")
+            self.log_en_consola("🔇 Música desabilitada.")
+            self.log_en_consola("- - - - - - - - - -")
+            self.music_menu.entryconfig("Desabilitar", state="disabled")
             self.music_menu.entryconfig("Habilitar", state="normal")
 
 
@@ -257,8 +259,9 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = not self.sound_enabled
         self.bot.sound_enabled = self.sound_enabled
         estado = "🔇 Sonido desactivado" if not self.sound_enabled else "🔊 Sonido activado"
-        self.log_en_consola("- - - - - - - - - -")
+        
         self.log_en_consola(estado)
+        self.log_en_consola("- - - - - - - - - -")
         # Actualizamos también el texto del menú:
         nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"
         # entryconfig(0, ...) actúa sobre la primera entrada que creamos en config_menu
@@ -973,21 +976,21 @@ class BotInterfaz(AnimationMixin):
                 rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')
 
                 self.logf(
-                    "Configuracion actualizada · TP: {tp_state} ({tp}) · SL: {sl_state} ({sl})",
+                    "Configuración actualizada:\n · TP: {tp_state} ({tp})\n · SL: {sl_state} ({sl})",
                     tp_state='ON' if self.bot.tp_enabled else 'OFF',
                     tp=(self.bot.take_profit_pct or Decimal('0'), '%'),
                     sl_state='ON' if self.bot.sl_enabled else 'OFF',
                     sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),
                 )
                 self.logf(
-                    " · Rebalance: {rb_state} (umbral={thr}, pct={pct})",
+                    " · Rebalance: {rb_state} (Umbral = {thr}, Pct = {pct})",
                     rb_state='ON' if self.bot.rebalance_enabled else 'OFF',
                     thr=self.bot.rebalance_threshold,
                     pct=(self.bot.rebalance_pct, '%'),
                 )
 
 
-                self.log_en_consola("-------------------------")
+                self.log_en_consola("- - - - - - - - - -")
                 cerrar_config()
 
             except (InvalidOperation, IndexError):
@@ -1221,7 +1224,7 @@ class BotInterfaz(AnimationMixin):
                 
                 if prev is None and actual is not None:
                     self.log_en_consola("🔄 Conexión restablecida, Khazad reactivado.")
-                    self.log_en_consola("--------------------------------------------")
+                    self.log_en_consola("- - - - - - - - - -")
                     
                     if self.sound_enabled:
                         reproducir_sonido("Sounds/reconexion.wav")
@@ -1237,7 +1240,7 @@ class BotInterfaz(AnimationMixin):
         except Exception as exc_ui:
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
-
+        self.actualizar_consola()
 
     def actualizar_historial(self):
         # recordar scroll
@@ -1280,6 +1283,7 @@ class BotInterfaz(AnimationMixin):
             self.historial.yview_moveto(first)
 
     def actualizar_consola(self):
+
         try:
             first, last = self.consola.yview()
             estaba_al_fondo = (1.0 - last) < 1e-3
@@ -1292,20 +1296,76 @@ class BotInterfaz(AnimationMixin):
             else:
                 val, sim = v, ""
             return self.format_var(val, sim)
+        
+        # 🔎 mapa id_compra → estado actual (activa/anulada/vendida)
+        estado_por_id = {}
+        estado_por_num = {}
+        try:
+            for t in self.bot.transacciones:
+                tx_id = t.get("id")
+                if tx_id:
+                    estado_por_id[str(tx_id).strip()] = t.get("estado", "activa")
+                numc = t.get("numcompra")
+                if numc is not None:
+                    estado_por_num[str(numc).strip()] = t.get("estado", "activa")
+        except Exception:
+            pass
+
+        # regex para detectar Id / Número de compra / Estado (incluye tus formatos con 🪙)
+        re_id = re.compile(
+            r'(?:🪙\s*)?Compra\s+id\s*:\s*([A-Za-z0-9\-_]+)|\bId(?:\s+compra)?\s*:\s*([A-Za-z0-9\-_]+)',
+            re.IGNORECASE
+        )
+        re_num = re.compile(
+            r'(?:🪙\s*)?Compra\s+Num\s*:\s*(\d+)|N[úu]mero\s+de\s+compra\s*:\s*(\d+)',
+            re.IGNORECASE
+        )
+        re_estado = re.compile(r'^\s*📜\s*Estado\s*:\s*(.+)\s*$')
+        re_divisor = re.compile(r'^\s*-\s-(?:\s-)+\s*$')  # “- - - - - - - - - -”
 
         self.consola.configure(state='normal')
         self.consola.delete("1.0", tk.END)
+        ultimo_id = None
+        ultimo_num = None
 
         for entry in self._consola_buffer:
             kind = entry[0]
             if kind == "raw":
                 _, msg = entry
-                self.consola.insert(tk.END, self._reformat_line(msg) + "\n")
+                linea = self._reformat_line(msg)
             elif kind == "fmt":
                 _, tpl, vals = entry
                 linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
                 linea = self._reformat_line(linea)
-                self.consola.insert(tk.END, linea + "\n")
+            else:
+                continue
+
+            # trackear id y número si aparecen en esta línea
+            m_id = re_id.search(linea)
+            if m_id:
+                ultimo_id = (m_id.group(1) or m_id.group(2) or "").strip() or ultimo_id
+
+            m_num = re_num.search(linea)
+            if m_num:
+                ultimo_num = (m_num.group(1) or m_num.group(2) or "").strip() or ultimo_num
+
+            # si es línea de estado, corregir con estado vivo (id -> num)
+            if re_estado.match(linea):
+                estado_actual = None
+                if ultimo_id and ultimo_id in estado_por_id:
+                    estado_actual = estado_por_id[ultimo_id]
+                elif ultimo_num and ultimo_num in estado_por_num:
+                    estado_actual = estado_por_num[ultimo_num]
+                if estado_actual:
+                    linea = f"📜 Estado: {estado_actual}"
+
+            # si encontramos divisor, reseteamos el contexto de id/num
+            if re_divisor.match(linea):
+                ultimo_id = None
+                ultimo_num = None
+
+            # insertamos UNA sola vez por línea
+            self.consola.insert(tk.END, linea + "\n")
 
         self.consola.configure(state='disabled')
 
@@ -1313,6 +1373,7 @@ class BotInterfaz(AnimationMixin):
             self.consola.see(tk.END)
         else:
             self.consola.yview_moveto(first)
+
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
@@ -1377,23 +1438,29 @@ class BotInterfaz(AnimationMixin):
 
         
     def log_en_consola(self, msg):
-        self._consola_buffer.append(("raw", msg))  # registrar sin tocar el texto
+        """
+        Guarda el mensaje en buffer y re-renderiza la consola completa.
+        Así podemos corregir líneas viejas (📜 Estado) con el estado actual.
+        """
+        try:
+            first, last = self.consola.yview()
+            estaba_al_fondo = (1.0 - last) < 1e-3
+        except Exception:
+            estaba_al_fondo, first = True, 0.0
 
-        first, last = self.consola.yview()
-        estaba_al_fondo = (1.0 - last) < 1e-3
+        # bufferizar SIEMPRE (no insert directo)
+        if not hasattr(self, "_consola_buffer"):
+            self._consola_buffer = []
+        self._consola_buffer.append(("raw", str(msg)))
 
-        self.consola.configure(state='normal')
-        self.consola.insert(tk.END, self._reformat_line(msg) + "\n")
-        self.consola.configure(state='disabled')
+        # Re-render
+        self.actualizar_consola()
 
+        # Restaurar scroll
         if estaba_al_fondo:
             self.consola.see(tk.END)
         else:
             self.consola.yview_moveto(first)
-
-
-            
-    
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
