@@ -84,6 +84,7 @@ class TradingBot:
         self.rebalance_enabled = False
         self.rebalance_count = 0 
         self.rebalance_loss_total = Decimal('0')  # pérdidas acumuladas por rebalances
+        self.ultimo_evento = None
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -431,7 +432,9 @@ class TradingBot:
                     self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
 
             if self.sound_enabled:          
-                reproducir_sonido("Sounds/compra.wav")            
+                reproducir_sonido("Sounds/compra.wav")   
+            
+            self.ultimo_evento = datetime.datetime.now()         
             self.reportado_trabajando = False
 
     def parametro_compra_A(self):
@@ -452,7 +455,8 @@ class TradingBot:
                 self.contador_compras_fantasma += 1
                 self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.format_fn(self.precio_actual, '$')}, Num: {self.contador_compras_fantasma}.")
                 self.log("- - - - - - - - - -")                 
-                self.precio_ult_comp = self.precio_actual                                
+                self.precio_ult_comp = self.precio_actual   
+                self.ultimo_evento = datetime.datetime.now()                             
                 self.reportado_trabajando = False
                 if self.sound_enabled:
                     reproducir_sonido("Sounds/compra_fantasma.wav")
@@ -475,7 +479,8 @@ class TradingBot:
                 self.log(f"⚠️ERROR (B) Fondos insuficientes, nueva compra fantasma registrada a: {self.format_fn(self.precio_actual, '$')}")
                 self.log("- - - - - - - - - -")
                 self.contador_compras_fantasma += 1                 
-                self.param_b_enabled = False       
+                self.param_b_enabled = False  
+                self.ultimo_evento = datetime.datetime.now()     
                 self.reportado_trabajando = False
                 if self.sound_enabled:
                     reproducir_sonido("Sounds/compra_fantasma.wav")                                         
@@ -581,6 +586,8 @@ class TradingBot:
                 
                 if self.sound_enabled:               
                     reproducir_sonido("Sounds/venta.wav")
+
+                self.ultimo_evento = datetime.datetime.now()
                 self.reportado_trabajando = False
                 break
 
@@ -615,6 +622,7 @@ class TradingBot:
             })
             self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
             self.log("- - - - - - - - - -")
+            self.ultimo_evento = datetime.datetime.now()
             self.reportado_trabajando = False
 
             if self.sound_enabled:
@@ -798,13 +806,19 @@ class TradingBot:
                     else:
                         self.var_inicio = self.varpor_ingreso()
 
-                    if self.reportado_trabajando == False:                        
-                        self.log("🟡 Trabajando...")   
-                        self.log("- - - - - - - - - -")                   
-                        self.reportado_trabajando = True   
+                    ahora = datetime.datetime.now()
+                    if self.ultimo_evento is None:
+                        self.ultimo_evento = ahora
+
+                    # si pasaron ≥5 segundos desde el último evento y todavía no lo reportamos
+                    if (ahora - self.ultimo_evento).total_seconds() >= 5 and not self.reportado_trabajando:
+                        self.log("🟡 Trabajando...")
+                        self.log("- - - - - - - - - -")
+                        self.reportado_trabajando = True
 
                 if self.btc < 0:
                     self.log("🔴Error: btc negativo")
+                    self.ultimo_evento = datetime.datetime.now()
                     self.reportado_trabajando = False
                     
                     if self.sound_enabled: 
