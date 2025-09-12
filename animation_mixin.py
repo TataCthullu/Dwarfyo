@@ -264,7 +264,7 @@ class AnimationMixin:
 
         # Guardián en canvas_various
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
-        self.guard_item = self.canvas_various.create_image(1800,0, image=guard0, anchor='nw')
+        self.guard_item = self.canvas_various.create_image(1800,15, image=guard0, anchor='nw')
 
          # 2) Crea el item en el canvas
         if self.dithmenos_frames:
