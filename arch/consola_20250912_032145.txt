@@ -1,0 +1,39 @@
+🔇 Música desabilitada.
+- - - - - - - - - -
+🟡 Khazâd iniciado.
+- - - - - - - - - -
+✅ Compra realizada.
+📉 Precio de compra: $ 115432.13
+🪙 Btc comprado: ₿ 0.004331549630072666942904025075
+🪙 Compra id: 1e6c
+🪙 Compra Num: 1
+📜 Estado: vendida
+🎯 Objetivo de venta: $ 115437.9016065
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-09-12 03:20:41
+🕒 Compra original: $ 115432.13
+🆔 Id: 1e6c
+🪙 Compra Num: 1
+📈 Precio de venta: $ 115440.77
+📈 Venta numero: 1
+📤 Btc vendido: ₿ 0.004331549630072666942904025075
+💹 Ganancia de esta operacion: $ 0.0374245888038278423866908
+📊 Excedente sobre objetivo: % 0.002484793521089514001638073426
+- - - - - - - - - -
+📝 Estado de compra #1 (id 1e6c): activa → vendida
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+📌 Venta fantasma #1 a $ 115451.74
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+📌 Venta fantasma #2 a $ 115459.19
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+🔴 Khazâd detenido.
+- - - - - - - - - -

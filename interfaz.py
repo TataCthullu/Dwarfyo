@@ -1,17 +1,19 @@
 # © 2025 Dungeon Market (Khazâd - Trading Bot)
 # Todos los derechos reservados.
+
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar, reproducir_musica_fondo, detener_musica_fondo
 from codigo_principala import TradingBot
 from calculador import CalculatorWindow
 from PIL import ImageGrab, Image, ImageTk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from concurrent.futures import ThreadPoolExecutor
 from animation_mixin import AnimationMixin
 from decimal import Decimal, InvalidOperation
 import re
-
+import csv
+from datetime import datetime
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
@@ -120,7 +122,12 @@ class BotInterfaz(AnimationMixin):
         else:
             self.music_menu.entryconfig("Desabilitar", state="disabled")
 
-        
+        # ——— Menú Archivo ———
+        menu_archivo = tk.Menu(self.menubar, tearoff=0)
+        menu_archivo.add_command(label="Descargar historial...", command=self.descargar_historial)
+        menu_archivo.add_command(label="Descargar consola...", command=self.descargar_consola)
+        self.menubar.add_cascade(label="Archivo", menu=menu_archivo)
+
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
         self.actualizar_ui()
@@ -278,6 +285,58 @@ class BotInterfaz(AnimationMixin):
         if ruta:
             img.save(ruta)
             self.log_en_consola(f"📸 Captura guardada en: {ruta}")
+# ——— dentro de BotInterfaz ———
+
+    def _exportar_texto(self, widget_text, sugerencia="export"):
+        """
+        Exporta el contenido de un Text/ScrolledText:
+        - .txt (texto tal cual)
+        - .csv (una línea por línea; Excel lo abre)
+        """
+        try:
+            contenido = widget_text.get("1.0", "end-1c")
+        except Exception as e:
+            messagebox.showerror("Error", f"No pude leer el widget: {e}")
+            return
+
+        if not contenido.strip():
+            messagebox.showinfo("Vacío", f"No hay contenido para exportar en '{sugerencia}'.")
+            return
+
+        fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
+        fname_sugerido = f"{sugerencia}_{fecha}.txt"
+
+        ruta = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            initialfile=fname_sugerido,
+            filetypes=[("Texto", "*.txt"), ("CSV (Excel)", "*.csv"), ("Todos", "*.*")],
+            title=f"Guardar {sugerencia}"
+        )
+        if not ruta:
+            return
+
+        try:
+            if ruta.lower().endswith(".csv"):
+                # Guardamos cada línea como una fila CSV (una sola columna)
+                lineas = contenido.splitlines()
+                with open(ruta, "w", newline="", encoding="utf-8") as f:
+                    w = csv.writer(f)
+                    for linea in lineas:
+                        w.writerow([linea])
+            else:
+                with open(ruta, "w", encoding="utf-8") as f:
+                    f.write(contenido)
+            messagebox.showinfo("Listo", f"Guardado en:\n{ruta}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No pude guardar el archivo:\n{e}")
+
+
+    def descargar_historial(self):
+        self._exportar_texto(self.historial, "historial")
+
+    def descargar_consola(self):
+        self._exportar_texto(self.consola, "consola")
+
 
     def _create_stringvars(self):
         # Display and config variables

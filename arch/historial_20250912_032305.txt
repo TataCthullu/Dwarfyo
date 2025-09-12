@@ -1,0 +1,16 @@
+🟦 Compra realizada:
+Precio de compra: $ 115432.13
+Id: 1e6c
+Número de compra: 1
+Estado: vendida
+Fecha y hora: 2025-09-12 03:20:36
+Objetivo de venta: 115437.9016065
+----------------------------------------
+🟩 Venta realizada:
+Precio de compra: 115432.13
+Precio de venta: 115440.77
+Id compra: 1e6c
+Ganancia: 0.0374245888038278423866908
+Número de venta: 1
+Fecha y hora: 2025-09-12 03:20:41
+----------------------------------------
