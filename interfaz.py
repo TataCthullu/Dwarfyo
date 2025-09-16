@@ -92,6 +92,8 @@ class BotInterfaz(AnimationMixin):
             "ghost_ratio",
             "rebalances",
             "rebalance_loss_total",
+            "hold_btc",
+            "hold_usdt",
         }
 
         # Frames
@@ -506,14 +508,9 @@ class BotInterfaz(AnimationMixin):
         add("Usdt + Btc:", self.balance_str, "balance")
         add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
         add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
-        add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")
-        
+        add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")    
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
-        add("Usdt Disponible:", self.cant_usdt_str, "usdt")
-
-        
-        add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
-        
+        add("Usdt Disponible:", self.cant_usdt_str, "usdt") 
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
@@ -522,6 +519,7 @@ class BotInterfaz(AnimationMixin):
         add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_realizadas")
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_fantasma")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_fantasma")
+        add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
         add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
         add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
