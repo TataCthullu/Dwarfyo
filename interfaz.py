@@ -80,6 +80,20 @@ class BotInterfaz(AnimationMixin):
         self.limpiar_visible = False
         #self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
       
+      # Estado de modo de vista (Avanzado por defecto)
+        self.modus = tk.StringVar(value='avanzado')
+        self.info_labels = {}
+
+        # Conjunto de keys a ocultar en modo Standard
+        self._keys_modus_standar = {
+            "excedente_compras",
+            "excedente_ventas",
+            "excedente_total",
+            "ghost_ratio",
+            "rebalances",
+            "rebalance_loss_total",
+        }
+
         # Frames
         self.left_panel()
         self.center_panel()
@@ -88,6 +102,8 @@ class BotInterfaz(AnimationMixin):
         self.animation_panel()
         self.various_panel()
         self.init_animation()
+        self._aplicar_modus()
+
         
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
@@ -132,10 +148,30 @@ class BotInterfaz(AnimationMixin):
         self.root.config(menu=self.menubar) 
         self.actualizar_ui()
         self.inicializar_valores_iniciales()
+        self._aplicar_modus()
+
         self._prev_price_ui = self.bot.precio_actual
         # Baseline for color comparisons
         self.sound_enabled = True
         self.bot.sound_enabled = True
+
+        
+        # —— Menú Modus ——
+        self.modus_menu = tk.Menu(self.menubar, tearoff=0)
+        self.modus_menu.add_radiobutton(
+            label="Avanzado",
+            variable=self.modus,
+            value="avanzado",
+            command=self._aplicar_modus
+        )
+        self.modus_menu.add_radiobutton(
+            label="Standard",
+            variable=self.modus,
+            value="standard",
+            command=self._aplicar_modus
+        )
+
+        self.menubar.add_cascade(label="Modus", menu=self.modus_menu)
         
     def reset_animaciones(self):
             self._animaciones_activas = False
@@ -181,13 +217,36 @@ class BotInterfaz(AnimationMixin):
 
         self.menubar.add_cascade(label="Vista", menu=view_menu)
 
+    def _aplicar_modus(self):
+        
+        modus = self.modus.get()
+
+        # Mostrar todo por defecto (labels + valores)
+        for _, (canvas, item_id) in getattr(self, "info_canvas", {}).items():
+            try: canvas.itemconfigure(item_id, state='normal')
+            except Exception: pass
+        for _, (canvas, lbl_id) in getattr(self, "info_labels", {}).items():
+            try: canvas.itemconfigure(lbl_id, state='normal')
+            except Exception: pass
+
+        # En Standard, ocultar los pedidos (label + valor)
+        if modus == "standard":
+            for key in getattr(self, "_keys_modus_standar", set()):
+                if key in getattr(self, "info_canvas", {}):
+                    canvas, item_id = self.info_canvas[key]
+                    try: canvas.itemconfigure(item_id, state='hidden')
+                    except Exception: pass
+                if key in getattr(self, "info_labels", {}):
+                    canvas, lbl_id = self.info_labels[key]
+                    try: canvas.itemconfigure(lbl_id, state='hidden')
+                    except Exception: pass
 
     def _cambiar_precision(self, prec=None):
         if prec is not None:
             self.float_precision = prec
 
         self.ajustar_fuente_por_vista()  
-        #self.reset_animaciones()
+        
 
         # 🧼 Destruir y recrear paneles para que los textos fijos usen nueva fuente
         try:
@@ -201,7 +260,8 @@ class BotInterfaz(AnimationMixin):
         self.animation_panel()
         self.init_animation()  
 
-        #self.bot.set_formatter(self.format_var)
+        self._aplicar_modus()
+
         self.actualizar_ui()
         self.actualizar_consola()
         self.actualizar_historial()
@@ -438,6 +498,10 @@ class BotInterfaz(AnimationMixin):
             if key:
                 self.info_canvas[key] = (self.canvas_uno, txt_id)
                 y_offset += row_height
+            
+            if key:
+                self.info_labels[key] = (self.canvas_uno, lbl_id)
+                self.info_canvas[key] = (self.canvas_uno, txt_id)
 
         add("Usdt + Btc:", self.balance_str, "balance")
         add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
@@ -499,8 +563,11 @@ class BotInterfaz(AnimationMixin):
                 self.info_canvas[key] = (self.canvas_center, txt_id)
             y_offset += row_height
 
-        add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")
-        
+            if key:
+                self.info_labels[key] = (self.canvas_center, lbl_id)
+                self.info_canvas[key] = (self.canvas_center, txt_id)
+
+        add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")    
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
         add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")
         add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")
@@ -660,6 +727,10 @@ class BotInterfaz(AnimationMixin):
 
             y_offset += row_height
 
+            if key:
+                self.info_labels[key] = (self.canvas_animation, lbl_id)
+                self.info_canvas[key] = (self.canvas_animation, txt_id)
+
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio", "$")
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
@@ -761,6 +832,14 @@ class BotInterfaz(AnimationMixin):
             except Exception:
                 pass
         self.info_canvas.clear()
+        # limpiar labels guardados
+        for key in list(getattr(self, "info_labels", {}).keys()):
+            canvas, lbl_id = self.info_labels[key]
+            try:
+                canvas.delete(lbl_id)
+            except Exception:
+                pass
+        self.info_labels.clear()
 
         self.nd_canvas.clear()
 
@@ -802,6 +881,8 @@ class BotInterfaz(AnimationMixin):
         self.center_panel()
         self.animation_panel() 
         self.init_animation()
+        self._aplicar_modus()
+
         # 8) Redibujar datos actuales (aunque estén vacíos)
         self.actualizar_ui()
 
@@ -1300,6 +1381,12 @@ class BotInterfaz(AnimationMixin):
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
         self.actualizar_consola()
+        # Vuelve a aplicar ocultamiento tras redibujar valores
+        try:
+            self._aplicar_modus()
+        except Exception:
+            pass
+
 
     def actualizar_historial(self):
         # recordar scroll
