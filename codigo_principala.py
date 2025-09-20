@@ -377,14 +377,17 @@ class TradingBot:
             
             if not self.condiciones_para_comprar():
                 self.log("Condiciones inválidas. No se realiza compra")
+                self.log("- - - - - - - - - -")
                 return
             
             if self.usdt is None or self.usdt < self.fixed_buyer:
                 self.log("⚠️ Usdt insuficiente para comprar.")
+                self.log("- - - - - - - - - -")
                 return
             
             if self.precio_actual is None or self.precio_actual == 0:
                 self.log("⚠️ Precio actual inválido para calcular BTC comprado.")
+                self.log("- - - - - - - - - -")
                 return
             
             id_op = self._new_id()
@@ -410,6 +413,7 @@ class TradingBot:
                             
             self.actualizar_balance()            
             self.log("✅ Compra realizada.")
+            self.log(f" . Fecha y Hora: {self.timestamp}")
             self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
             self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
             self.log(f"🪙 Compra id: {id_op}")
@@ -453,7 +457,8 @@ class TradingBot:
             else:                               
                 self.compras_fantasma.append(self.precio_actual)
                 self.contador_compras_fantasma += 1
-                self.log(f"📌(A) Sin Usdt para comprar, nueva compra fantasma registrada a {self.format_fn(self.precio_actual, '$')}, Num: {self.contador_compras_fantasma}.")
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                self.log(f"📌(A) {ts} · Sin Usdt para comprar, nueva compra fantasma registrada a {self.format_fn(self.precio_actual, '$')}, Num: {self.contador_compras_fantasma}.")
                 self.log("- - - - - - - - - -")                 
                 self.precio_ult_comp = self.precio_actual   
                 self.ultimo_evento = datetime.datetime.now()                             
@@ -475,8 +480,9 @@ class TradingBot:
                 self.precio_ult_comp = self.precio_actual
                 self.param_a_enabled = True
                 self.param_b_enabled = False  # Deshabilitamos B hasta la próxima venta                                
-            else:                          
-                self.log(f"⚠️ERROR (B) Fondos insuficientes, nueva compra fantasma registrada a: {self.format_fn(self.precio_actual, '$')}")
+            else:         
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")                 
+                self.log(f"⚠️  {ts} · Fondos insuficientes, nueva compra fantasma registrada a: {self.format_fn(self.precio_actual, '$')}")
                 self.log("- - - - - - - - - -")
                 self.contador_compras_fantasma += 1                 
                 self.param_b_enabled = False  
@@ -592,13 +598,18 @@ class TradingBot:
                 break
 
          # ----- remover transacciones vendidas (FUERA DEL LOOP) -----
-        """for transaccion in ejecutadas:
-            if transaccion in self.transacciones:
-                self.transacciones.remove(transaccion)"""
-
+        # ----- remover transacciones vendidas (FUERA DEL LOOP) -----
         if ejecutadas:
+            # Solo borrar en modo Standard
+            if getattr(self, "modus_actual", "standard") == "standard":
+                for transaccion in ejecutadas:
+                    if transaccion in self.transacciones:
+                        self.transacciones.remove(transaccion)
+
+            # Reinicio de parámetros siempre
             self.param_b_enabled = True
             self.param_a_enabled = False
+
 
         self.actualizar_balance()             
 
@@ -616,11 +627,13 @@ class TradingBot:
             self.activar_compra_tras_vta_fantasma = True
             # Actualiza el punto de referencia para el próximo umbral
             self.precio_ult_venta = self.precio_actual
+            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.ventas_fantasma.append({
                 'id': id_f,
-                'precio': self.precio_actual
+                'precio': self.precio_actual,
+                'timestamp': ts,
             })
-            self.log(f"📌 Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
+            self.log(f"📌 {ts} · Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
             self.log("- - - - - - - - - -")
             self.ultimo_evento = datetime.datetime.now()
             self.reportado_trabajando = False
@@ -729,6 +742,7 @@ class TradingBot:
             self.start_time = datetime.datetime.now()
             self._stop_flag = False
             self.running = True
+            
             self.log("🟡 Khazâd iniciado.")
             self.log("- - - - - - - - - -")
             self.realizar_primera_compra()

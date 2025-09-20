@@ -1037,47 +1037,60 @@ class BotInterfaz(AnimationMixin):
                     rb_thr = int(self.var_rebalance_threshold.get())
                 except (TypeError, ValueError):
                     self.log_en_consola("⚠️ Umbral de rebalance inválido (debe ser entero).")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 try:
                     rb_pct = int(self.var_rebalance_pct.get())
                 except (TypeError, ValueError):
                     self.log_en_consola("⚠️ % de rebalance inválido (debe ser entero).")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if rb_thr < 0:
                     self.log_en_consola("⚠️ El umbral de rebalance no puede ser negativo.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if not (1 <= rb_pct <= 100):
                     self.log_en_consola("⚠️ El % de rebalance debe estar entre 1 y 100.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 
                 # 3) Validaciones > 0
                 if porc_compra <= 0:
                     self.log_en_consola("⚠️ El porcentaje desde compra debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if porc_venta <= 0:
                     self.log_en_consola("⚠️ El porcentaje desde venta debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if porc_profit <= 0:
                     self.log_en_consola("⚠️ El porcentaje de profit por venta debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if porc_inv <= 0:
                     self.log_en_consola("⚠️ El porcentaje de inversión por compra debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if usdtinit <= 0:
                     self.log_en_consola("⚠️ El capital inicial debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if tp < 0:
                     self.log_en_consola("⚠️ El Take Profit debe ser 0 o mayor.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if sl < 0:
                     self.log_en_consola("⚠️ El Stop Loss debe ser 0 o mayor.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 # Si se activan, deben ser > 0 (evitar detener instantáneamente)
                 if self.var_tp_enabled.get() and tp <= 0:
                     self.log_en_consola("⚠️ Si activás el Take Profit, debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
                 if self.var_sl_enabled.get() and sl <= 0:
                     self.log_en_consola("⚠️ Si activás el Stop Loss, debe ser mayor que 0.")
+                    self.log_en_consola("- - - - - - - - - -")
                     return
 
                 # 3) Asignamos al bot (para los cálculos internos)
@@ -1112,14 +1125,14 @@ class BotInterfaz(AnimationMixin):
                 tp_txt     = self.format_var(self.bot.take_profit_pct or Decimal('0'), '%')
                 sl_txt     = self.format_var(self.bot.stop_loss_pct  or Decimal('0'), '%')
                 rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')
-
-                self.logf(
-                    "Configuración actualizada:\n · TP: {tp_state} ({tp})\n · SL: {sl_state} ({sl})",
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                self.logf(f"{ts} · Configuración actualizada:\n · TP: {{tp_state}} ({{tp}})\n · SL: {{sl_state}} ({{sl}})",
                     tp_state='ON' if self.bot.tp_enabled else 'OFF',
                     tp=(self.bot.take_profit_pct or Decimal('0'), '%'),
                     sl_state='ON' if self.bot.sl_enabled else 'OFF',
                     sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),
                 )
+                self.log_en_consola("- - - - - - - - - -")
                 self.logf(
                     " · Rebalance: {rb_state} (Umbral = {thr}, Pct = {pct})",
                     rb_state='ON' if self.bot.rebalance_enabled else 'OFF',
@@ -1202,6 +1215,7 @@ class BotInterfaz(AnimationMixin):
                 return
             # – Si salió bien, guardamos el precio y ejecutamos el ciclo de trading:
             self.bot.precio_actual = price
+            self.bot.modus_actual = self.modus.get()
             self.bot.loop()
         except Exception as exc:
             # Si falla, dejamos precio_actual en None para detectar desconexión
