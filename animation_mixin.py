@@ -26,7 +26,7 @@ class AnimationMixin:
 
         # 3) Carga de los elefantes numerados 0..5
         self.elephants = []
-        for i in range(6):
+        for i in range(8):
             p = os.path.join(ruta_ele, f"elephant_{i}.png")
             if os.path.exists(p):
                 # Aumentamos de tamaño con zoom, si lo deseas
@@ -370,12 +370,12 @@ class AnimationMixin:
 
         if cnt <= 0:
             img = self.elephant_statue
-        elif 1 <= cnt <= 6:
-            # Mapeamos “1 compra fantasma” → elephants[0], “2” → elephants[1], … hasta elephants[5]
+        elif 1 <= cnt <= 8:
+            # Mapeamos “1 compra fantasma” → elephants[0], “2” → elephants[1], … hasta elephants[7]
             idx = min(cnt-1, len(self.elephants)-1)
             img = self.elephants[idx]
         else:
-            # Si hay más de 6 compras fantasma, mostramos siempre el último elefante
+            # Si hay más de 8 compras fantasma, mostramos siempre el último elefante
             img = self.elephants[-1]
 
         if img:
