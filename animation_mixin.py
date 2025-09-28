@@ -24,7 +24,10 @@ class AnimationMixin:
         stat_path = os.path.join(ruta_ele, "elephant_statue.png")
         self.elephant_statue = PhotoImage(file=stat_path).zoom(3, 3) if os.path.exists(stat_path) else None
 
-        # 3) Carga de los elefantes numerados 0..5
+        # ✨ NUEVO: estatua de jade
+        jade_path = os.path.join(ruta_ele, "statue_elephant_jade.png")
+        self.elephant_jade = PhotoImage(file=jade_path).zoom(3, 3) if os.path.exists(jade_path) else None
+        
         self.elephants = []
         for i in range(8):
             p = os.path.join(ruta_ele, f"elephant_{i}.png")
@@ -369,8 +372,11 @@ class AnimationMixin:
         cnt = getattr(self, 'bot', None) and self.bot.contador_compras_fantasma or 0
 
         if cnt <= 0:
-            img = self.elephant_statue
-        elif 1 <= cnt <= 8:
+            # Si el bot marcó que el reequilibrio se concretó, mostrar la jade; si no, la estatua normal.
+            base_img = self.elephant_jade if getattr(self.bot, 'rebalance_concretado', False) else self.elephant_statue
+            img = base_img
+
+        elif 1 <= cnt <= len(self.elephants):
             # Mapeamos “1 compra fantasma” → elephants[0], “2” → elephants[1], … hasta elephants[7]
             idx = min(cnt-1, len(self.elephants)-1)
             img = self.elephants[idx]

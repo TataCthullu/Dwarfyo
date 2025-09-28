@@ -4,7 +4,7 @@
 import ccxt
 from utils import reproducir_sonido
 import datetime
-from decimal import Decimal, InvalidOperation, DivisionByZero, localcontext
+from decimal import Decimal, InvalidOperation, DivisionByZero, localcontext, ROUND_UP
 from secrets import token_hex
 
 class TradingBot:
@@ -85,6 +85,7 @@ class TradingBot:
         self.rebalance_count = 0 
         self.rebalance_loss_total = Decimal('0')  # pérdidas acumuladas por rebalances
         self.ultimo_evento = None
+        self.rebalance_concretado = False
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -265,10 +266,11 @@ class TradingBot:
         _rebalance_done = False
         
         if n_total > 1:
-            # purgar % de las más antiguas
-            n_a_vender = int(n_total * (self.rebalance_pct / Decimal("100")))
-            if n_a_vender <= 0:
-                n_a_vender = 1
+             # purgar % de las más antiguas (redondeo hacia ARRIBA)
+            raw = (Decimal(n_total) * Decimal(self.rebalance_pct)) / Decimal("100")
+            n_a_vender = int(raw.to_integral_value(rounding=ROUND_UP))
+            n_a_vender = max(1, min(n_total, n_a_vender))  # clamp entre 1 y n_total
+
 
             activos_ordenados = sorted(activos, key=lambda tx: tx.get("numcompra", 0))
             a_vender = activos_ordenados[:n_a_vender]
@@ -295,7 +297,7 @@ class TradingBot:
                     perdida = costo_base - usdt_obtenido
                     rebalance_loss_event += perdida
                     self.log(
-                        f"   • Pérdida por rebalance en esta compra: "
+                        f" • Pérdida por rebalance en esta compra: "
                         f"{self.format_fn(perdida, '$')} (base {self.format_fn(costo_base, '$')} → "
                     )
 
@@ -356,6 +358,7 @@ class TradingBot:
         if '_rebalance_done' in locals() and _rebalance_done:
             self.rebalance_count += 1
             self.log(f"📊 Rebalance #{self.rebalance_count} ejecutado")
+            self.rebalance_concretado = True   # ← encender jade
     # 🔻 NUEVO: totales de pérdida
         if rebalance_loss_event > 0:
             self.rebalance_loss_total = (self.rebalance_loss_total or Decimal("0")) + rebalance_loss_event
@@ -398,7 +401,8 @@ class TradingBot:
             self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
             self.btc = (self.btc or Decimal("0")) + self.btc_comprado
             self.contador_compras_reales += 1 
-
+            self.rebalance_concretado = False
+            
             self.transacciones.append({
                     "compra": self.precio_ult_comp,
                     "id": id_op,     
