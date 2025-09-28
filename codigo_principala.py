@@ -917,7 +917,7 @@ class TradingBot:
             return False
 
         if self.tp_enabled and self.take_profit_pct and variacion >= self.take_profit_pct:
-            self.log(f"🎯 Take Profit alcanzado: {variacion:.2f}%")
+            self.log(f"🎯 Take Profit alcanzado: {variacion}%")
             
             if self.sound_enabled:
                 reproducir_sonido("Sounds/take_profit.wav")
@@ -930,7 +930,7 @@ class TradingBot:
             return True
 
         if self.sl_enabled and self.stop_loss_pct and variacion <= -self.stop_loss_pct:
-            self.log(f"🛑 Stop Loss alcanzado: {variacion:.2f}%")
+            self.log(f"🛑 Stop Loss alcanzado: {variacion}%")
             
             if self.sound_enabled:
                 reproducir_sonido("Sounds/stop_loss.wav")

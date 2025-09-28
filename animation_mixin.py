@@ -60,6 +60,15 @@ class AnimationMixin:
         # animación suave de bases (gozag / jiyva alternan 0/1 si existen)
         self.root.after(600, self._animate_altars)
 
+        # ─── imagen de altar destruido ───
+        self.ashenzari_img = _img("imagenes/deco/sltp/ashenzari.png", 2) or _img("ashenzari.png", 2)
+
+        # overlays de altar destruido (uno para cada lado), ocultos por defecto
+        self.destroy_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.ashenzari_img or '', anchor='nw')
+        self.destroy_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.ashenzari_img or '', anchor='nw')
+        self.canvas_various.itemconfigure(self.destroy_tp_item, state='hidden')
+        self.canvas_various.itemconfigure(self.destroy_sl_item, state='hidden')
+
 
         # ─── CARGA DE “ELEFANTES” ───
         # 1) Ruta base de los elefantes
@@ -416,6 +425,28 @@ class AnimationMixin:
         self._tp_state = state
         self._refresh_altar_image(kind="tp")
 
+        # Cuando TP = hit → destruir el otro altar (SL), ocultar su base e ícono
+        if state == "hit":
+            try:
+                self._sl_state = "inactive"
+                self._refresh_altar_image(kind="sl")  # apaga ícono del SL si estaba 'armed'
+
+                # mostrar ashenzari en SL y ocultar TODO lo de abajo
+                self.canvas_various.itemconfigure(self.destroy_sl_item, state='normal')   # overlay destruido
+                self.canvas_various.itemconfigure(self.sl_icon_item,   state='hidden')    # escudo fuera
+                self.canvas_various.itemconfigure(self.altar_sl_item,  state='hidden')    # ⬅️ base verde fuera
+                self.canvas_various.tag_raise(self.destroy_sl_item)                        # overlay arriba
+            except Exception:
+                pass
+        else:
+            # Si TP no está en 'hit', apagamos el destruido del otro lado y restauramos su base
+            try:
+                self.canvas_various.itemconfigure(self.destroy_sl_item, state='hidden')
+                self.canvas_various.itemconfigure(self.altar_sl_item,   state='normal')   # ⬅️ restaurar base
+            except Exception:
+                pass
+
+
     def set_stop_loss_state(self, state: str):
         """
         state: 'inactive' | 'armed' | 'hit'
@@ -425,6 +456,29 @@ class AnimationMixin:
         """
         self._sl_state = state
         self._refresh_altar_image(kind="sl")
+
+        # Cuando SL = hit → destruir el otro altar (TP), ocultar su base e ícono
+        if state == "hit":
+            try:
+                self._tp_state = "inactive"
+                self._refresh_altar_image(kind="tp")  # apaga espada si estaba 'armed'
+
+                # mostrar ashenzari en TP y ocultar TODO lo de abajo
+                self.canvas_various.itemconfigure(self.destroy_tp_item, state='normal')   # overlay destruido
+                self.canvas_various.itemconfigure(self.tp_icon_item,    state='hidden')   # espada fuera
+                self.canvas_various.itemconfigure(self.altar_tp_item,   state='hidden')   # ⬅️ base verde fuera
+                self.canvas_various.tag_raise(self.destroy_tp_item)                        # overlay arriba
+            except Exception:
+                pass
+        else:
+            # Si SL no está en 'hit', apagar destruido del otro lado y restaurar su base
+            try:
+                self.canvas_various.itemconfigure(self.destroy_tp_item, state='hidden')
+                self.canvas_various.itemconfigure(self.altar_tp_item,   state='normal')   # ⬅️ restaurar base
+            except Exception:
+                pass
+
+
 
     def _refresh_altar_image(self, kind: str):
         # decide imagen según estado actual y frame
@@ -451,7 +505,7 @@ class AnimationMixin:
 
         self.canvas_various.itemconfig(item, image=img or '')
     # ⬇️ Mostrar ícono solo si está 'armed' o 'hit'; ocultar si 'inactive'
-        visible = 'normal' if state in ('armed', 'hit') else 'hidden'
+        visible = 'normal' if state == 'armed' else 'hidden'
         self.canvas_various.itemconfigure(icon_item, state=visible)
         
     def _animate_altars(self):
