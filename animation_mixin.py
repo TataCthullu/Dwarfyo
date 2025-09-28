@@ -38,7 +38,7 @@ class AnimationMixin:
 
         # posiciones (pegado al lado derecho, antes del icono de sonido)
         Wv = int(self.canvas_various["width"])
-        base_y = 8
+        base_y = 30
         tp_x   = Wv - 440   # altar TP (espada)
         sl_x   = Wv - 360   # altar SL (escudo)
 
@@ -47,8 +47,8 @@ class AnimationMixin:
         self.altar_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.altar_base or '', anchor='nw')
 
         # crear ítems de íconos sobrepuestos (offset pequeño para que se vean centrados)
-        self.tp_icon_item  = self.canvas_various.create_image(tp_x+12, base_y-6, image=self.icon_sword or '', anchor='nw')
-        self.sl_icon_item  = self.canvas_various.create_image(sl_x+12, base_y-6, image=self.icon_shield or '', anchor='nw')
+        self.tp_icon_item  = self.canvas_various.create_image(tp_x+12, base_y-17, image=self.icon_sword or '', anchor='nw')
+        self.sl_icon_item  = self.canvas_various.create_image(sl_x+2, base_y-16, image=self.icon_shield or '', anchor='nw')
         self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
         self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
 
@@ -327,7 +327,7 @@ class AnimationMixin:
         # item sound
         initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
         self.noise_item = self.canvas_various.create_image(
-            1500, 10,
+            1700, 16,
             image=initial,
             anchor='nw'
         )
