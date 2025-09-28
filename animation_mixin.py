@@ -15,7 +15,52 @@ class AnimationMixin:
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
 
-        
+                # ─── ALTARES TP / SL ───
+        # rutas posibles (usa las que tengas en tu proyecto; si no existen, se omiten)
+        def _img(path, zoom=2):
+            return PhotoImage(file=path).zoom(zoom, zoom) if os.path.exists(path) else None
+
+        # bases
+        self.altar_base     = _img("imagenes/deco/sltp/altar_base.png",      2) or _img("altar_base.png", 2)
+        self.altar_trog     = _img("imagenes/deco/sltp/altar_trog.png",      2) or _img("altar_trog.png", 2)
+        self.gozag_frames   = [p for p in (
+                                _img("imagenes/deco/sltp/gozag_0.png", 2) or _img("gozag_0.png", 2),
+                                _img("imagenes/deco/sltp/gozag_1.png", 2) or _img("gozag_1.png", 2)
+                              ) if p]
+        self.jiyva_frames   = [p for p in (
+                                _img("imagenes/deco/sltp/altar_jiyva_0.png", 2) or _img("altar_jiyva_0.png", 2),
+                                _img("imagenes/deco/sltp/altar_jiyva_1.png", 2) or _img("altar_jiyva_1.png", 2)
+                              ) if p]
+
+        # íconos
+        self.icon_sword     = _img("imagenes/deco/sltp/long_sword_1_new.png", 2) or _img("long_sword_1_new.png", 2)
+        self.icon_shield    = _img("imagenes/deco/sltp/buckler_1_new.png",    2) or _img("buckler_1_new.png", 2)
+
+        # posiciones (pegado al lado derecho, antes del icono de sonido)
+        Wv = int(self.canvas_various["width"])
+        base_y = 8
+        tp_x   = Wv - 440   # altar TP (espada)
+        sl_x   = Wv - 360   # altar SL (escudo)
+
+        # crear ítems de base
+        self.altar_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.altar_base or '', anchor='nw')
+        self.altar_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.altar_base or '', anchor='nw')
+
+        # crear ítems de íconos sobrepuestos (offset pequeño para que se vean centrados)
+        self.tp_icon_item  = self.canvas_various.create_image(tp_x+12, base_y-6, image=self.icon_sword or '', anchor='nw')
+        self.sl_icon_item  = self.canvas_various.create_image(sl_x+12, base_y-6, image=self.icon_shield or '', anchor='nw')
+        self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
+        self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
+
+        # estados y frame para animación
+        self._tp_state = "inactive"   # 'inactive' | 'armed' | 'hit'
+        self._sl_state = "inactive"   # 'inactive' | 'armed' | 'hit'
+        self._altar_frame = 0
+
+        # animación suave de bases (gozag / jiyva alternan 0/1 si existen)
+        self.root.after(600, self._animate_altars)
+
+
         # ─── CARGA DE “ELEFANTES” ───
         # 1) Ruta base de los elefantes
         ruta_ele = os.path.join("imagenes", "deco", "elefants")
@@ -360,6 +405,61 @@ class AnimationMixin:
             self.canvas_center.itemconfig(self.abyss_item, image=self.abyss_static_img)
 
         self.animar(500, self._update_abyss)
+
+    def set_take_profit_state(self, state: str):
+        """
+        state: 'inactive' | 'armed' | 'hit'
+        - inactive  → Jiyva
+        - armed     → base
+        - hit       → Gozag
+        """
+        self._tp_state = state
+        self._refresh_altar_image(kind="tp")
+
+    def set_stop_loss_state(self, state: str):
+        """
+        state: 'inactive' | 'armed' | 'hit'
+        - inactive  → Jiyva
+        - armed     → base
+        - hit       → Trog
+        """
+        self._sl_state = state
+        self._refresh_altar_image(kind="sl")
+
+    def _refresh_altar_image(self, kind: str):
+        # decide imagen según estado actual y frame
+        if kind == "tp":
+            state = self._tp_state
+            item  = self.altar_tp_item
+            icon_item = self.tp_icon_item
+        else:
+            state = self._sl_state
+            item  = self.altar_sl_item
+            icon_item = self.sl_icon_item
+
+        if state == "hit":
+            img = (self.gozag_frames[self._altar_frame % len(self.gozag_frames)]
+                   if self.gozag_frames else self.altar_base)
+            if kind == "sl":
+                # para SL 'hit' es TROG (estático)
+                img = self.altar_trog or self.altar_base
+        elif state == "inactive":
+            img = (self.jiyva_frames[self._altar_frame % len(self.jiyva_frames)]
+                   if self.jiyva_frames else self.altar_base)
+        else:  # 'armed'
+            img = self.altar_base
+
+        self.canvas_various.itemconfig(item, image=img or '')
+    # ⬇️ Mostrar ícono solo si está 'armed' o 'hit'; ocultar si 'inactive'
+        visible = 'normal' if state in ('armed', 'hit') else 'hidden'
+        self.canvas_various.itemconfigure(icon_item, state=visible)
+        
+    def _animate_altars(self):
+        # alterna frames de jiyva/gozag si corresponden
+        self._altar_frame += 1
+        self._refresh_altar_image("tp")
+        self._refresh_altar_image("sl")
+        self.root.after(600, self._animate_altars)
 
    
     def _update_elephant(self):

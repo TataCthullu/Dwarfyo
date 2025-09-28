@@ -105,6 +105,12 @@ class BotInterfaz(AnimationMixin):
         self.various_panel()
         self.init_animation()
         self._aplicar_modus()
+        # ⬅️ AÑADIR: estado visual inicial de altares
+        try:
+            self.set_take_profit_state("inactive")
+            self.set_stop_loss_state("inactive")
+        except Exception:
+            pass
 
         
         self.historial.tag_configure('venta_tag', foreground='Green')
@@ -181,20 +187,43 @@ class BotInterfaz(AnimationMixin):
             # Pero este flag impide que nuevas animaciones se dupliquen.
         
     def _on_bot_stop(self, motivo=None):
+        """
+        Callback desde TradingBot.detener(motivo)
+        motivo: "TP" | "SL" | "TP/SL" (compat) | None/otros
+        """
         # 🔁 Siempre resetear botones a un estado "limpio"
         self.btn_inicio.config(text="Iniciar")
         self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
 
-        if motivo == "TP/SL":
-            # Caso de parada automática → solo mostrar limpiar
+        # Parada automática por TP/SL (nuevo y compat con el viejo "TP/SL")
+        if motivo in ("TP", "SL", "TP/SL"):
+            # mostrar solo 'Limpiar'
             self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
-            self.log_en_consola("📌 Bot detenido por Take Profit / Stop Loss. Usa 'Limpiar' antes de reiniciar.")
-        else:
-            # Caso manual o error → volver a flujo normal
-            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
-            self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
+
+            if motivo == "TP":
+                self.log_en_consola("🎯 Take Profit alcanzado. Usa 'Limpiar' antes de reiniciar.")
+                try:
+                    self.set_take_profit_state("hit")   # altar TP → Gozag
+                except Exception:
+                    pass
+
+            elif motivo == "SL":
+                self.log_en_consola("🛡️ Stop Loss alcanzado. Usa 'Limpiar' antes de reiniciar.")
+                try:
+                    self.set_stop_loss_state("hit")     # altar SL → Trog
+                except Exception:
+                    pass
+
+            else:  # "TP/SL" (llamadas antiguas, motivo ambiguo)
+                self.log_en_consola("📌 Bot detenido por Take Profit / Stop Loss. Usa 'Limpiar' antes de reiniciar.")
+            return
+
+        # Parada manual u otros motivos → volver a flujo normal (mostrar Iniciar y Configurar)
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+        self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
+
 
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
@@ -780,6 +809,16 @@ class BotInterfaz(AnimationMixin):
             self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
             self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
             self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
+            # ⬅️ AÑADIR: reflejar configuración actual en altares al iniciar
+            if getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or 0) > 0:
+                self.set_take_profit_state("armed")
+            else:
+                self.set_take_profit_state("inactive")
+
+            if getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct or 0) > 0:
+                self.set_stop_loss_state("armed")
+            else:
+                self.set_stop_loss_state("inactive")
 
             self._loop()
 
@@ -880,6 +919,12 @@ class BotInterfaz(AnimationMixin):
         self.animation_panel() 
         self.init_animation()
         self._aplicar_modus()
+        # ⬅️ AÑADIR: reset visual de altares al limpiar
+        try:
+            self.set_take_profit_state("inactive")
+            self.set_stop_loss_state("inactive")
+        except Exception:
+            pass
 
         # 8) Redibujar datos actuales (aunque estén vacíos)
         self.actualizar_ui()
@@ -1103,6 +1148,17 @@ class BotInterfaz(AnimationMixin):
                 self.bot.stop_loss_pct = (sl if sl > 0 else None)
                 self.bot.tp_enabled = self.var_tp_enabled.get()
                 self.bot.sl_enabled = self.var_sl_enabled.get()
+                # ⬅️ AÑADIR: reflejar en altares la config recién guardada
+                if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:
+                    self.set_take_profit_state("armed")
+                else:
+                    self.set_take_profit_state("inactive")
+
+                if self.bot.sl_enabled and (self.bot.stop_loss_pct or 0) > 0:
+                    self.set_stop_loss_state("armed")
+                else:
+                    self.set_stop_loss_state("inactive")
+
                 self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
                 self.bot.rebalance_threshold = rb_thr
                 self.bot.rebalance_pct = rb_pct

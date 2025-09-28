@@ -926,7 +926,7 @@ class TradingBot:
                 self.usdt += self.btc * self.precio_actual
                 self.log(f"💰 Vendido todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
                 self.btc = Decimal("0")
-            self.detener(motivo="TP/SL")
+            self.detener(motivo="TP")
             return True
 
         if self.sl_enabled and self.stop_loss_pct and variacion <= -self.stop_loss_pct:
@@ -939,7 +939,7 @@ class TradingBot:
                 self.usdt += self.btc * self.precio_actual
                 self.log(f"💰 Vendido todo el BTC ({self.btc} ₿) a {self.format_fn(self.precio_actual, '$')}")
                 self.btc = Decimal("0")
-            self.detener(motivo="TP/SL")
+            self.detener(motivo="SL")
             return True
 
         return False
