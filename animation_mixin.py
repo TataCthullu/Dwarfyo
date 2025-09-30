@@ -308,6 +308,47 @@ class AnimationMixin:
             idx += 1
 
         # ─── CREACIÓN DE ITEMS ───
+                # ─── LÁMPARA + EFREET (abajo del animation panel) ───
+        # Intentamos primero en tu carpeta de proyecto y si no, fallback a /mnt/data
+        lamppaths = [
+            (os.path.join("imagenes", "deco", "magic_lamp.png"),
+             os.path.join("imagenes", "deco", "efreet.png")),
+            ("/mnt/data/magic_lamp.png", "/mnt/data/efreet.png"),
+        ]
+        lamp_path = efreet_path = None
+        for lp, ep in lamppaths:
+            if os.path.exists(lp) and os.path.exists(ep):
+                lamp_path, efreet_path = lp, ep
+                break
+
+        self.lamp_img   = PhotoImage(file=lamp_path).zoom(2, 2)   if lamp_path   else None
+        self.efreet_img = PhotoImage(file=efreet_path).zoom(3, 3) if efreet_path else None
+
+        # Posicionar en la parte inferior izquierda del canvas_animation
+        # anchor='sw' → ancla abajo-izquierda; y=alto del canvas para que “apoye” en el borde inferior
+        y_bottom = 400
+        x_left   = 400
+
+        self.lamp_item = self.canvas_animation.create_image(
+            x_left, y_bottom,
+            image=(self.lamp_img or ""),
+            anchor="sw"
+        )
+        # El efreet va encima, “saliendo” de la lámpara
+        self.efreet_item = self.canvas_animation.create_image(
+            320, 380,
+            image="",                 # arranca oculto
+            anchor="sw"
+        )
+        # Asegurar orden de capas: genio arriba
+        try:
+            self.canvas_animation.tag_raise(self.efreet_item, self.lamp_item)
+        except Exception:
+            pass
+
+        # Actualizador periódico del estado visual (según rebalance_enabled)
+        self.root.after(250, self._update_lamp_genie)
+
         # Antorcha en canvas_center
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
         self.torch_item = self.canvas_center.create_image(350,250, image=first_torch, anchor='nw')
@@ -414,6 +455,28 @@ class AnimationMixin:
             self.canvas_center.itemconfig(self.abyss_item, image=self.abyss_static_img)
 
         self.animar(500, self._update_abyss)
+
+    def _update_lamp_genie(self):
+        """
+        Muestra el efreet si el rebalance está activado (self.bot.rebalance_enabled).
+        Caso contrario, sólo la lámpara.
+        """
+        try:
+            show_genie = bool(getattr(self, "bot", None) and getattr(self.bot, "rebalance_enabled", False))
+        except Exception:
+            show_genie = False
+
+        # la lámpara siempre visible si la imagen existe
+        if getattr(self, "lamp_item", None) is not None:
+            self.canvas_animation.itemconfig(self.lamp_item, image=(self.lamp_img or ""))
+
+        # el genio sólo si rebalance_enabled está ON
+        if getattr(self, "efreet_item", None) is not None:
+            self.canvas_animation.itemconfig(self.efreet_item, image=(self.efreet_img if show_genie else ""))
+
+        # Reprogramar
+        self.root.after(400, self._update_lamp_genie)
+    
 
     def set_take_profit_state(self, state: str):
         """
