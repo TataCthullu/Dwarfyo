@@ -58,7 +58,7 @@ class AnimationMixin:
         self._altar_frame = 0
 
         # animación suave de bases (gozag / jiyva alternan 0/1 si existen)
-        self.root.after(600, self._animate_altars)
+        self.animar(600, self._animate_altars)
 
         # ─── imagen de altar destruido ───
         self.ashenzari_img = _img("imagenes/deco/sltp/ashenzari.png", 2) or _img("ashenzari.png", 2)
@@ -347,7 +347,7 @@ class AnimationMixin:
             pass
 
         # Actualizador periódico del estado visual (según rebalance_enabled)
-        self.root.after(250, self._update_lamp_genie)
+        self.animar(250, self._update_lamp_genie)
 
         # Antorcha en canvas_center
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
@@ -475,7 +475,7 @@ class AnimationMixin:
             self.canvas_animation.itemconfig(self.efreet_item, image=(self.efreet_img if show_genie else ""))
 
         # Reprogramar
-        self.root.after(400, self._update_lamp_genie)
+        self.animar(400, self._update_lamp_genie)
     
 
     def set_take_profit_state(self, state: str):
@@ -576,7 +576,7 @@ class AnimationMixin:
         self._altar_frame += 1
         self._refresh_altar_image("tp")
         self._refresh_altar_image("sl")
-        self.root.after(600, self._animate_altars)
+        self.animar(600, self._animate_altars)
 
    
     def _update_elephant(self):
@@ -670,23 +670,62 @@ class AnimationMixin:
         buy = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
         sell = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
 
-        img_b = self.skel_buy[min(buy - 1, len(self.skel_buy) - 1)] if buy > 0 and self.skel_buy else None
-        img_s = self.skel_sell[min(sell - 1, len(self.skel_sell) - 1)] if sell > 0 and self.skel_sell else None
+        def _resolve_image(count, frames):
+                """
+                Regla de reset:
+                - count <= 0            → limpiar
+                - count == n (todas)    → limpiar (reset visual)
+                - count  < n            → frame count-1
+                - count  > n            → cicla 1..n y cuando cae en n → limpiar
+                """
+                if not frames:
+                    return None, False  # sin cambios (conserva lo último mostrado)
+                n = len(frames)
+                if count <= 0:
+                    return "", True
+                if count == n:
+                    return "", True
+                if count < n:
+                    return frames[count - 1], False
+                # count > n → ciclo
+                r = ((count - 1) % n) + 1  # r en [1..n]
+                if r == n:
+                    return "", True
+                return frames[r - 1], False
 
-        if img_b and self._is_valid_image_item(self.canvas_center, self.skel_buy_it):
-            self.canvas_center.itemconfig(self.skel_buy_it, image=img_b)
-        if img_s and self._is_valid_image_item(self.canvas_center, self.skel_sell_it):
-            self.canvas_center.itemconfig(self.skel_sell_it, image=img_s)
+        img_b, clear_b = _resolve_image(buy, self.skel_buy)
+        img_s, clear_s = _resolve_image(sell, self.skel_sell)
+
+        if self._is_valid_image_item(self.canvas_center, self.skel_buy_it):
+            if clear_b:
+                self.canvas_center.itemconfig(self.skel_buy_it, image="")
+            elif img_b:
+                self.canvas_center.itemconfig(self.skel_buy_it, image=img_b)
+
+        if self._is_valid_image_item(self.canvas_center, self.skel_sell_it):
+            if clear_s:
+                self.canvas_center.itemconfig(self.skel_sell_it, image="")
+            elif img_s:
+                self.canvas_center.itemconfig(self.skel_sell_it, image=img_s)
 
         self.animar(500, self._update_skeleton)
 
 
+
     def _animate_dithmenos(self):
         if self.dithmenos_frames:
-            frame, self.dithmenos_index = self._safe_next_frame(self.dithmenos_frames, self.dithmenos_index)
+            # Si no hay conexión (precio_actual = None) → dejar fijo en el primer frame
+            if getattr(self, "bot", None) and self.bot.precio_actual is None:
+                frame = self.dithmenos_frames[0]
+            else:
+                frame, self.dithmenos_index = self._safe_next_frame(
+                    self.dithmenos_frames, self.dithmenos_index
+                )
             if frame and self.canvas_center.type(self.dithmenos_item) == 'image':
                 self.canvas_center.itemconfig(self.dithmenos_item, image=frame)
+
         self.animar(1000, self._animate_dithmenos)
+
 
     def _animate_vines(self):
         if not hasattr(self, 'vine_items') or not hasattr(self, 'vine_indices'):

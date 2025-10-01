@@ -36,6 +36,9 @@ class BotInterfaz(AnimationMixin):
         self._font_historial = ("LondonBetween", 16)  # o la que quieras
         self._font_consola   = ("LondonBetween", 16)  # o distinta si preferís
         self._consola_buffer = []  # buffer de líneas de consola
+        self._consola_last_n = 0   # cuántas entradas del buffer ya fueron pintadas (console incremental)
+        self._ctx_ultimo_id = None # contexto incremental para corrección de estado
+        self._ctx_ultimo_num = None
 
         self.colores_fijos = {
             "usdt": "SpringGreen",
@@ -376,6 +379,7 @@ class BotInterfaz(AnimationMixin):
         if ruta:
             img.save(ruta)
             self.log_en_consola(f"📸 Captura guardada en: {ruta}")
+            self.log_en_consola("- - - - - - - - - -")
 # ——— dentro de BotInterfaz ———
 
     def _exportar_texto(self, widget_text, sugerencia="export"):
@@ -646,10 +650,12 @@ class BotInterfaz(AnimationMixin):
 
       
     def logf(self, tpl, **vals):
-        # Guarda la entrada como formateable
+        # Guarda en buffer
+        if not hasattr(self, "_consola_buffer"):
+            self._consola_buffer = []
         self._consola_buffer.append(("fmt", tpl, vals))
 
-        # Pintar ahora mismo usando format_var (mismo criterio que paneles)
+        # Formateo previo para detectar cambios de estado (sin escribir aún)
         def _fmt(v):
             if isinstance(v, tuple):
                 val, sim = v
@@ -660,20 +666,24 @@ class BotInterfaz(AnimationMixin):
         linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
         linea = self._reformat_line(linea)
 
+        # Si el log anuncia un cambio de estado, parchear IN-PLACE la línea vieja
         try:
-            first, last = self.consola.yview()
-            estaba_al_fondo = (1.0 - last) < 1e-3
+            m = re.search(
+                r"Estado\s+de\s+compra\s*#\s*(\d+)\s*\(id\s*([A-Za-z0-9\-_]+)\)\s*:\s*([^\-]+?)\s*→\s*(\w+)",
+                linea, flags=re.IGNORECASE
+            )
+            if m:
+                numc_str, idc, _estado_viejo, estado_nuevo = m.groups()
+                numc = int(numc_str)
+                self._consola_patch_estado(id_compra=idc,  nuevo_estado=estado_nuevo)
+                self._consola_patch_estado(numcompra=numc, nuevo_estado=estado_nuevo)
         except Exception:
-            estaba_al_fondo = True
+            pass
 
-        self.consola.configure(state='normal')
-        self.consola.insert(tk.END, linea + "\n")
-        self.consola.configure(state='disabled')
+        # NO escribir directo: render lo hace actualizar_consola() (incremental)
+        self.actualizar_consola()
 
-        if estaba_al_fondo:
-            self.consola.see(tk.END)
-        else:
-            self.consola.yview_moveto(first)
+        
 
     def _reformat_line(self, s: str) -> str:
         # Reaplica el formateo para $, ₿ y % usando la vista actual
@@ -763,6 +773,23 @@ class BotInterfaz(AnimationMixin):
         add("Tiempo activo:", self.runtime_str, "runtime")
         add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")
         
+        try:
+            img_ped = Image.open("imagenes/deco/pedestal.png")
+            # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
+            zoom_factor = 2
+            w0, h0 = img_ped.size
+            img_ped = img_ped.resize((w0 * zoom_factor, h0 * zoom_factor), Image.NEAREST)  # o Image.LANCZOS
+
+            self._pedestal_img = ImageTk.PhotoImage(img_ped)  # mantener referencia
+
+            w = int(self.canvas_animation["width"])
+            h = int(self.canvas_animation["height"])
+            self.pedestal_it = self.canvas_animation.create_image(
+                w // 2 + 85, h - 30, image=self._pedestal_img, anchor="s"
+            )
+        except Exception as _e:
+            pass
+
 
     def various_panel(self):
         self.various_frame = tk.Frame(self.root)
@@ -937,6 +964,7 @@ class BotInterfaz(AnimationMixin):
 
         # 10) Forzar primer log de limpieza
         self.log_en_consola("🧹 Bot limpiado.")
+        self.log_en_consola("- - - - - - - - - -")
 
 
     def _thread_callback(self, future):
@@ -1388,8 +1416,6 @@ class BotInterfaz(AnimationMixin):
                 "rebalance_loss_total": (getattr(self.bot, "rebalance_loss_total", Decimal("0")), "$"),
             }
 
-            
-
             for clave, valor in texto_fijo.items():
                 if clave not in self.info_canvas:
                     continue
@@ -1457,9 +1483,7 @@ class BotInterfaz(AnimationMixin):
 
 
     def actualizar_historial(self):
-        # recordar scroll
-        first, last = self.historial.yview()
-        estaba_al_fondo = (1.0 - last) < 1e-3
+        
 
         self.historial.delete('1.0', tk.END)
 
@@ -1490,103 +1514,143 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
             self.historial.insert(tk.END, "-"*40 + "\n")
 
-        # restaurar scroll
-        if estaba_al_fondo:
-            self.historial.see(tk.END)
+    def _consola_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):
+        """
+        Corrige IN-PLACE la última línea '📜 Estado: ...' del bloque que
+        corresponde a id_compra o numcompra. No borra todo, no toca scroll.
+        """
+        txt = self.consola
+        if (not id_compra) and (numcompra in (None, "")):
+            return
+
+        if id_compra:
+            patron_ancla = rf"\bId(?:\s+compra)?\s*:\s*{re.escape(str(id_compra))}\b"
         else:
-            self.historial.yview_moveto(first)
-
-    def actualizar_consola(self):
+            patron_ancla = rf"(?:Compra\s+Num|N[úu]mero\s+de\s+compra)\s*:\s*{re.escape(str(numcompra))}\b"
 
         try:
-            first, last = self.consola.yview()
-            estaba_al_fondo = (1.0 - last) < 1e-3
-        except Exception:
-            estaba_al_fondo, first = True, 0.0
+            start_idx = txt.search(patron_ancla, "end-1c", stopindex="1.0", backwards=True, regexp=True)
+            if not start_idx:
+                return
 
-        def _fmt(v):
-            if isinstance(v, tuple):
-                val, sim = v
-            else:
-                val, sim = v, ""
-            return self.format_var(val, sim)
-        
-        # 🔎 mapa id_compra → estado actual (activa/anulada/vendida)
-        estado_por_id = {}
-        estado_por_num = {}
-        try:
-            for t in self.bot.transacciones:
-                tx_id = t.get("id")
-                if tx_id:
-                    estado_por_id[str(tx_id).strip()] = t.get("estado", "activa")
-                numc = t.get("numcompra")
-                if numc is not None:
-                    estado_por_num[str(numc).strip()] = t.get("estado", "activa")
+            divisor = r"^\s*-\s-(?:\s-)+\s*$"
+            end_bloque = txt.search(divisor, start_idx, stopindex="end-1c", forwards=True, regexp=True)
+            if not end_bloque:
+                end_bloque = "end-1c"
+
+            estado_pat = r"^\s*📜\s*Estado\s*:\s*.*$"
+            estado_idx = txt.search(estado_pat, start_idx, stopindex=end_bloque, forwards=True, regexp=True)
+            if not estado_idx:
+                return
+
+            line_start = estado_idx.split(".")[0] + ".0"
+            line_end   = str(int(estado_idx.split(".")[0]) + 1) + ".0"
+
+            txt.configure(state="normal")
+            txt.delete(line_start, line_end)
+            txt.insert(line_start, f"📜 Estado: {nuevo_estado}\n")
+            txt.configure(state="disabled")
         except Exception:
             pass
 
-        # regex para detectar Id / Número de compra / Estado (incluye tus formatos con 🪙)
-        re_id = re.compile(
-            r'(?:🪙\s*)?Compra\s+id\s*:\s*([A-Za-z0-9\-_]+)|\bId(?:\s+compra)?\s*:\s*([A-Za-z0-9\-_]+)',
-            re.IGNORECASE
-        )
-        re_num = re.compile(
-            r'(?:🪙\s*)?Compra\s+Num\s*:\s*(\d+)|N[úu]mero\s+de\s+compra\s*:\s*(\d+)',
-            re.IGNORECASE
-        )
-        re_estado = re.compile(r'^\s*📜\s*Estado\s*:\s*(.+)\s*$')
-        re_divisor = re.compile(r'^\s*-\s-(?:\s-)+\s*$')  # “- - - - - - - - - -”
+    def actualizar_consola(self):
+        """
+        Incremental append-only:
+        - NO borra contenido existente.
+        - NO usa see() / yview_*().
+        - Corrige '📜 Estado' SOLO en líneas nuevas basándose en estado vivo.
+        - Mantiene contexto incremental de Id/Num.
+        """
+        try:
+            def _fmt(v):
+                if isinstance(v, tuple):
+                    val, sim = v
+                else:
+                    val, sim = v, ""
+                return self.format_var(val, sim)
 
-        self.consola.configure(state='normal')
-        self.consola.delete("1.0", tk.END)
-        ultimo_id = None
-        ultimo_num = None
+            # mapa vivo de estados
+            estado_por_id = {}
+            estado_por_num = {}
+            try:
+                for t in self.bot.transacciones:
+                    tx_id = t.get("id")
+                    if tx_id:
+                        estado_por_id[str(tx_id).strip()] = t.get("estado", "activa")
+                    numc = t.get("numcompra")
+                    if numc is not None:
+                        estado_por_num[str(numc).strip()] = t.get("estado", "activa")
+            except Exception:
+                pass
 
-        for entry in self._consola_buffer:
-            kind = entry[0]
-            if kind == "raw":
-                _, msg = entry
-                linea = self._reformat_line(msg)
-            elif kind == "fmt":
-                _, tpl, vals = entry
-                linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
-                linea = self._reformat_line(linea)
-            else:
-                continue
+            re_id = re.compile(
+                r'(?:🪙\s*)?Compra\s+id\s*:\s*([A-Za-z0-9\-_]+)|\bId(?:\s+compra)?\s*:\s*([A-Za-z0-9\-_]+)',
+                re.IGNORECASE
+            )
+            re_num = re.compile(
+                r'(?:🪙\s*)?Compra\s+Num\s*:\s*(\d+)|N[úu]mero\s+de\s+compra\s*:\s*(\d+)',
+                re.IGNORECASE
+            )
+            re_estado = re.compile(r'^\s*📜\s*Estado\s*:\s*(.+)\s*$')
+            re_divisor = re.compile(r'^\s*-\s-(?:\s-)+\s*$')
 
-            # trackear id y número si aparecen en esta línea
-            m_id = re_id.search(linea)
-            if m_id:
-                ultimo_id = (m_id.group(1) or m_id.group(2) or "").strip() or ultimo_id
+            start = getattr(self, "_consola_last_n", 0)
+            if start < 0:
+                start = 0
+            nuevos = self._consola_buffer[start:]
+            if not nuevos:
+                return
 
-            m_num = re_num.search(linea)
-            if m_num:
-                ultimo_num = (m_num.group(1) or m_num.group(2) or "").strip() or ultimo_num
+            self.consola.configure(state='normal')
 
-            # si es línea de estado, corregir con estado vivo (id -> num)
-            if re_estado.match(linea):
-                estado_actual = None
-                if ultimo_id and ultimo_id in estado_por_id:
-                    estado_actual = estado_por_id[ultimo_id]
-                elif ultimo_num and ultimo_num in estado_por_num:
-                    estado_actual = estado_por_num[ultimo_num]
-                if estado_actual:
-                    linea = f"📜 Estado: {estado_actual}"
+            # contexto incremental previo
+            ultimo_id = getattr(self, "_ctx_ultimo_id", None)
+            ultimo_num = getattr(self, "_ctx_ultimo_num", None)
 
-            # si encontramos divisor, reseteamos el contexto de id/num
-            if re_divisor.match(linea):
-                ultimo_id = None
-                ultimo_num = None
+            for entry in nuevos:
+                kind = entry[0]
+                if kind == "raw":
+                    _, msg = entry
+                    linea = self._reformat_line(msg)
+                elif kind == "fmt":
+                    _, tpl, vals = entry
+                    linea = tpl.format(**{k: _fmt(v) for k, v in vals.items()})
+                    linea = self._reformat_line(linea)
+                else:
+                    continue
 
-            # insertamos UNA sola vez por línea
-            self.consola.insert(tk.END, linea + "\n")
+                m_id = re_id.search(linea)
+                if m_id:
+                    ultimo_id = (m_id.group(1) or m_id.group(2) or "").strip() or ultimo_id
 
-        self.consola.configure(state='disabled')
+                m_num = re_num.search(linea)
+                if m_num:
+                    ultimo_num = (m_num.group(1) or m_num.group(2) or "").strip() or ultimo_num
 
-        if estaba_al_fondo:
-            self.consola.see(tk.END)
-        else:
-            self.consola.yview_moveto(first)
+                if re_estado.match(linea):
+                    estado_actual = None
+                    if ultimo_id and ultimo_id in estado_por_id:
+                        estado_actual = estado_por_id[ultimo_id]
+                    elif ultimo_num and ultimo_num in estado_por_num:
+                        estado_actual = estado_por_num[ultimo_num]
+                    if estado_actual:
+                        linea = f"📜 Estado: {estado_actual}"
+
+                if re_divisor.match(linea):
+                    ultimo_id = None
+                    ultimo_num = None
+
+                self.consola.insert(tk.END, linea + "\n")
+
+            self.consola.configure(state='disabled')
+
+            # guardar progreso y contexto
+            self._consola_last_n = start + len(nuevos)
+            self._ctx_ultimo_id = ultimo_id
+            self._ctx_ultimo_num = ultimo_num
+
+        except Exception:
+            pass
 
 
     def actualizar_color(self, key, valor_actual):
@@ -1652,29 +1716,32 @@ class BotInterfaz(AnimationMixin):
 
         
     def log_en_consola(self, msg):
-        """
-        Guarda el mensaje en buffer y re-renderiza la consola completa.
-        Así podemos corregir líneas viejas (📜 Estado) con el estado actual.
-        """
-        try:
-            first, last = self.consola.yview()
-            estaba_al_fondo = (1.0 - last) < 1e-3
-        except Exception:
-            estaba_al_fondo, first = True, 0.0
-
-        # bufferizar SIEMPRE (no insert directo)
         if not hasattr(self, "_consola_buffer"):
             self._consola_buffer = []
+
+        texto = self._reformat_line(str(msg))
+
+        # Si el mensaje anuncia cambio de estado, parchear IN-PLACE
+        try:
+            m = re.search(
+                r"Estado\s+de\s+compra\s*#\s*(\d+)\s*\(id\s*([A-Za-z0-9\-_]+)\)\s*:\s*([^\-]+?)\s*→\s*(\w+)",
+                texto, flags=re.IGNORECASE
+            )
+            if m:
+                numc_str, idc, _estado_viejo, estado_nuevo = m.groups()
+                numc = int(numc_str)
+                self._consola_patch_estado(id_compra=idc,  nuevo_estado=estado_nuevo)
+                self._consola_patch_estado(numcompra=numc, nuevo_estado=estado_nuevo)
+        except Exception:
+            pass
+
+        # Solo buffer; NO insert directo (para evitar duplicados)
         self._consola_buffer.append(("raw", str(msg)))
 
-        # Re-render
+        # Render incremental de lo nuevo
         self.actualizar_consola()
 
-        # Restaurar scroll
-        if estaba_al_fondo:
-            self.consola.see(tk.END)
-        else:
-            self.consola.yview_moveto(first)
+
 
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
