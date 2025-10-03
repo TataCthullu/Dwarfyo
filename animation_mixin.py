@@ -15,6 +15,26 @@ class AnimationMixin:
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
 
+                # ─── CARGA SEARING RAY ───
+        self.searing_frames = []
+        for i in range(6):  # 0..5
+            p = f"imagenes/deco/searing_ray_{i}.png"
+            if os.path.exists(p):
+                self.searing_frames.append(PhotoImage(file=p))
+
+        # ─── CARGA MAGIC DART ───
+        self.magic_frames = []
+        for i in range(6):  # 0..5
+            p = f"imagenes/deco/magic_dart_{i}.png"
+            if os.path.exists(p):
+                self.magic_frames.append(PhotoImage(file=p))
+
+        # Item en el canvas_uno (left panel, abajo a la derecha)
+        self.searing_item = self.canvas_uno.create_image(
+            580, 870, image='', anchor="se"
+        )
+    
+
                 # ─── ALTARES TP / SL ───
         # rutas posibles (usa las que tengas en tu proyecto; si no existen, se omiten)
         def _img(path, zoom=2):
@@ -415,6 +435,33 @@ class AnimationMixin:
         self.animar(200, self._update_noise_icon)
         self.animar(250, self._animate_vines)
         self.animar(500, self._update_abyss)
+        self.searing_index = 0
+        self.animar(500, self._update_searing_magic)
+
+    def _update_searing_magic(self):
+        if not getattr(self, 'bot', None):
+            return
+
+        # valores actuales
+        total = (self.bot.usdt or 0) + (self.bot.btc_usdt or 0)
+        guia  = self.bot.hold_usdt_var or 0
+
+        img = ''
+        frames = None
+
+        if total > guia and self.searing_frames:
+            frames = self.searing_frames
+        elif total < guia and self.magic_frames:
+            frames = self.magic_frames
+        else:
+            frames = None  # iguales → nada
+
+        if frames:
+            self.searing_index = (self.searing_index + 1) % len(frames)
+            img = frames[self.searing_index]
+
+        self.canvas_uno.itemconfig(self.searing_item, image=img)
+        self.animar(500, self._update_searing_magic)
 
     def _is_valid_image_item(self, canvas, item_id):
         try:

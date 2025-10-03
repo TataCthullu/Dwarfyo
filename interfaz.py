@@ -994,16 +994,112 @@ class BotInterfaz(AnimationMixin):
         self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
+        # —— Tamaño de ventana (ajustable en 1 lugar) ——
+        win_w, win_h = 900, 620
+        self.config_ventana.geometry(f"{win_w}x{win_h}")
+
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
             self.config_ventana = None
-             
-
         self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
-        """if self.sound_enabled:
-            reproducir_sonido("Sounds/antorchab.wav")"""
 
+        # ===== Canvas principal =====
+        pad = 10
+        cfg_w, cfg_h = win_w - pad*2, win_h - pad*2
+        self.cfg_canvas = tk.Canvas(self.config_ventana, width=cfg_w, height=cfg_h,
+                                    highlightthickness=0, bd=0, relief='flat')
+        self.cfg_canvas.pack(fill="both", expand=True, padx=pad, pady=pad)
+
+        # ===== Fondo escalado a todo el canvas =====
+        # (sin tocar rellenar_mosaico; acá lo hacemos con una sola imagen escalada)
+        
+        self._cfg_bg_path = "imagenes/deco/shoals_deep_water_1_old.png"
+        self._cfg_bg_img = None
+        self._cfg_bg_it = None
+
+        def _draw_cfg_bg(event=None):
+            # tamaño actual del canvas
+            cw = self.cfg_canvas.winfo_width() or cfg_w
+            ch = self.cfg_canvas.winfo_height() or cfg_h
+            try:
+                im = Image.open(self._cfg_bg_path).resize((cw, ch), Image.NEAREST)
+                self._cfg_bg_img = ImageTk.PhotoImage(im)
+                if self._cfg_bg_it is None:
+                    self._cfg_bg_it = self.cfg_canvas.create_image(0, 0, image=self._cfg_bg_img, anchor="nw")
+                else:
+                    # actualizar imagen existente
+                    self.cfg_canvas.itemconfigure(self._cfg_bg_it, image=self._cfg_bg_img)
+                    self.cfg_canvas.coords(self._cfg_bg_it, 0, 0)
+                # enviar fondo al fondo
+                self.cfg_canvas.tag_lower(self._cfg_bg_it)
+            except Exception:
+                pass
+
+        # dibujar ahora y al redimensionar
+        _draw_cfg_bg()
+        self.cfg_canvas.bind("<Configure>", _draw_cfg_bg)
+
+        # ===== Helpers de layout sobre canvas =====
+        left_x = 20              # margen izquierdo de etiquetas
+        y = 24                   # primer renglón
+        row = 42                 # separación vertical por fila
+        font_lbl = ("LondonBetween", 16)
+        color_lbl = "PaleGoldenRod"
+
+        def put_text(ypos, texto, color=color_lbl, size=16):
+            return self.cfg_canvas.create_text(
+                left_x, ypos, text=texto, anchor="nw",
+                fill=color, font=("LondonBetween", size)
+            )
+
+        def put_entry_next_to(label_id, textvariable, width=14):
+            # coloca el Entry pegado al texto (bbox del label)
+            bbox = self.cfg_canvas.bbox(label_id)  # (x1, y1, x2, y2)
+            x_entry = (bbox[2] + 12) if bbox else (left_x + 340)  # fallback
+            e = tk.Entry(self.config_ventana, textvariable=textvariable,
+                        bg="DarkGoldenRod", fg="Gold",
+                        insertbackground="Gold",
+                        font=("LondonBetween", 16), width=width)
+            self.cfg_canvas.create_window(x_entry, bbox[1], anchor="nw", window=e)
+            return e
+
+        def put_check(ypos, text, variable):
+            cb = tk.Checkbutton(self.config_ventana, text=text, variable=variable,
+                                bg="DarkGoldenRod", fg="PaleGoldenRod",
+                                activebackground="DarkGoldenRod", activeforeground="PaleGoldenRod",
+                                selectcolor="DarkGoldenRod",
+                                font=("LondonBetween", 16),
+                                highlightthickness=0, bd=0)
+            self.cfg_canvas.create_window(left_x, ypos, anchor="nw", window=cb)
+            return cb
+
+        # ===== Checks de comportamiento (mismos nombres) =====
+        self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)
+        put_check(y, "Habilitar compra tras venta fantasma", self.var_ghost); y += row
+
+        self.var_tp_enabled = tk.BooleanVar(value=getattr(self.bot, "tp_enabled", False))
+        self.var_sl_enabled = tk.BooleanVar(value=getattr(self.bot, "sl_enabled", False))
+        put_check(y, "Activar Take Profit", self.var_tp_enabled); y += row
+        put_check(y, "Activar Stop Loss", self.var_sl_enabled);   y += row + 6
+
+        # ===== Rebalance =====
+        put_text(y, "Rebalance", color="Khaki", size=18); y += row
+
+        # Compras (umbral)
+        lbl = put_text(y, "Compras (umbral):")
+        self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
+        put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row
+
+        # Porcentaje a vender
+        lbl = put_text(y, "Porcentaje a vender (%):")
+        self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
+        put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
+
+        self.var_rebalance_enabled = tk.BooleanVar(value=getattr(self.bot, "rebalance_enabled", False))
+        put_check(y, "Activar Rebalance", self.var_rebalance_enabled); y += row + 6
+
+        # ===== Campos numéricos (MISMO ORDEN; entries intacto) =====
         campos = [
             ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
             ("% Desde venta, para compra: %", self.bot.porc_desde_venta),
@@ -1013,78 +1109,16 @@ class BotInterfaz(AnimationMixin):
             ("Take Profit Global (%):", self.bot.take_profit_pct or Decimal("0")),
             ("Stop Loss Global (%):", self.bot.stop_loss_pct or Decimal("0")),
         ]
-
-        # ── Check para activar compra tras venta fantasma
-        self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)
-        cb_frame = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
-        cb_frame.pack(fill=tk.X, pady=4, padx=8)
-        tk.Checkbutton(cb_frame,
-                    text="Habilitar compra tras venta fantasma",
-                    variable=self.var_ghost,
-                    bg="DarkGoldenRod",
-                    font=("LondonBetween", 16),
-                    fg="DarkSlateGray").pack(side=tk.LEFT)  
-        
-        # ── Checks para activar/desactivar TP y SL globales
-        self.var_tp_enabled = tk.BooleanVar(value=getattr(self.bot, "tp_enabled", False))
-        self.var_sl_enabled = tk.BooleanVar(value=getattr(self.bot, "sl_enabled", False))
-        cb_frame_tp_sl = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
-        cb_frame_tp_sl.pack(fill=tk.X, pady=2, padx=8)
-        tk.Checkbutton(cb_frame_tp_sl,
-                    text="Activar Take Profit",
-                    variable=self.var_tp_enabled,
-                    bg="DarkGoldenRod",
-                    font=("LondonBetween", 16),
-                    fg="DarkSlateGray").pack(side=tk.LEFT, padx=(0,12))
-        tk.Checkbutton(cb_frame_tp_sl,
-                    text="Activar Stop Loss",
-                    variable=self.var_sl_enabled,
-                    bg="DarkGoldenRod",
-                    font=("LondonBetween", 16),
-                    fg="DarkSlateGray").pack(side=tk.LEFT)
-        
-        # ── Check para activar/desactivar Rebalance (reequilibrio)
-        self.var_rebalance_enabled = tk.BooleanVar(
-            value=getattr(self.bot, "rebalance_enabled", False)
-        )
-        cb_frame_reb = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
-        cb_frame_reb.pack(fill=tk.X, pady=2, padx=8)
-        tk.Checkbutton(cb_frame_reb,
-                    text="Activar Rebalance",
-                    variable=self.var_rebalance_enabled,
-                    bg="DarkGoldenRod",
-                    font=("LondonBetween", 16),
-                    fg="DarkSlateGray").pack(side=tk.LEFT)
-
-        # ── Rebalance: umbral de compras y % a vender
-        frm_rb = tk.LabelFrame(self.config_ventana, text="Rebalance", bg="DarkGoldenRod",
-                               fg="DarkSlateGray", font=("LondonBetween", 16))
-        frm_rb.pack(fill=tk.X, padx=8, pady=6)
-
-        tk.Label(frm_rb, text="Compras (umbral):", bg="DarkGoldenRod",
-                 font=("LondonBetween", 14), fg="DarkSlateGray").grid(row=0, column=0, padx=4, pady=4, sticky="w")
-        self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
-        tk.Entry(frm_rb, textvariable=self.var_rebalance_threshold, width=8,
-                 font=("LondonBetween", 14)).grid(row=0, column=1, padx=4, pady=4, sticky="w")
-
-        tk.Label(frm_rb, text="Porcentaje a vender (%):", bg="DarkGoldenRod",
-                 font=("LondonBetween", 14), fg="DarkSlateGray").grid(row=0, column=2, padx=12, pady=4, sticky="w")
-        self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
-        tk.Entry(frm_rb, textvariable=self.var_rebalance_pct, width=8,
-                 font=("LondonBetween", 14)).grid(row=0, column=3, padx=4, pady=4, sticky="w")
-
-        entries = []
+        entries = []  # <- tu guardar_config depende de este nombre
 
         for etiqueta, valor in campos:
-            frame = tk.Frame(self.config_ventana, bg="DarkGoldenRod")
-            frame.pack(fill=tk.X, pady=4, padx=8)
-            tk.Label(frame, text=etiqueta, bg="DarkGoldenRod",
-                font=("LondonBetween", 16), fg="DarkSlateGray").pack(side=tk.LEFT)
+            lbl = put_text(y, etiqueta)
             var = tk.StringVar(value=str(valor))
-            tk.Entry(frame, textvariable=var, bg="DarkGoldenRod",
-                font=("LondonBetween", 16), fg="Gold").pack(side=tk.LEFT, padx=6)
+            put_entry_next_to(lbl, var, width=16)
             entries.append(var)
+            y += row
 
+        # ===== guardar_config (tu lógica idéntica) =====
         def guardar_config():
             try:
                 # 1) Leemos la cadena exacta
@@ -1176,7 +1210,7 @@ class BotInterfaz(AnimationMixin):
                 self.bot.stop_loss_pct = (sl if sl > 0 else None)
                 self.bot.tp_enabled = self.var_tp_enabled.get()
                 self.bot.sl_enabled = self.var_sl_enabled.get()
-                # ⬅️ AÑADIR: reflejar en altares la config recién guardada
+                # ⬅️ reflejar en altares la config recién guardada
                 if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:
                     self.set_take_profit_state("armed")
                 else:
@@ -1196,16 +1230,15 @@ class BotInterfaz(AnimationMixin):
 
                 self.bot.fixed_buyer = (
                     self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100'))
-                
 
-                 # 5) Calculamos fixed_buyer y validamos
+                # 5) Calculamos fixed_buyer y validamos
                 self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
                 if self.bot.fixed_buyer <= 0:
                     self.log_en_consola("⚠️ El monto de compra fijo debe ser mayor que 0.")
                     return
                 
                 self.bot.compra_en_venta_fantasma = self.var_ghost.get()
-   
+
                 tp_txt     = self.format_var(self.bot.take_profit_pct or Decimal('0'), '%')
                 sl_txt     = self.format_var(self.bot.stop_loss_pct  or Decimal('0'), '%')
                 rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')
@@ -1224,16 +1257,29 @@ class BotInterfaz(AnimationMixin):
                     pct=(self.bot.rebalance_pct, '%'),
                 )
 
-
                 self.log_en_consola("- - - - - - - - - -")
                 cerrar_config()
 
             except (InvalidOperation, IndexError):
                 self.log_en_consola("Error: ingresa valores numericos validos.")
 
-        tk.Button(self.config_ventana, text="Guardar",
-            bg="Goldenrod", command=guardar_config,
-            font=("LondonBetween", 16), fg="PaleGoldenRod").pack(pady=8)
+        # ===== Botón Guardar (centrado abajo; se adapta si la ventana cambia) =====
+        def _place_save_btn(event=None):
+            # dejar 16 px del borde inferior
+            cy = self.cfg_canvas.winfo_height() - 16
+            cx = self.cfg_canvas.winfo_width() // 2
+            try:
+                self.cfg_canvas.coords(btn_id, cx, cy)
+            except Exception:
+                pass
+
+        btn_guardar = tk.Button(self.config_ventana, text="Guardar",
+                                bg="Goldenrod", fg="PaleGoldenRod",
+                                font=("LondonBetween", 16),
+                                command=guardar_config)
+        btn_id = self.cfg_canvas.create_window(cfg_w // 2, cfg_h - 16, anchor="s", window=btn_guardar)
+        self.cfg_canvas.bind("<Configure>", lambda e: (_draw_cfg_bg(e), _place_save_btn(e)))
+
 
     def _on_close(self):
 
