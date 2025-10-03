@@ -15,7 +15,26 @@ class AnimationMixin:
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
 
-                # ─── CARGA SEARING RAY ───
+            # ─── PEDESTAL ───
+        pedestal_path = "imagenes/deco/pedestal.png"
+        if os.path.exists(pedestal_path):
+            self.pedestal_img = PhotoImage(file=pedestal_path).zoom(2,2)
+            self.pedestal_item = self.canvas_various.create_image(
+                1450, 25,   # coordenadas absolutas; después vos las acomodás
+                image=self.pedestal_img,
+                anchor="nw"
+            )
+
+        # ─── VARITA ───
+        wand_path = "imagenes/deco/gem_wood_new.png"
+        if os.path.exists(wand_path):
+            self.wand_img = PhotoImage(file=wand_path).zoom(2,2)
+            # Abajo-derecha del left panel
+            self.wand_item = self.canvas_various.create_image(1450, 20, image=(self.wand_img or ''), anchor='nw')
+    
+        
+
+        # ─── CARGA SEARING RAY ───
         self.searing_frames = []
         for i in range(6):  # 0..5
             p = f"imagenes/deco/searing_ray_{i}.png"
@@ -30,10 +49,8 @@ class AnimationMixin:
                 self.magic_frames.append(PhotoImage(file=p))
 
         # Item en el canvas_uno (left panel, abajo a la derecha)
-        self.searing_item = self.canvas_uno.create_image(
-            580, 870, image='', anchor="se"
-        )
-    
+        self.searing_item = self.canvas_various.create_image(1450, 20, image='', anchor='nw')
+        
 
                 # ─── ALTARES TP / SL ───
         # rutas posibles (usa las que tengas en tu proyecto; si no existen, se omiten)
@@ -439,10 +456,16 @@ class AnimationMixin:
         self.animar(500, self._update_searing_magic)
 
     def _update_searing_magic(self):
-        if not getattr(self, 'bot', None):
+        # ⛔️ Si el bot NO está corriendo, ocultar siempre y salir
+        if not getattr(self, 'bot', None) or not self.bot.running:
+            # aseguro que no se vea nada antes de iniciar
+            try:
+                self.canvas_various.itemconfig(self.searing_item, image='')
+            except Exception:
+                pass
+            self.animar(500, self._update_searing_magic)
             return
-
-        # valores actuales
+        
         total = (self.bot.usdt or 0) + (self.bot.btc_usdt or 0)
         guia  = self.bot.hold_usdt_var or 0
 
@@ -460,8 +483,11 @@ class AnimationMixin:
             self.searing_index = (self.searing_index + 1) % len(frames)
             img = frames[self.searing_index]
 
-        self.canvas_uno.itemconfig(self.searing_item, image=img)
+        self.canvas_various.itemconfig(self.searing_item, image=(img if frames else ''))
+
         self.animar(500, self._update_searing_magic)
+
+
 
     def _is_valid_image_item(self, canvas, item_id):
         try:
