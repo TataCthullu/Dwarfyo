@@ -62,7 +62,8 @@ class AnimationMixin:
         self.altar_trog     = _img("imagenes/deco/sltp/altar_trog.png",      2) or _img("altar_trog.png", 2)
         self.gozag_frames   = [p for p in (
                                 _img("imagenes/deco/sltp/gozag_0.png", 2) or _img("gozag_0.png", 2),
-                                _img("imagenes/deco/sltp/gozag_1.png", 2) or _img("gozag_1.png", 2)
+                                _img("imagenes/deco/sltp/gozag_1.png", 2) or _img("gozag_1.png", 2),
+                                _img("imagenes/deco/sltp/gozag_2.png", 2) or _img("gozag_2.png", 2)
                               ) if p]
         self.jiyva_frames   = [p for p in (
                                 _img("imagenes/deco/sltp/altar_jiyva_0.png", 2) or _img("altar_jiyva_0.png", 2),
@@ -453,7 +454,7 @@ class AnimationMixin:
         self.animar(250, self._animate_vines)
         self.animar(500, self._update_abyss)
         self.searing_index = 0
-        self.animar(500, self._update_searing_magic)
+        self.animar(250, self._update_searing_magic)
 
     def _update_searing_magic(self):
         # ⛔️ Si el bot NO está corriendo, ocultar siempre y salir
@@ -463,7 +464,7 @@ class AnimationMixin:
                 self.canvas_various.itemconfig(self.searing_item, image='')
             except Exception:
                 pass
-            self.animar(500, self._update_searing_magic)
+            self.animar(250, self._update_searing_magic)
             return
         
         total = (self.bot.usdt or 0) + (self.bot.btc_usdt or 0)
@@ -485,7 +486,7 @@ class AnimationMixin:
 
         self.canvas_various.itemconfig(self.searing_item, image=(img if frames else ''))
 
-        self.animar(500, self._update_searing_magic)
+        self.animar(250, self._update_searing_magic)
 
 
 
