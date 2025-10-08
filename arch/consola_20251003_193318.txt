@@ -1,0 +1,54 @@
+🟡 Khazâd iniciado.
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-03 19:26:40
+📉 Precio de compra: $ 122481.14
+🪙 Btc comprado: ₿ 0.004082261154656137263255387727
+🪙 Compra id: 1d53
+🪙 Compra Num: 1
+📜 Estado: activa
+🎯 Objetivo de venta: $ 122487.264057
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+2025-10-03 19:28:22 · Configuración actualizada:
+ · TP: OFF (% 3)
+ · SL: OFF (% 1)
+- - - - - - - - - -
+ · Rebalance: ON (Umbral = 6, Pct = % 50)
+- - - - - - - - - -
+2025-10-03 19:29:38 · Configuración actualizada:
+ · TP: ON (% 3)
+ · SL: ON (% 1)
+- - - - - - - - - -
+ · Rebalance: ON (Umbral = 6, Pct = % 50)
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-03 19:31:16
+🕒 Compra original: $ 122481.14
+🆔 Id: 1d53
+🪙 Compra Num: 1
+📈 Precio de venta: $ 122500.36
+📈 Venta numero: 1
+📤 Btc vendido: ₿ 0.004082261154656137263255387727
+💹 Ganancia de esta operacion: $ 0.0784610593924909581997685
+📊 Excedente sobre objetivo: % 0.01069167729463345996695536266
+- - - - - - - - - -
+📝 Estado de compra #1 (id 1d53): activa → vendida
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+📌 2025-10-03 19:31:32 · Venta fantasma #1 a $ 122508.83
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-03 19:31:36
+📉 Precio de compra: $ 122508.83
+🪙 Btc comprado: ₿ 0.004081338463521364133507764297
+🪙 Compra id: 17e7
+🪙 Compra Num: 2
+📜 Estado: activa
+🎯 Objetivo de venta: $ 122514.9554415
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -

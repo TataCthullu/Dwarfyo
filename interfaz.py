@@ -1456,8 +1456,8 @@ class BotInterfaz(AnimationMixin):
                 "excedente_compras": (self.bot.excedente_total_compras, "%"),
                 "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
                 "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),
-                "take_profit": (self.bot.take_profit_pct or Decimal("0"), "%"),
-                "stop_loss": (self.bot.stop_loss_pct or Decimal("0"), "%"),
+                "take_profit": ((self.bot.take_profit_pct, "%") if (getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or Decimal("0")) > 0) else ("", "")),
+                "stop_loss":  ((self.bot.stop_loss_pct, "%")  if (getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct  or Decimal("0")) > 0) else ("", "")),
                 "rebalances": self.bot.rebalance_count,
                 "rebalance_loss_total": (getattr(self.bot, "rebalance_loss_total", Decimal("0")), "$"),
             }
@@ -1492,6 +1492,39 @@ class BotInterfaz(AnimationMixin):
                 self.info_canvas[clave] = (canvas, new_id)
 
             self.actualizar_historial()
+            # ─── Ocultar TP/SL si están desactivados ───
+            try:
+                if not getattr(self.bot, "tp_enabled", False):
+                    if "take_profit" in self.info_canvas:
+                        canvas, item_id = self.info_canvas["take_profit"]
+                        canvas.itemconfigure(item_id, state='hidden')
+                    if "take_profit" in self.info_labels:
+                        canvas, lbl_id = self.info_labels["take_profit"]
+                        canvas.itemconfigure(lbl_id, state='hidden')
+                else:
+                    if "take_profit" in self.info_canvas:
+                        canvas, item_id = self.info_canvas["take_profit"]
+                        canvas.itemconfigure(item_id, state='normal')
+                    if "take_profit" in self.info_labels:
+                        canvas, lbl_id = self.info_labels["take_profit"]
+                        canvas.itemconfigure(lbl_id, state='normal')
+
+                if not getattr(self.bot, "sl_enabled", False):
+                    if "stop_loss" in self.info_canvas:
+                        canvas, item_id = self.info_canvas["stop_loss"]
+                        canvas.itemconfigure(item_id, state='hidden')
+                    if "stop_loss" in self.info_labels:
+                        canvas, lbl_id = self.info_labels["stop_loss"]
+                        canvas.itemconfigure(lbl_id, state='hidden')
+                else:
+                    if "stop_loss" in self.info_canvas:
+                        canvas, item_id = self.info_canvas["stop_loss"]
+                        canvas.itemconfigure(item_id, state='normal')
+                    if "stop_loss" in self.info_labels:
+                        canvas, lbl_id = self.info_labels["stop_loss"]
+                        canvas.itemconfigure(lbl_id, state='normal')
+            except Exception:
+                pass
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")

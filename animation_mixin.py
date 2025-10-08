@@ -85,7 +85,7 @@ class AnimationMixin:
         self.altar_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.altar_base or '', anchor='nw')
 
         # crear ítems de íconos sobrepuestos (offset pequeño para que se vean centrados)
-        self.tp_icon_item  = self.canvas_various.create_image(tp_x+12, base_y-17, image=self.icon_sword or '', anchor='nw')
+        self.tp_icon_item  = self.canvas_various.create_image(tp_x+12, base_y-25, image=self.icon_sword or '', anchor='nw')
         self.sl_icon_item  = self.canvas_various.create_image(sl_x+2, base_y-16, image=self.icon_shield or '', anchor='nw')
         self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
         self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
