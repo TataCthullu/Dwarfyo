@@ -29,6 +29,8 @@ class BotInterfaz(AnimationMixin):
         self.bot.ui_callback_on_stop = self._on_bot_stop
         self.was_offline = False
         self.bot.log_fn = self.logf
+        self.operativa_configurada = False
+
 
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
@@ -223,8 +225,11 @@ class BotInterfaz(AnimationMixin):
                 self.log_en_consola("📌 Bot detenido por Take Profit / Stop Loss. Usa 'Limpiar' antes de reiniciar.")
             return
 
-        # Parada manual u otros motivos → volver a flujo normal (mostrar Iniciar y Configurar)
-        self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+        # Parada manual u otros motivos → mostrar Configurar y (solo si hay config) Iniciar
+        if getattr(self, 'operativa_configurada', False):
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+        else:
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
 
 
@@ -802,6 +807,7 @@ class BotInterfaz(AnimationMixin):
         # Crear botones pero solo mostrar "Iniciar" al principio
         self.btn_inicio = tk.Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
 
         self.btn_limpiar = tk.Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_limpiar_id = self.canvas_various.create_window(250, 50, window=self.btn_limpiar)
@@ -852,6 +858,10 @@ class BotInterfaz(AnimationMixin):
     def clear_bot(self):
         if self.bot.running:
             return
+        
+        # La limpieza invalida la configuración
+        self.operativa_configurada = False
+
 # 🔒 bloquear cualquier ciclo residual
         try:
             self.bot._stop_flag = True
@@ -958,10 +968,15 @@ class BotInterfaz(AnimationMixin):
 
         # 9) Restaurar botones
         self.btn_inicio.config(text="Iniciar")
-        self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+        # Solo mostrar 'Iniciar' si ya hay operativa configurada
+        if getattr(self, 'operativa_configurada', False):
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+        else:
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
+
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
-
+        
         # 10) Forzar primer log de limpieza
         self.log_en_consola("🧹 Bot limpiado.")
         self.log_en_consola("- - - - - - - - - -")
@@ -989,6 +1004,9 @@ class BotInterfaz(AnimationMixin):
             self.config_ventana.lift()
             self.config_ventana.focus_force()
             return  # No abrir otra
+        
+        # Mientras estoy configurando, el botón Iniciar NO debe verse
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
 
         self.config_ventana = tk.Toplevel(self.root)
         self.config_ventana.title("Configuracion de operativa")
@@ -998,6 +1016,7 @@ class BotInterfaz(AnimationMixin):
         win_w, win_h = 900, 620
         self.config_ventana.geometry(f"{win_w}x{win_h}")
 
+        
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
@@ -1250,14 +1269,20 @@ class BotInterfaz(AnimationMixin):
                     sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),
                 )
                 self.log_en_consola("- - - - - - - - - -")
+                
+                
                 self.logf(
                     " · Rebalance: {rb_state} (Umbral = {thr}, Pct = {pct})",
                     rb_state='ON' if self.bot.rebalance_enabled else 'OFF',
                     thr=self.bot.rebalance_threshold,
                     pct=(self.bot.rebalance_pct, '%'),
                 )
-
                 self.log_en_consola("- - - - - - - - - -")
+                
+                self.operativa_configurada = True
+                self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+
+                
                 cerrar_config()
 
             except (InvalidOperation, IndexError):
