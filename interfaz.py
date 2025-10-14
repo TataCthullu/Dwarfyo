@@ -1024,40 +1024,19 @@ class BotInterfaz(AnimationMixin):
         self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)
 
         # ===== Canvas principal =====
-        pad = 10
+        pad= 0
         cfg_w, cfg_h = win_w - pad*2, win_h - pad*2
         self.cfg_canvas = tk.Canvas(self.config_ventana, width=cfg_w, height=cfg_h,
                                     highlightthickness=0, bd=0, relief='flat')
-        self.cfg_canvas.pack(fill="both", expand=True, padx=pad, pady=pad)
+        self.cfg_canvas.pack(fill="both", expand=True)
+
 
         # ===== Fondo escalado a todo el canvas =====
         # (sin tocar rellenar_mosaico; acá lo hacemos con una sola imagen escalada)
         
-        self._cfg_bg_path = "imagenes/deco/shoals_deep_water_1_old.png"
-        self._cfg_bg_img = None
-        self._cfg_bg_it = None
+                # ===== Fondo tipo mosaico (como los paneles principales) =====
+        self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/shoals_deep_water_1_old.png", escala=3)
 
-        def _draw_cfg_bg(event=None):
-            # tamaño actual del canvas
-            cw = self.cfg_canvas.winfo_width() or cfg_w
-            ch = self.cfg_canvas.winfo_height() or cfg_h
-            try:
-                im = Image.open(self._cfg_bg_path).resize((cw, ch), Image.NEAREST)
-                self._cfg_bg_img = ImageTk.PhotoImage(im)
-                if self._cfg_bg_it is None:
-                    self._cfg_bg_it = self.cfg_canvas.create_image(0, 0, image=self._cfg_bg_img, anchor="nw")
-                else:
-                    # actualizar imagen existente
-                    self.cfg_canvas.itemconfigure(self._cfg_bg_it, image=self._cfg_bg_img)
-                    self.cfg_canvas.coords(self._cfg_bg_it, 0, 0)
-                # enviar fondo al fondo
-                self.cfg_canvas.tag_lower(self._cfg_bg_it)
-            except Exception:
-                pass
-
-        # dibujar ahora y al redimensionar
-        _draw_cfg_bg()
-        self.cfg_canvas.bind("<Configure>", _draw_cfg_bg)
 
         # ===== Helpers de layout sobre canvas =====
         left_x = 20              # margen izquierdo de etiquetas
