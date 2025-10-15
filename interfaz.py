@@ -1042,8 +1042,8 @@ class BotInterfaz(AnimationMixin):
         left_x = 20              # margen izquierdo de etiquetas
         y = 24                   # primer renglón
         row = 42                 # separación vertical por fila
-        font_lbl = ("LondonBetween", 16)
-        color_lbl = "PaleGoldenRod"
+        font_lbl = ("LondonBetween", 18)
+        color_lbl = "lime"
 
         def put_text(ypos, texto, color=color_lbl, size=16):
             return self.cfg_canvas.create_text(
@@ -1056,46 +1056,102 @@ class BotInterfaz(AnimationMixin):
             bbox = self.cfg_canvas.bbox(label_id)  # (x1, y1, x2, y2)
             x_entry = (bbox[2] + 12) if bbox else (left_x + 340)  # fallback
             e = tk.Entry(self.config_ventana, textvariable=textvariable,
-                        bg="DarkGoldenRod", fg="Gold",
-                        insertbackground="Gold",
+                        bg="navy", fg="PaleGoldenRod",
+                        insertbackground="PaleGoldenRod",
+                        relief="flat", bd=0, highlightthickness=0,
                         font=("LondonBetween", 16), width=width)
+
             self.cfg_canvas.create_window(x_entry, bbox[1], anchor="nw", window=e)
             return e
 
         def put_check(ypos, text, variable):
             cb = tk.Checkbutton(self.config_ventana, text=text, variable=variable,
-                                bg="DarkGoldenRod", fg="PaleGoldenRod",
-                                activebackground="DarkGoldenRod", activeforeground="PaleGoldenRod",
-                                selectcolor="DarkGoldenRod",
+                                bg="navy", fg="PaleGoldenRod",
+                                activebackground="PaleGoldenRod", activeforeground="PaleGoldenRod",
+                                selectcolor="PaleGoldenRod",
                                 font=("LondonBetween", 16),
                                 highlightthickness=0, bd=0)
             self.cfg_canvas.create_window(left_x, ypos, anchor="nw", window=cb)
             return cb
 
-        # ===== Checks de comportamiento (mismos nombres) =====
         self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)
-        put_check(y, "Habilitar compra tras venta fantasma", self.var_ghost); y += row
+        # ===== Checks de comportamiento (label en canvas + check centrado con bbox) =====
 
+        # --- Ghost ---
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Habilitar compra tras venta fantasma",
+                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+        bbox = self.cfg_canvas.bbox(text_id)
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
+        self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)
+        self.chk_ghost = tk.Checkbutton(self.config_ventana, variable=self.var_ghost,
+                                        text="", bg="navy", activebackground="navy",
+                                        relief="flat", bd=0, highlightthickness=0,
+                                        selectcolor="navy", padx=0, pady=0, takefocus=0)
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_ghost)
+        y += row
+
+        # --- Take Profit ---
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Take Profit",
+                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+        bbox = self.cfg_canvas.bbox(text_id)
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
         self.var_tp_enabled = tk.BooleanVar(value=getattr(self.bot, "tp_enabled", False))
+        self.chk_tp = tk.Checkbutton(self.config_ventana, variable=self.var_tp_enabled,
+                                    text="", bg="navy", activebackground="navy",
+                                    relief="flat", bd=0, highlightthickness=0,
+                                    selectcolor="navy", padx=0, pady=0, takefocus=0)
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_tp)
+        y += row
+
+        # --- Stop Loss ---
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Stop Loss",
+                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+        bbox = self.cfg_canvas.bbox(text_id)
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
         self.var_sl_enabled = tk.BooleanVar(value=getattr(self.bot, "sl_enabled", False))
-        put_check(y, "Activar Take Profit", self.var_tp_enabled); y += row
-        put_check(y, "Activar Stop Loss", self.var_sl_enabled);   y += row + 6
+        self.chk_sl = tk.Checkbutton(self.config_ventana, variable=self.var_sl_enabled,
+                                    text="", bg="navy", activebackground="navy",
+                                    relief="flat", bd=0, highlightthickness=0,
+                                    selectcolor="navy", padx=0, pady=0, takefocus=0)
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_sl)
+        y += row + 6
+
+        # --- Rebalance ---
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Rebalance",
+                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+        bbox = self.cfg_canvas.bbox(text_id)
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
+        self.var_rebalance_enabled = tk.BooleanVar(value=getattr(self.bot, "rebalance_enabled", False))
+        self.chk_reb = tk.Checkbutton(self.config_ventana, variable=self.var_rebalance_enabled,
+                                    text="", bg="navy", activebackground="navy",
+                                    relief="flat", bd=0, highlightthickness=0,
+                                    selectcolor="navy", padx=0, pady=0, takefocus=0)
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_reb)
+        y += row + 6
+
+
+
 
         # ===== Rebalance =====
-        put_text(y, "Rebalance", color="Khaki", size=18); y += row
+        put_text(y, "* Rebalance *", color="PaleGoldenRod", size=18); y += row
 
         # Compras (umbral)
-        lbl = put_text(y, "Compras (umbral):")
+        lbl = put_text(y, "- - - - Compras Fantasma (umbral):")
         self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
         put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row
 
         # Porcentaje a vender
-        lbl = put_text(y, "Porcentaje a vender (%):")
+        lbl = put_text(y, "- - - - Porcentaje a vender (%):")
         self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
         put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
 
         self.var_rebalance_enabled = tk.BooleanVar(value=getattr(self.bot, "rebalance_enabled", False))
-        put_check(y, "Activar Rebalance", self.var_rebalance_enabled); y += row + 6
+        
+        
 
         # ===== Campos numéricos (MISMO ORDEN; entries intacto) =====
         campos = [
@@ -1282,7 +1338,8 @@ class BotInterfaz(AnimationMixin):
                                 font=("LondonBetween", 16),
                                 command=guardar_config)
         btn_id = self.cfg_canvas.create_window(cfg_w // 2, cfg_h - 16, anchor="s", window=btn_guardar)
-        self.cfg_canvas.bind("<Configure>", lambda e: (_draw_cfg_bg(e), _place_save_btn(e)))
+        self.cfg_canvas.bind("<Configure>", _place_save_btn)
+
 
 
     def _on_close(self):
