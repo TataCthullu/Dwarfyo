@@ -1035,7 +1035,7 @@ class BotInterfaz(AnimationMixin):
         # (sin tocar rellenar_mosaico; acá lo hacemos con una sola imagen escalada)
         
                 # ===== Fondo tipo mosaico (como los paneles principales) =====
-        self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/shoals_deep_water_1_old.png", escala=3)
+        self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/rect_gray_0_new.png", escala=3)
 
 
         # ===== Helpers de layout sobre canvas =====
