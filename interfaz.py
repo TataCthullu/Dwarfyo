@@ -1079,7 +1079,7 @@ class BotInterfaz(AnimationMixin):
 
         # --- Ghost ---
         text_id = self.cfg_canvas.create_text(left_x, y, text="Habilitar compra tras venta fantasma",
-                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")
         bbox = self.cfg_canvas.bbox(text_id)
         x_check = bbox[2] + 10 if bbox else (left_x + 350)
         y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
@@ -1087,13 +1087,13 @@ class BotInterfaz(AnimationMixin):
         self.chk_ghost = tk.Checkbutton(self.config_ventana, variable=self.var_ghost,
                                         text="", bg="navy", activebackground="navy",
                                         relief="flat", bd=0, highlightthickness=0,
-                                        selectcolor="navy", padx=0, pady=0, takefocus=0)
+                                        selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)
         self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_ghost)
         y += row
 
         # --- Take Profit ---
         text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Take Profit",
-                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")
         bbox = self.cfg_canvas.bbox(text_id)
         x_check = bbox[2] + 10 if bbox else (left_x + 350)
         y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
@@ -1101,13 +1101,13 @@ class BotInterfaz(AnimationMixin):
         self.chk_tp = tk.Checkbutton(self.config_ventana, variable=self.var_tp_enabled,
                                     text="", bg="navy", activebackground="navy",
                                     relief="flat", bd=0, highlightthickness=0,
-                                    selectcolor="navy", padx=0, pady=0, takefocus=0)
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)
         self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_tp)
         y += row
 
         # --- Stop Loss ---
         text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Stop Loss",
-                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+                                            fill="lime", font=("LondonBetween", 18), anchor="nw")
         bbox = self.cfg_canvas.bbox(text_id)
         x_check = bbox[2] + 10 if bbox else (left_x + 350)
         y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
@@ -1115,7 +1115,7 @@ class BotInterfaz(AnimationMixin):
         self.chk_sl = tk.Checkbutton(self.config_ventana, variable=self.var_sl_enabled,
                                     text="", bg="navy", activebackground="navy",
                                     relief="flat", bd=0, highlightthickness=0,
-                                    selectcolor="navy", padx=0, pady=0, takefocus=0)
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)
         self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_sl)
         y += row + 6
 
@@ -1129,7 +1129,7 @@ class BotInterfaz(AnimationMixin):
         self.chk_reb = tk.Checkbutton(self.config_ventana, variable=self.var_rebalance_enabled,
                                     text="", bg="navy", activebackground="navy",
                                     relief="flat", bd=0, highlightthickness=0,
-                                    selectcolor="navy", padx=0, pady=0, takefocus=0)
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)
         self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_reb)
         y += row + 6
 
