@@ -99,6 +99,8 @@ class BotInterfaz(AnimationMixin):
             "rebalance_loss_total",
             "hold_btc",
             "hold_usdt",
+            "rebalance_thr",
+            "rebalance_pct",
         }
 
         # Frames
@@ -472,6 +474,9 @@ class BotInterfaz(AnimationMixin):
         self.stop_loss_str = tk.StringVar()
         self.cont_rebalances_str = tk.StringVar() 
         self.rebalance_loss_total_str = tk.StringVar()
+        self.rebalance_thr_str = tk.StringVar()
+        self.rebalance_pct_str = tk.StringVar()
+
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
 
@@ -777,7 +782,9 @@ class BotInterfaz(AnimationMixin):
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
         add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")
-        
+        add("Rebalance — Umbral:", self.rebalance_thr_str, "rebalance_thr")
+        add("Rebalance — Porcentaje:", self.rebalance_pct_str, "rebalance_pct")
+
         try:
             img_ped = Image.open("imagenes/deco/pedestal.png")
             # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
@@ -1006,7 +1013,7 @@ class BotInterfaz(AnimationMixin):
             return  # No abrir otra
         
         # Mientras estoy configurando, el botón Iniciar NO debe verse
-        self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
+        
 
         self.config_ventana = tk.Toplevel(self.root)
         self.config_ventana.title("Configuracion de operativa")
@@ -1278,6 +1285,10 @@ class BotInterfaz(AnimationMixin):
                 self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
                 self.bot.rebalance_threshold = rb_thr
                 self.bot.rebalance_pct = rb_pct
+                try:
+                    self._update_lamp_genie()
+                except Exception:
+                    pass
 
                 if not self.bot.running:
                     self.bot.usdt = usdtinit
@@ -1521,6 +1532,9 @@ class BotInterfaz(AnimationMixin):
                 "stop_loss":  ((self.bot.stop_loss_pct, "%")  if (getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct  or Decimal("0")) > 0) else ("", "")),
                 "rebalances": self.bot.rebalance_count,
                 "rebalance_loss_total": (getattr(self.bot, "rebalance_loss_total", Decimal("0")), "$"),
+                "rebalance_thr": (self.bot.rebalance_threshold if getattr(self.bot, "rebalance_enabled", False) else ""),
+                "rebalance_pct": ((self.bot.rebalance_pct, "%") if getattr(self.bot, "rebalance_enabled", False) else ("","")),
+
             }
 
             for clave, valor in texto_fijo.items():
@@ -1584,6 +1598,37 @@ class BotInterfaz(AnimationMixin):
                     if "stop_loss" in self.info_labels:
                         canvas, lbl_id = self.info_labels["stop_loss"]
                         canvas.itemconfigure(lbl_id, state='normal')
+                        # ─── Ocultar/mostrar Umbral y % de Rebalance según rebalance_enabled ───
+                    
+                    if not getattr(self.bot, "rebalance_enabled", False):
+                        if "rebalance_thr" in self.info_canvas:
+                            canvas, item_id = self.info_canvas["rebalance_thr"]
+                            canvas.itemconfigure(item_id, state='hidden')
+                        if "rebalance_thr" in self.info_labels:
+                            canvas, lbl_id = self.info_labels["rebalance_thr"]
+                            canvas.itemconfigure(lbl_id, state='hidden')
+
+                        if "rebalance_pct" in self.info_canvas:
+                            canvas, item_id = self.info_canvas["rebalance_pct"]
+                            canvas.itemconfigure(item_id, state='hidden')
+                        if "rebalance_pct" in self.info_labels:
+                            canvas, lbl_id = self.info_labels["rebalance_pct"]
+                            canvas.itemconfigure(lbl_id, state='hidden')
+                    else:
+                        if "rebalance_thr" in self.info_canvas:
+                            canvas, item_id = self.info_canvas["rebalance_thr"]
+                            canvas.itemconfigure(item_id, state='normal')
+                        if "rebalance_thr" in self.info_labels:
+                            canvas, lbl_id = self.info_labels["rebalance_thr"]
+                            canvas.itemconfigure(lbl_id, state='normal')
+
+                        if "rebalance_pct" in self.info_canvas:
+                            canvas, item_id = self.info_canvas["rebalance_pct"]
+                            canvas.itemconfigure(item_id, state='normal')
+                        if "rebalance_pct" in self.info_labels:
+                            canvas, lbl_id = self.info_labels["rebalance_pct"]
+                            canvas.itemconfigure(lbl_id, state='normal')
+
             except Exception:
                 pass
 
