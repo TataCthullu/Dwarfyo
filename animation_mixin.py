@@ -433,9 +433,6 @@ class AnimationMixin:
             anchor='nw'
         )
 
-            
-        self._after_ids = []
-
         # Oro e hidra en canvas_animation
         self.sales_item       = self.canvas_various.create_image(1350,15,  image='', anchor='nw')
 
@@ -545,24 +542,30 @@ class AnimationMixin:
 
     def _update_lamp_genie(self):
         """
-        Muestra el efreet si el rebalance está activado (self.bot.rebalance_enabled).
-        Caso contrario, sólo la lámpara.
+        Muestra el efreet si rebalance_enabled está activo.
+        Acepta True/False, 'ON'/'OFF', 'true'/'false', '1'/'0', 'sí'/'no'.
         """
         try:
-            show_genie = bool(getattr(self, "bot", None) and getattr(self.bot, "rebalance_enabled", False))
+            raw = getattr(self, "bot", None) and getattr(self.bot, "rebalance_enabled", False)
+            if isinstance(raw, str):
+                show_genie = raw.strip().lower() in ("on", "true", "1", "sí", "si", "yes")
+            else:
+                show_genie = bool(raw)
         except Exception:
             show_genie = False
 
-        # la lámpara siempre visible si la imagen existe
         if getattr(self, "lamp_item", None) is not None:
             self.canvas_animation.itemconfig(self.lamp_item, image=(self.lamp_img or ""))
 
-        # el genio sólo si rebalance_enabled está ON
         if getattr(self, "efreet_item", None) is not None:
             self.canvas_animation.itemconfig(self.efreet_item, image=(self.efreet_img if show_genie else ""))
+            try:
+                self.canvas_animation.tag_raise(self.efreet_item)
+            except Exception:
+                pass
 
-        # Reprogramar
         self.animar(400, self._update_lamp_genie)
+
     
 
     def set_take_profit_state(self, state: str):
