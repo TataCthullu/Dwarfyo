@@ -69,6 +69,10 @@ class AnimationMixin:
                                 _img("imagenes/deco/sltp/altar_jiyva_0.png", 2) or _img("altar_jiyva_0.png", 2),
                                 _img("imagenes/deco/sltp/altar_jiyva_1.png", 2) or _img("altar_jiyva_1.png", 2)
                               ) if p]
+        
+        # Imagen alternativa cuando el bot no está iniciado
+        fedhas_path = "imagenes/deco/altar_fedhas.png"
+        self.altar_fedhas = PhotoImage(file=fedhas_path).zoom(2, 2) if os.path.exists(fedhas_path) else None
 
         # íconos
         self.icon_sword     = _img("imagenes/deco/sltp/long_sword_1_new.png", 2) or _img("long_sword_1_new.png", 2)
@@ -94,6 +98,15 @@ class AnimationMixin:
         self._tp_state = "inactive"   # 'inactive' | 'armed' | 'hit'
         self._sl_state = "inactive"   # 'inactive' | 'armed' | 'hit'
         self._altar_frame = 0
+
+        # Mostrar Fedhas si el bot NO está iniciado (y ocultar íconos)
+        if not getattr(self, 'bot', None) or not self.bot.running:
+            if self.altar_fedhas:
+                self.canvas_various.itemconfig(self.altar_tp_item, image=self.altar_fedhas)
+                self.canvas_various.itemconfig(self.altar_sl_item, image=self.altar_fedhas)
+                self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
+                self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
+
 
         # animación suave de bases (gozag / jiyva alternan 0/1 si existen)
         self.animar(600, self._animate_altars)
@@ -646,11 +659,25 @@ class AnimationMixin:
         self.canvas_various.itemconfigure(icon_item, state=visible)
         
     def _animate_altars(self):
-        # alterna frames de jiyva/gozag si corresponden
+        # Si el bot NO está corriendo, mantener la imagen Fedhas fija en ambos altares
+        # y ocultar los íconos. No avanzar frames ni refrescar altares verdes.
+        if (not getattr(self, 'bot', None) or not self.bot.running) and getattr(self, 'altar_fedhas', None):
+            try:
+                self.canvas_various.itemconfig(self.altar_tp_item, image=self.altar_fedhas)
+                self.canvas_various.itemconfig(self.altar_sl_item, image=self.altar_fedhas)
+                self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
+                self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
+            except Exception:
+                pass
+            self.animar(600, self._animate_altars)
+            return
+
+        # alterna frames de jiyva/gozag si corresponde (bot corriendo)
         self._altar_frame += 1
         self._refresh_altar_image("tp")
         self._refresh_altar_image("sl")
         self.animar(600, self._animate_altars)
+
 
    
     def _update_elephant(self):
