@@ -1121,7 +1121,7 @@ class BotInterfaz(AnimationMixin):
 
         # --- Rebalance ---
         text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Rebalance",
-                                            fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")
         bbox = self.cfg_canvas.bbox(text_id)
         x_check = bbox[2] + 10 if bbox else (left_x + 350)
         y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
@@ -1140,12 +1140,12 @@ class BotInterfaz(AnimationMixin):
         put_text(y, "* Rebalance *", color="PaleGoldenRod", size=18); y += row
 
         # Compras (umbral)
-        lbl = put_text(y, "- - - - Compras Fantasma (umbral):")
+        lbl = put_text(y, "- - - - Compras Fantasma (umbral):", color="PaleGoldenRod")
         self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
         put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row
 
         # Porcentaje a vender
-        lbl = put_text(y, "- - - - Porcentaje a vender (%):")
+        lbl = put_text(y, "- - - - Porcentaje a vender (%):", color="PaleGoldenRod")
         self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
         put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
 
@@ -1327,14 +1327,14 @@ class BotInterfaz(AnimationMixin):
         def _place_save_btn(event=None):
             # dejar 16 px del borde inferior
             cy = self.cfg_canvas.winfo_height() - 16
-            cx = self.cfg_canvas.winfo_width() // 2
+            cx = self.cfg_canvas.winfo_width() // 1.5
             try:
                 self.cfg_canvas.coords(btn_id, cx, cy)
             except Exception:
                 pass
 
         btn_guardar = tk.Button(self.config_ventana, text="Guardar",
-                                bg="Goldenrod", fg="PaleGoldenRod",
+                                bg="Crimson", fg="PaleGoldenRod",
                                 font=("LondonBetween", 16),
                                 command=guardar_config)
         btn_id = self.cfg_canvas.create_window(cfg_w // 2, cfg_h - 16, anchor="s", window=btn_guardar)
