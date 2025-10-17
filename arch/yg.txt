@@ -1,0 +1,1349 @@
+2025-10-17 12:13:54 · Configuración actualizada:
+ · TP: ON (% 3)
+ · SL: ON (% 1)
+- - - - - - - - - -
+ · Rebalance: ON (Umbral = 6, Pct = % 50)
+- - - - - - - - - -
+🟡 Khazâd iniciado.
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:15
+📉 Precio de compra: $ 105635.3
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 15bc
+🪙 Compra Num: 1
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105640.5818
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:14:24
+🕒 Compra original: $ 105635.3
+🆔 Id: 15bc
+🪙 Compra Num: 1
+📈 Precio de venta: $ 105646.42
+📈 Venta numero: 1
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0526
+📊 Excedente sobre objetivo: % 0.0055
+- - - - - - - - - -
+📝 Estado de compra #1 (id 15bc): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:28
+📉 Precio de compra: $ 105599.99
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: dfbc
+🪙 Compra Num: 2
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105605.27
+📊 Excedente de bajada: % 0.0295
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:33
+📉 Precio de compra: $ 105569.33
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 88e3
+🪙 Compra Num: 3
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105574.6085
+📊 Excedente de bajada: % 0.024
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:37
+📉 Precio de compra: $ 105532.01
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 145a
+🪙 Compra Num: 4
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105537.2866
+📊 Excedente de bajada: % 0.0304
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:41
+📉 Precio de compra: $ 105524.01
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: a259
+🪙 Compra Num: 5
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105529.2862
+📊 Excedente de bajada: % 0.0025
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:50
+📉 Precio de compra: $ 105524.87
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 4977
+🪙 Compra Num: 6
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105530.1462
+📊 Excedente de bajada: % 0.0083
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:54
+📉 Precio de compra: $ 105518.6
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c37e
+🪙 Compra Num: 7
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105523.8759
+📊 Excedente de bajada: % 0.0009
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:14:58
+📉 Precio de compra: $ 105483.99
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 93f6
+🪙 Compra Num: 8
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105489.2642
+📊 Excedente de bajada: % 0.005
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:02
+🕒 Compra original: $ 105483.99
+🆔 Id: 93f6
+🪙 Compra Num: 8
+📈 Precio de venta: $ 105494.55
+📈 Venta numero: 2
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0501
+📊 Excedente sobre objetivo: % 0.005
+- - - - - - - - - -
+📝 Estado de compra #8 (id 93f6): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:03
+📉 Precio de compra: $ 105481.75
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c619
+🪙 Compra Num: 9
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105487.0241
+📊 Excedente de bajada: % 0.1388
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:07
+📉 Precio de compra: $ 105464.9
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 0ef3
+🪙 Compra Num: 10
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105470.1732
+📊 Excedente de bajada: % 0.011
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:11
+🕒 Compra original: $ 105481.75
+🆔 Id: c619
+🪙 Compra Num: 9
+📈 Precio de venta: $ 105497.73
+📈 Venta numero: 3
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0757
+📊 Excedente sobre objetivo: % 0.0101
+- - - - - - - - - -
+📝 Estado de compra #9 (id c619): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:15
+🕒 Compra original: $ 105464.9
+🆔 Id: 0ef3
+🪙 Compra Num: 10
+📈 Precio de venta: $ 105493.56
+📈 Venta numero: 4
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.1359
+📊 Excedente sobre objetivo: % 0.0222
+- - - - - - - - - -
+📝 Estado de compra #10 (id 0ef3): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:20
+🕒 Compra original: $ 105532.01
+🆔 Id: 145a
+🪙 Compra Num: 4
+📈 Precio de venta: $ 105541.4
+📈 Venta numero: 5
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0445
+📊 Excedente sobre objetivo: % 0.0039
+- - - - - - - - - -
+📝 Estado de compra #4 (id 145a): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:24
+🕒 Compra original: $ 105524.01
+🆔 Id: a259
+🪙 Compra Num: 5
+📈 Precio de venta: $ 105552.34
+📈 Venta numero: 6
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.1342
+📊 Excedente sobre objetivo: % 0.0218
+- - - - - - - - - -
+📝 Estado de compra #5 (id a259): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:28
+🕒 Compra original: $ 105524.87
+🆔 Id: 4977
+🪙 Compra Num: 6
+📈 Precio de venta: $ 105544.01
+📈 Venta numero: 7
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0907
+📊 Excedente sobre objetivo: % 0.0131
+- - - - - - - - - -
+📝 Estado de compra #6 (id 4977): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:28
+📉 Precio de compra: $ 105543.26
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 8f77
+🪙 Compra Num: 11
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105548.5372
+📊 Excedente de bajada: % 0.0029
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:32
+🕒 Compra original: $ 105518.6
+🆔 Id: c37e
+🪙 Compra Num: 7
+📈 Precio de venta: $ 105561.03
+📈 Venta numero: 8
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.2011
+📊 Excedente sobre objetivo: % 0.0352
+- - - - - - - - - -
+📝 Estado de compra #7 (id c37e): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:36
+🕒 Compra original: $ 105543.26
+🆔 Id: 8f77
+🪙 Compra Num: 11
+📈 Precio de venta: $ 105561.64
+📈 Venta numero: 9
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0871
+📊 Excedente sobre objetivo: % 0.0124
+- - - - - - - - - -
+📝 Estado de compra #11 (id 8f77): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:37
+📉 Precio de compra: $ 105561.64
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c72d
+🪙 Compra Num: 12
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105566.9181
+📊 Excedente de bajada: % 0.0029
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:41
+🕒 Compra original: $ 105561.64
+🆔 Id: c72d
+🪙 Compra Num: 12
+📈 Precio de venta: $ 105567.62
+📈 Venta numero: 10
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0283
+📊 Excedente sobre objetivo: % 0.0007
+- - - - - - - - - -
+📝 Estado de compra #12 (id c72d): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:45
+📉 Precio de compra: $ 105551.1
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 3ba6
+🪙 Compra Num: 13
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105556.3776
+📊 Excedente de bajada: % 0.0106
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:49
+📉 Precio de compra: $ 105516.14
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: f8fc
+🪙 Compra Num: 14
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105521.4158
+📊 Excedente de bajada: % 0.0226
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:54
+📉 Precio de compra: $ 105486.23
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: f587
+🪙 Compra Num: 15
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105491.5043
+📊 Excedente de bajada: % 0.0122
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:15:58
+🕒 Compra original: $ 105486.23
+🆔 Id: f587
+🪙 Compra Num: 15
+📈 Precio de venta: $ 105496.56
+📈 Venta numero: 11
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.049
+📊 Excedente sobre objetivo: % 0.0048
+- - - - - - - - - -
+📝 Estado de compra #15 (id f587): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:15:59
+📉 Precio de compra: $ 105496.56
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: ee53
+🪙 Compra Num: 16
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105501.8348
+📊 Excedente de bajada: % 0.0623
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:03
+🕒 Compra original: $ 105516.14
+🆔 Id: f8fc
+🪙 Compra Num: 14
+📈 Precio de venta: $ 105553.31
+📈 Venta numero: 12
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.1761
+📊 Excedente sobre objetivo: % 0.0302
+- - - - - - - - - -
+📝 Estado de compra #14 (id f8fc): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:07
+🕒 Compra original: $ 105551.1
+🆔 Id: 3ba6
+🪙 Compra Num: 13
+📈 Precio de venta: $ 105564
+📈 Venta numero: 13
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0611
+📊 Excedente sobre objetivo: % 0.0072
+- - - - - - - - - -
+📝 Estado de compra #13 (id 3ba6): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:11
+🕒 Compra original: $ 105569.33
+🆔 Id: 88e3
+🪙 Compra Num: 3
+📈 Precio de venta: $ 105586.96
+📈 Venta numero: 14
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0835
+📊 Excedente sobre objetivo: % 0.0117
+- - - - - - - - - -
+📝 Estado de compra #3 (id 88e3): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:15
+🕒 Compra original: $ 105496.56
+🆔 Id: ee53
+🪙 Compra Num: 16
+📈 Precio de venta: $ 105586.99
+📈 Venta numero: 15
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.4286
+📊 Excedente sobre objetivo: % 0.0807
+- - - - - - - - - -
+📝 Estado de compra #16 (id ee53): activa → vendida
+- - - - - - - - - -
+📌 2025-10-17 12:16:19 · Venta fantasma #1 a $ 105597.01
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:16:23
+📉 Precio de compra: $ 105637.02
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 2412
+🪙 Compra Num: 17
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105642.3019
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:27
+🕒 Compra original: $ 105599.99
+🆔 Id: dfbc
+🪙 Compra Num: 2
+📈 Precio de venta: $ 105676.25
+📈 Venta numero: 16
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.3611
+📊 Excedente sobre objetivo: % 0.0672
+- - - - - - - - - -
+📝 Estado de compra #2 (id dfbc): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:16:32
+📉 Precio de compra: $ 105649.6
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 3fb7
+🪙 Compra Num: 18
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105654.8825
+📊 Excedente de bajada: % 0.0293
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:36
+🕒 Compra original: $ 105637.02
+🆔 Id: 2412
+🪙 Compra Num: 17
+📈 Precio de venta: $ 105709.09
+📈 Venta numero: 17
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.3411
+📊 Excedente sobre objetivo: % 0.0632
+- - - - - - - - - -
+📝 Estado de compra #17 (id 2412): activa → vendida
+- - - - - - - - - -
+📌 2025-10-17 12:16:40 · Venta fantasma #2 a $ 105717.79
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:16:44
+📉 Precio de compra: $ 105739.75
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: f372
+🪙 Compra Num: 19
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105745.037
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:16:48
+🕒 Compra original: $ 105649.6
+🆔 Id: 3fb7
+🪙 Compra Num: 18
+📈 Precio de venta: $ 105749.99
+📈 Venta numero: 18
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.4751
+📊 Excedente sobre objetivo: % 0.09
+- - - - - - - - - -
+📝 Estado de compra #18 (id 3fb7): activa → vendida
+- - - - - - - - - -
+📌 2025-10-17 12:16:52 · Venta fantasma #3 a $ 105776.59
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:16:56
+📉 Precio de compra: $ 105747.53
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 1fe0
+🪙 Compra Num: 20
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105752.8174
+📊 Excedente de bajada: % 0.0225
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:16:57
+📉 Precio de compra: $ 105747.53
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: f611
+🪙 Compra Num: 21
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105752.8174
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:17:01
+🕒 Compra original: $ 105739.75
+🆔 Id: f372
+🪙 Compra Num: 19
+📈 Precio de venta: $ 105799.99
+📈 Venta numero: 19
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.2849
+📊 Excedente sobre objetivo: % 0.052
+- - - - - - - - - -
+📝 Estado de compra #19 (id f372): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:17:05
+🕒 Compra original: $ 105747.53
+🆔 Id: 1fe0
+🪙 Compra Num: 20
+📈 Precio de venta: $ 105811.5
+📈 Venta numero: 20
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.3025
+📊 Excedente sobre objetivo: % 0.0555
+- - - - - - - - - -
+📝 Estado de compra #20 (id 1fe0): activa → vendida
+- - - - - - - - - -
+📌 2025-10-17 12:17:09 · Venta fantasma #4 a $ 105922.38
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:17:14
+📉 Precio de compra: $ 105947.07
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 64a7
+🪙 Compra Num: 22
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105952.3674
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:17:18
+🕒 Compra original: $ 105747.53
+🆔 Id: f611
+🪙 Compra Num: 21
+📈 Precio de venta: $ 105999
+📈 Venta numero: 21
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 1.189
+📊 Excedente sobre objetivo: % 0.2328
+- - - - - - - - - -
+📝 Estado de compra #21 (id f611): activa → vendida
+- - - - - - - - - -
+📌 2025-10-17 12:17:22 · Venta fantasma #5 a $ 106027.38
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:17:26
+📉 Precio de compra: $ 106027.38
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c210
+🪙 Compra Num: 23
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106032.6814
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:17:30
+🕒 Compra original: $ 105947.07
+🆔 Id: 64a7
+🪙 Compra Num: 22
+📈 Precio de venta: $ 106006.02
+📈 Venta numero: 22
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.2782
+📊 Excedente sobre objetivo: % 0.0506
+- - - - - - - - - -
+📝 Estado de compra #22 (id 64a7): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:17:31
+📉 Precio de compra: $ 106006.02
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c45f
+🪙 Compra Num: 24
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106011.3203
+📊 Excedente de bajada: % 0.0083
+🔵 [Parametro B].
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:17:43
+📉 Precio de compra: $ 105904.24
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 8255
+🪙 Compra Num: 25
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105909.5352
+📊 Excedente de bajada: % 0.091
+🔵 [Parametro A].
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:17:55
+🕒 Compra original: $ 105904.24
+🆔 Id: 8255
+🪙 Compra Num: 25
+📈 Precio de venta: $ 105916.07
+📈 Venta numero: 23
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0559
+📊 Excedente sobre objetivo: % 0.0062
+- - - - - - - - - -
+📝 Estado de compra #25 (id 8255): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:17:55
+📉 Precio de compra: $ 105936.69
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 8364
+🪙 Compra Num: 26
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105941.9868
+📊 Excedente de bajada: % 0.0799
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:17:59
+🕒 Compra original: $ 105936.69
+🆔 Id: 8364
+🪙 Compra Num: 26
+📈 Precio de venta: $ 105998.99
+📈 Venta numero: 24
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.294
+📊 Excedente sobre objetivo: % 0.0538
+- - - - - - - - - -
+📝 Estado de compra #26 (id 8364): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:18:03
+🕒 Compra original: $ 106027.38
+🆔 Id: c210
+🪙 Compra Num: 23
+📈 Precio de venta: $ 106072.9
+📈 Venta numero: 25
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.2147
+📊 Excedente sobre objetivo: % 0.0379
+- - - - - - - - - -
+📝 Estado de compra #23 (id c210): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:08
+📉 Precio de compra: $ 106043.98
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 41eb
+🪙 Compra Num: 27
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106049.2822
+📊 Excedente de bajada: % 0.019
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:18:12
+🕒 Compra original: $ 106006.02
+🆔 Id: c45f
+🪙 Compra Num: 24
+📈 Precio de venta: $ 106027.74
+📈 Venta numero: 26
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.1024
+📊 Excedente sobre objetivo: % 0.0155
+- - - - - - - - - -
+📝 Estado de compra #24 (id c45f): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:12
+📉 Precio de compra: $ 106027.74
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 0d04
+🪙 Compra Num: 28
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106033.0414
+📊 Excedente de bajada: % 0.0376
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:17
+📉 Precio de compra: $ 105998
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 98d9
+🪙 Compra Num: 29
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106003.2999
+📊 Excedente de bajada: % 0.015
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:21
+📉 Precio de compra: $ 105984.01
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 8801
+🪙 Compra Num: 30
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105989.3092
+📊 Excedente de bajada: % 0.0082
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:25
+📉 Precio de compra: $ 105957.42
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: bd8b
+🪙 Compra Num: 31
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105962.7179
+📊 Excedente de bajada: % 0.0034
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:18:29
+🕒 Compra original: $ 105998
+🆔 Id: 98d9
+🪙 Compra Num: 29
+📈 Precio de venta: $ 106029.01
+📈 Venta numero: 27
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.1463
+📊 Excedente sobre objetivo: % 0.0243
+- - - - - - - - - -
+📝 Estado de compra #29 (id 98d9): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:18:33
+🕒 Compra original: $ 105984.01
+🆔 Id: 8801
+🪙 Compra Num: 30
+📈 Precio de venta: $ 106028.99
+📈 Venta numero: 28
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.2122
+📊 Excedente sobre objetivo: % 0.0374
+- - - - - - - - - -
+📝 Estado de compra #30 (id 8801): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:18:37
+🕒 Compra original: $ 105957.42
+🆔 Id: bd8b
+🪙 Compra Num: 31
+📈 Precio de venta: $ 106024.95
+📈 Venta numero: 29
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.3187
+📊 Excedente sobre objetivo: % 0.0587
+- - - - - - - - - -
+📝 Estado de compra #31 (id bd8b): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:18:41
+🕒 Compra original: $ 106027.74
+🆔 Id: 0d04
+🪙 Compra Num: 28
+📈 Precio de venta: $ 106046.16
+📈 Venta numero: 30
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0869
+📊 Excedente sobre objetivo: % 0.0124
+- - - - - - - - - -
+📝 Estado de compra #28 (id 0d04): activa → vendida
+- - - - - - - - - -
+📌 2025-10-17 12:18:45 · Venta fantasma #6 a $ 106059.45
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:50
+📉 Precio de compra: $ 106045.63
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 8f61
+🪙 Compra Num: 32
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106050.9323
+📊 Excedente de bajada: % 0.008
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:18:50
+📉 Precio de compra: $ 106045.63
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 7323
+🪙 Compra Num: 33
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106050.9323
+🔵 [Parametro C] Compra tras venta fantasma.
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:19:06
+🕒 Compra original: $ 106043.98
+🆔 Id: 41eb
+🪙 Compra Num: 27
+📈 Precio de venta: $ 106053.02
+📈 Venta numero: 31
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0426
+📊 Excedente sobre objetivo: % 0.0035
+- - - - - - - - - -
+📝 Estado de compra #27 (id 41eb): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:06
+📉 Precio de compra: $ 106053.03
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: d1aa
+🪙 Compra Num: 34
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106058.3327
+📊 Excedente de bajada: % 0.0011
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:11
+📉 Precio de compra: $ 106027.65
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 71f5
+🪙 Compra Num: 35
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106032.9514
+📊 Excedente de bajada: % 0.0189
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:15
+📉 Precio de compra: $ 106005.66
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 7dc6
+🪙 Compra Num: 36
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106010.9603
+📊 Excedente de bajada: % 0.0157
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:20
+📉 Precio de compra: $ 105998
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 8e2a
+🪙 Compra Num: 37
+📜 Estado: activa
+🎯 Objetivo de venta: $ 106003.2999
+📊 Excedente de bajada: % 0.0091
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:24
+📉 Precio de compra: $ 105990.14
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 816c
+🪙 Compra Num: 38
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105995.4395
+📊 Excedente de bajada: % 0.0024
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:28
+📉 Precio de compra: $ 105927.92
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: f67a
+🪙 Compra Num: 39
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105933.2164
+📊 Excedente de bajada: % 0.0537
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:19:32
+🕒 Compra original: $ 105927.92
+🆔 Id: f67a
+🪙 Compra Num: 39
+📈 Precio de venta: $ 105938.51
+📈 Venta numero: 32
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.05
+📊 Excedente sobre objetivo: % 0.005
+- - - - - - - - - -
+📝 Estado de compra #39 (id f67a): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:33
+📉 Precio de compra: $ 105938.51
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 99f2
+🪙 Compra Num: 40
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105943.8069
+📊 Excedente de bajada: % 0.103
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:37
+📉 Precio de compra: $ 105855.03
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: e973
+🪙 Compra Num: 41
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105860.3228
+📊 Excedente de bajada: % 0.0738
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:41
+📉 Precio de compra: $ 105846.16
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: a1b2
+🪙 Compra Num: 42
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105851.4523
+📊 Excedente de bajada: % 0.0034
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:19:46
+🕒 Compra original: $ 105846.16
+🆔 Id: a1b2
+🪙 Compra Num: 42
+📈 Precio de venta: $ 105859.22
+📈 Venta numero: 33
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0617
+📊 Excedente sobre objetivo: % 0.0073
+- - - - - - - - - -
+📝 Estado de compra #42 (id a1b2): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:46
+📉 Precio de compra: $ 105859.22
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 3bd8
+🪙 Compra Num: 43
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105864.513
+📊 Excedente de bajada: % 0.0698
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:19:50
+🕒 Compra original: $ 105855.03
+🆔 Id: e973
+🪙 Compra Num: 41
+📈 Precio de venta: $ 105891.49
+📈 Venta numero: 34
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.1722
+📊 Excedente sobre objetivo: % 0.0294
+- - - - - - - - - -
+📝 Estado de compra #41 (id e973): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:19:54
+🕒 Compra original: $ 105859.22
+🆔 Id: 3bd8
+🪙 Compra Num: 43
+📈 Precio de venta: $ 105877.05
+📈 Venta numero: 35
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0842
+📊 Excedente sobre objetivo: % 0.0118
+- - - - - - - - - -
+📝 Estado de compra #43 (id 3bd8): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:19:55
+📉 Precio de compra: $ 105877.05
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 0e16
+🪙 Compra Num: 44
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105882.3439
+📊 Excedente de bajada: % 0.0086
+🔵 [Parametro B].
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:20:07
+📉 Precio de compra: $ 105867.61
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c2c5
+🪙 Compra Num: 45
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105872.9034
+📊 Excedente de bajada: % 0.0039
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:20:11
+🕒 Compra original: $ 105867.61
+🆔 Id: c2c5
+🪙 Compra Num: 45
+📈 Precio de venta: $ 105874.02
+📈 Venta numero: 36
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0303
+📊 Excedente sobre objetivo: % 0.0011
+- - - - - - - - - -
+📝 Estado de compra #45 (id c2c5): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:20:15
+🕒 Compra original: $ 105877.05
+🆔 Id: 0e16
+🪙 Compra Num: 44
+📈 Precio de venta: $ 105895.31
+📈 Venta numero: 37
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0862
+📊 Excedente sobre objetivo: % 0.0122
+- - - - - - - - - -
+📝 Estado de compra #44 (id 0e16): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:20:19
+🕒 Compra original: $ 105938.51
+🆔 Id: 99f2
+🪙 Compra Num: 40
+📈 Precio de venta: $ 105957.48
+📈 Venta numero: 38
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0895
+📊 Excedente sobre objetivo: % 0.0129
+- - - - - - - - - -
+📝 Estado de compra #40 (id 99f2): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:20:27
+📉 Precio de compra: $ 105922.4
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 4d6f
+🪙 Compra Num: 46
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105927.6961
+📊 Excedente de bajada: % 0.0241
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:20:32
+📉 Precio de compra: $ 105892.65
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 66f8
+🪙 Compra Num: 47
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105897.9446
+📊 Excedente de bajada: % 0.011
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:20:36
+📉 Precio de compra: $ 105880.01
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: a948
+🪙 Compra Num: 48
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105885.304
+📊 Excedente de bajada: % 0.0069
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:20:40
+🕒 Compra original: $ 105880.01
+🆔 Id: a948
+🪙 Compra Num: 48
+📈 Precio de venta: $ 105887.01
+📈 Venta numero: 39
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0331
+📊 Excedente sobre objetivo: % 0.0016
+- - - - - - - - - -
+📝 Estado de compra #48 (id a948): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:20:41
+📉 Precio de compra: $ 105887.01
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: 3340
+🪙 Compra Num: 49
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105892.3044
+📊 Excedente de bajada: % 0.0615
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:20:45
+🕒 Compra original: $ 105887.01
+🆔 Id: 3340
+🪙 Compra Num: 49
+📈 Precio de venta: $ 105892.6
+📈 Venta numero: 40
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0264
+📊 Excedente sobre objetivo: % 0.0003
+- - - - - - - - - -
+📝 Estado de compra #49 (id 3340): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:20:53
+📉 Precio de compra: $ 105850.01
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: f50a
+🪙 Compra Num: 50
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105855.3025
+📊 Excedente de bajada: % 0.0352
+🔵 [Parametro B].
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:21:05
+🕒 Compra original: $ 105850.01
+🆔 Id: f50a
+🪙 Compra Num: 50
+📈 Precio de venta: $ 105867.52
+📈 Venta numero: 41
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0827
+📊 Excedente sobre objetivo: % 0.0115
+- - - - - - - - - -
+📝 Estado de compra #50 (id f50a): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:21:05
+📉 Precio de compra: $ 105867.53
+🪙 Btc comprado: ₿ 0.0047
+🪙 Compra id: c29d
+🪙 Compra Num: 51
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105872.8234
+📊 Excedente de bajada: % 0.0187
+🔵 [Parametro B].
+- - - - - - - - - -
+📌(A) 2025-10-17 12:21:09 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 105851.97, Num: 1.
+- - - - - - - - - -
+📌(A) 2025-10-17 12:21:17 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 105841.01, Num: 2.
+- - - - - - - - - -
+📌(A) 2025-10-17 12:21:25 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 105834.19, Num: 3.
+- - - - - - - - - -
+📌(A) 2025-10-17 12:21:33 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 105828.85, Num: 4.
+- - - - - - - - - -
+📌(A) 2025-10-17 12:21:37 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 105820.2, Num: 5.
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+📌(A) 2025-10-17 12:22:09 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 105804.91, Num: 6.
+- - - - - - - - - -
+📝 Estado de compra #32 (id 8f61): activa → anulada
+- - - - - - - - - -
+ • Pérdida por rebalance en esta compra: $ 1.135 (base $ 500 → 
+📝 Estado de compra #33 (id 7323): activa → anulada
+- - - - - - - - - -
+ • Pérdida por rebalance en esta compra: $ 1.135 (base $ 500 → 
+📝 Estado de compra #34 (id d1aa): activa → anulada
+- - - - - - - - - -
+ • Pérdida por rebalance en esta compra: $ 1.1698 (base $ 500 → 
+📝 Estado de compra #35 (id 71f5): activa → anulada
+- - - - - - - - - -
+ • Pérdida por rebalance en esta compra: $ 1.0504 (base $ 500 → 
+📝 Estado de compra #36 (id 7dc6): activa → anulada
+- - - - - - - - - -
+ • Pérdida por rebalance en esta compra: $ 0.9469 (base $ 500 → 
+   • Estado actualizado: anulada
+⚖️ Rebalance: purga 5/10 compras antiguas.
+📉 BTC vendido: ₿ 0.0236
+💰 USDT recibido: $ 2494.563
+- - - - - - - - - -
+💼 Balance tras rebalance → USDT: $ 2501.6832
+ · BTC: ₿ 0.0236
+- - - - - - - - - -
+📊 Rebalance #1 ejecutado
+🔻 Pérdida total en este rebalance: $ 5.437
+📉 Pérdida acumulada por rebalances: $ 5.437
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:22:25
+🕒 Compra original: $ 105867.53
+🆔 Id: c29d
+🪙 Compra Num: 51
+📈 Precio de venta: $ 105883.61
+📈 Venta numero: 42
+📤 Btc vendido: ₿ 0.0047
+💹 Ganancia de esta operacion: $ 0.0759
+📊 Excedente sobre objetivo: % 0.0102
+- - - - - - - - - -
+📝 Estado de compra #51 (id c29d): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:22:29
+📉 Precio de compra: $ 105874.83
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: 84b6
+🪙 Compra Num: 52
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105880.1237
+📊 Excedente de bajada: % 0.0033
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:22:33
+🕒 Compra original: $ 105874.83
+🆔 Id: 84b6
+🪙 Compra Num: 52
+📈 Precio de venta: $ 105889.9
+📈 Venta numero: 43
+📤 Btc vendido: ₿ 0.0024
+💹 Ganancia de esta operacion: $ 0.0356
+📊 Excedente sobre objetivo: % 0.0092
+- - - - - - - - - -
+📝 Estado de compra #52 (id 84b6): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:22:37
+📉 Precio de compra: $ 105868.48
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: 35e2
+🪙 Compra Num: 53
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105873.7734
+📊 Excedente de bajada: % 0.0152
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:22:46
+📉 Precio de compra: $ 105850.01
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: 3326
+🪙 Compra Num: 54
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105855.3025
+📊 Excedente de bajada: % 0.0052
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:22:54
+📉 Precio de compra: $ 105839.85
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: ae09
+🪙 Compra Num: 55
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105845.142
+📊 Excedente de bajada: % 0.0046
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:22:59
+📉 Precio de compra: $ 105815.93
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: d69c
+🪙 Compra Num: 56
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105821.2208
+📊 Excedente de bajada: % 0.0176
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:23:03
+🕒 Compra original: $ 105815.93
+🆔 Id: d69c
+🪙 Compra Num: 56
+📈 Precio de venta: $ 105826.96
+📈 Venta numero: 44
+📤 Btc vendido: ₿ 0.0024
+💹 Ganancia de esta operacion: $ 0.0261
+📊 Excedente sobre objetivo: % 0.0054
+- - - - - - - - - -
+📝 Estado de compra #56 (id d69c): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:23:03
+📉 Precio de compra: $ 105831.59
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: c520
+🪙 Compra Num: 57
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105836.8816
+📊 Excedente de bajada: % 0.0544
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:23:08
+📉 Precio de compra: $ 105831.58
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: e49c
+🪙 Compra Num: 58
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105836.8716
+📊 Excedente de bajada: % 0.0009
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:23:16
+📉 Precio de compra: $ 105816.13
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: 1818
+🪙 Compra Num: 59
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105821.4208
+📊 Excedente de bajada: % 0.0096
+🔵 [Parametro A].
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:23:24
+📉 Precio de compra: $ 105806.02
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: 63a8
+🪙 Compra Num: 60
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105811.3103
+📊 Excedente de bajada: % 0.0046
+🔵 [Parametro A].
+- - - - - - - - - -
+🟡 Trabajando...
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:23:44
+🕒 Compra original: $ 105806.02
+🆔 Id: 63a8
+🪙 Compra Num: 60
+📈 Precio de venta: $ 105819.9
+📈 Venta numero: 45
+📤 Btc vendido: ₿ 0.0024
+💹 Ganancia de esta operacion: $ 0.0328
+📊 Excedente sobre objetivo: % 0.0081
+- - - - - - - - - -
+📝 Estado de compra #60 (id 63a8): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-10-17 12:23:45
+📉 Precio de compra: $ 105819.89
+🪙 Btc comprado: ₿ 0.0024
+🪙 Compra id: b5fb
+🪙 Compra Num: 61
+📜 Estado: activa
+🎯 Objetivo de venta: $ 105825.181
+📊 Excedente de bajada: % 0.0017
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:23:49
+🕒 Compra original: $ 105816.13
+🆔 Id: 1818
+🪙 Compra Num: 59
+📈 Precio de venta: $ 105831.59
+📈 Venta numero: 46
+📤 Btc vendido: ₿ 0.0024
+💹 Ganancia de esta operacion: $ 0.0366
+📊 Excedente sobre objetivo: % 0.0096
+- - - - - - - - - -
+📝 Estado de compra #59 (id 1818): activa → vendida
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-10-17 12:23:53
+🕒 Compra original: $ 105819.89
+🆔 Id: b5fb
+🪙 Compra Num: 61
+📈 Precio de venta: $ 105835.76
+📈 Venta numero: 47
+📤 Btc vendido: ₿ 0.0024
+💹 Ganancia de esta operacion: $ 0.0375
+📊 Excedente sobre objetivo: % 0.01
+- - - - - - - - - -
+📝 Estado de compra #61 (id b5fb): activa → vendida
+- - - - - - - - - -

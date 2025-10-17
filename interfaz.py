@@ -944,6 +944,11 @@ class BotInterfaz(AnimationMixin):
 
        
         self._consola_buffer.clear()
+        # resetear índices/contexto de la consola
+        self._consola_last_n = 0
+        self._ctx_ultimo_id = None
+        self._ctx_ultimo_num = None
+
 
         # 7) Guardar la vista actual del usuario
         self.reset_animaciones()
@@ -1779,9 +1784,11 @@ class BotInterfaz(AnimationMixin):
             re_estado = re.compile(r'^\s*📜\s*Estado\s*:\s*(.+)\s*$')
             re_divisor = re.compile(r'^\s*-\s-(?:\s-)+\s*$')
 
+            # Reinicio seguro del puntero de consola (corrige bug tras limpiar)
             start = getattr(self, "_consola_last_n", 0)
-            if start < 0:
-                start = 0
+            if start > len(self._consola_buffer):
+                start = 0  # evita índice fuera de rango si se limpió
+            self._consola_last_n = start  # asegura coherencia
             nuevos = self._consola_buffer[start:]
             if not nuevos:
                 return
