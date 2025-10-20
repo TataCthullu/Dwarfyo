@@ -304,7 +304,24 @@ class BotInterfaz(AnimationMixin):
         self._aplicar_modus()
 
         self.actualizar_ui()
+        # 6) ♻️ Re-render retroactivo de la CONSOLA con la vista nueva
+        #    - Limpiamos el widget, reseteamos el puntero incremental
+        #      y volvemos a volcar TODO el buffer usando el nuevo modo.
+        try:
+            self.consola.configure(state='normal')
+            self.consola.delete("1.0", "end")
+            self.consola.configure(state='disabled')
+        except Exception:
+            pass
+        # Reiniciar el índice incremental para que se reescriba todo
+        try:
+            self._consola_last_n = 0
+        except Exception:
+            self._consola_last_n = 0
+        # Vuelca el buffer completo re-formateando con _reformat_line
         self.actualizar_consola()
+
+        # 7) Rehacer HISTORIAL (ya se formatea con format_var según vista)
         self.actualizar_historial()
 
     def ajustar_fuente_por_vista(self):
@@ -1047,7 +1064,7 @@ class BotInterfaz(AnimationMixin):
         # (sin tocar rellenar_mosaico; acá lo hacemos con una sola imagen escalada)
         
                 # ===== Fondo tipo mosaico (como los paneles principales) =====
-        self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/rect_gray_0_new.png", escala=3)
+        self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/rect_gray_0_new.png", escala=2)
 
 
         # ===== Helpers de layout sobre canvas =====
@@ -1088,6 +1105,25 @@ class BotInterfaz(AnimationMixin):
 
         self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)
         # ===== Checks de comportamiento (label en canvas + check centrado con bbox) =====
+        # --- Comisiones ---
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Aplicar comisión (%)",
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")
+        bbox = self.cfg_canvas.bbox(text_id)
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
+        self.var_comisiones_enabled = tk.BooleanVar(value=getattr(self.bot, "comisiones_enabled", True))
+        self.chk_fee = tk.Checkbutton(self.config_ventana, variable=self.var_comisiones_enabled,
+                                    text="", bg="navy", activebackground="navy",
+                                    relief="flat", bd=0, highlightthickness=0,
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_fee)
+        y += row
+
+        lbl = self.cfg_canvas.create_text(left_x, y, text="Porcentaje de comisión:",
+                                        fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+        self.var_comision_pct = tk.StringVar(value=str(getattr(self.bot, "comision_pct", "0.1")))
+        put_entry_next_to(lbl, self.var_comision_pct, width=8)
+        y += row
 
         # --- Ghost ---
         text_id = self.cfg_canvas.create_text(left_x, y, text="Habilitar compra tras venta fantasma",
@@ -1204,6 +1240,12 @@ class BotInterfaz(AnimationMixin):
                 usdtinit = Decimal(txt_usdt_inic)
                 tp = Decimal(txt_tp)
                 sl = Decimal(txt_sl)
+                
+                self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
+                try:
+                    self.bot.comision_pct = Decimal(self.var_comision_pct.get())
+                except InvalidOperation:
+                    self.bot.comision_pct = Decimal("0.0")
 
                 # Validaciones Rebalance
                 try:
@@ -1443,40 +1485,35 @@ class BotInterfaz(AnimationMixin):
     
 
     def format_var(self, valor, simbolo=""):
+        """
+        Formatea números sin notación científica, sin redondear
+        y sin ceros de más al final. También corrige '-0' -> '0'.
+        Si no se puede parsear como número, devuelve el string tal cual.
+        """
         if valor is None:
             return ""
-        if isinstance(valor, str):
-            s = valor.strip()
+
+        # Intentar tratar SIEMPRE como Decimal (incluye cuando viene como string)
+        try:
+            d = Decimal(str(valor))
+        except Exception:
+            s = str(valor).strip()
             return f"{simbolo} {s}" if simbolo and s else s
 
-        modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
-        prec = self.float_precision if hasattr(self, 'float_precision') else 2
+        # Cualquier cero (incluye 0E-8, -0, etc.)
+        if d == 0:
+            return f"{simbolo} 0" if simbolo else "0"
 
-        if modo == 'decimal':
-            # Mostrar “inteligente” con Decimal, sin ceros basura
-            if not isinstance(valor, Decimal):
-                valor = Decimal(str(valor))
-            texto = format(valor.normalize(), 'f')
-            if '.' in texto:
-                texto = texto.rstrip('0').rstrip('.')
-        else:
-            # Mostrar HASTA 'prec' decimales y recortar ceros sobrantes
-            try:
-                v = float(valor)
-            except Exception:
-                v = float(str(valor))
-            texto = f"{v:.{prec}f}"
-            if '.' in texto:
-                texto = texto.rstrip('0').rstrip('.')
+        # Salida plana (sin 'E+…') y sin ceros sobrantes
+        s = format(d, "f")            # p. ej. "499.7950000000"
+        if "." in s:
+            s = s.rstrip("0").rstrip(".") or "0"
 
-        # Normalizar -0 → 0
-        try:
-            if float(texto) == 0.0:
-                texto = "0"
-        except Exception:
-            pass
+        if s in ("-0", "-0.0"):
+            s = "0"
 
-        return f"{simbolo} {texto}" if simbolo else texto
+        return f"{simbolo} {s}" if simbolo else s
+
 
 
     def format_fijo(self, clave, valor):
@@ -1945,19 +1982,28 @@ class BotInterfaz(AnimationMixin):
                 return Decimal("0")
 
         if self.bot.precio_actual is None:
-            return  # No inicializar con datos vacíos
+            return
+
         self.bot.hold_usdt_var = self.bot.hold_usdt()
-        self.bot.hold_btc_var = self.bot.hold_btc()
+        self.bot.hold_btc_var  = self.bot.hold_btc()
+
+        # 🔧 Baselines “intencionales” para el color:
         self.valores_iniciales = {
+            # balance se compara contra la inversión inicial (no el balance post-compra)
+            'balance':               safe(self.bot.inv_inic),
+
+            # estas comparan contra 0 para pintar por signo (+ verde / - rojo)
+            'variacion_total_inv':   Decimal('0'),
+            'variacion_desde_inicio':Decimal('0'),
+            'desde_ult_comp':        Decimal('0'),
+            'ult_vent':              Decimal('0'),
+
+            # Los que son info comparativa: se mantienen por si los usás en color
             'precio_actual':         safe(self.bot.precio_actual),
-            'balance':               safe(self.bot.usdt_mas_btc),
-            'desde_ult_comp':        safe(self.bot.varCompra),
-            'ult_vent':              safe(self.bot.varVenta),
-            'variacion_desde_inicio': safe(self.bot.var_inicio),
-            'variacion_total_inv':   safe(self.bot.var_total),
             'hold_usdt':             safe(self.bot.hold_usdt_var),
             'hold_btc':              safe(self.bot.hold_btc_var),
         }
+
 
     def run(self):
         try:

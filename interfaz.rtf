@@ -1,0 +1,2018 @@
+{\rtf1\fbidis\ansi\ansicpg1252\deff0\nouicompat\deflang2058{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset1 Segoe UI Emoji;}{\f2\fnil Calibri;}{\f3\fnil\fcharset1 Segoe UI Symbol;}{\f4\fnil\fcharset1 Cambria Math;}{\f5\fnil\fcharset1 Segoe UI Emoji;}{\f6\fnil\fcharset1 Segoe UI Symbol;}}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mmathFont4\mwrapIndent1440 }\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang10 # \'a9 2025 Dungeon Market (Khaz\'e2d - Trading Bot)\par
+# Todos los derechos reservados.\par
+\par
+import tkinter as tk\par
+from tkinter.scrolledtext import ScrolledText\par
+from utils import reproducir_sonido, detener_sonido_y_cerrar, reproducir_musica_fondo, detener_musica_fondo\par
+from codigo_principala import TradingBot\par
+from calculador import CalculatorWindow\par
+from PIL import ImageGrab, Image, ImageTk\par
+from tkinter import filedialog, messagebox\par
+from concurrent.futures import ThreadPoolExecutor\par
+from animation_mixin import AnimationMixin\par
+from decimal import Decimal, InvalidOperation\par
+import re\par
+import csv\par
+from datetime import datetime\par
+\par
+class BotInterfaz(AnimationMixin):\par
+    def __init__(self, bot: TradingBot):\par
+         # Main window setup\par
+        self.root = tk.Tk()\par
+        self.root.title("Dungeon Market")\par
+        self.root.config(cursor="@imagenes/deco/cursor/stone_arrow.cur")\par
+        self.root.configure(bg="pink")\par
+        self.root.iconbitmap("imagenes/deco/urand_eternal_torment.png")\par
+        self.root.attributes("-alpha", 0.93)\par
+        # initialize bot and clear only ingreso price until started\par
+        self.bot = bot\par
+        self.bot.ui_callback_on_stop = self._on_bot_stop\par
+        self.was_offline = False\par
+        self.bot.log_fn = self.logf\par
+        self.operativa_configurada = False\par
+\par
+\par
+        self.executor = ThreadPoolExecutor(max_workers=1)\par
+        self.config_ventana = None\par
+        # Fuentes espec\'edficas para consolas\par
+        self._font_historial = ("LondonBetween", 16)  # o la que quieras\par
+        self._font_consola   = ("LondonBetween", 16)  # o distinta si prefer\'eds\par
+        self._consola_buffer = []  # buffer de l\'edneas de consola\par
+        self._consola_last_n = 0   # cu\'e1ntas entradas del buffer ya fueron pintadas (console incremental)\par
+        self._ctx_ultimo_id = None # contexto incremental para correcci\'f3n de estado\par
+        self._ctx_ultimo_num = None\par
+\par
+        self.colores_fijos = \{\par
+            "usdt": "SpringGreen",\par
+            "btc_dispo": "SkyBlue",\par
+            "btcnusdt": "DodgerBlue",\par
+            "ganancia_neta": "LightSeaGreen",\par
+            "start_time": "Khaki",\par
+            "runtime": "Khaki",\par
+            "compras_realizadas": "LightSteelBlue",\par
+            "ventas_realizadas": "Cyan",\par
+            "compras_fantasma": "Magenta",\par
+            "ventas_fantasma": "MediumSpringGreen",\par
+\par
+            "ghost_ratio": "Plum",\par
+            "balance": "Orange",\par
+            "variacion_total_inv": "Lightgreen",\par
+            "variacion_desde_inicio": "LightCoral",\par
+            "precio_actual": "LemonChiffon",\par
+            "desde_ult_comp": "IndianRed",\par
+            "ult_vent": "MediumSeaGreen",\par
+            "excedente_compras": "MediumTurquoise",\par
+            "excedente_ventas": "lightblue",\par
+            "excedente_total": "Pink",\par
+            "hold_usdt": "MediumPurple",\par
+            "rebalances": "IndianRed",\par
+            "rebalance_loss_total": "Tomato"\par
+        \}   \par
+        \par
+        self._consola_buffer = []  # guarda todo lo impreso en consola\par
+        self._font_normal = ("LondonBetween", 16)\par
+        self.espaciado_horizontal = 5\par
+        self.espaciado_vertical = 35\par
+        self.loop_id = None\par
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)\par
+        # Lista de (StringVar, Label) para los No Data\par
+        self.nd_canvas = []\par
+        # UI variables and clear initial values\par
+        self._create_stringvars()         \par
+        self.valores_iniciales = \{\}\par
+        self.colores_actuales = \{\}  # key -> "Gold", "Green" o "Crimson"\par
+\par
+        self.limpiar_visible = False\par
+        #self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))\par
+      \par
+      # Estado de modo de vista (Avanzado por defecto)\par
+        self.modus = tk.StringVar(value='avanzado')\par
+        self.info_labels = \{\}\par
+\par
+        # Conjunto de keys a ocultar en modo Standard\par
+        self._keys_modus_standar = \{\par
+            "excedente_compras",\par
+            "excedente_ventas",\par
+            "excedente_total",\par
+            "ghost_ratio",\par
+            "rebalances",\par
+            "rebalance_loss_total",\par
+            "hold_btc",\par
+            "hold_usdt",\par
+            "rebalance_thr",\par
+            "rebalance_pct",\par
+        \}\par
+\par
+        # Frames\par
+        self.left_panel()\par
+        self.center_panel()\par
+        self.right_panel()\par
+        self.right_panel_b()\par
+        self.animation_panel()\par
+        self.various_panel()\par
+        self.init_animation()\par
+        self._aplicar_modus()\par
+        # \f1\u11013?\u-497?\f2  \f0 A\'d1ADIR: estado visual inicial de altares\par
+        try:\par
+            self.set_take_profit_state("inactive")\par
+            self.set_stop_loss_state("inactive")\par
+        except Exception:\par
+            pass\par
+\par
+        \par
+        self.historial.tag_configure('venta_tag', foreground='Green')\par
+        self.historial.tag_configure('compra_tag', foreground='SteelBlue')\par
+        # \f3\u-10180?\u-8267?\f2  \f0 M\'fasica de fondo \f2\emdash  definir estado ANTES de armar los men\f0\'fas\par
+        self._music_path = "Musica/epicbfinal.wav"\par
+        self.music_enabled = True  # estado inicial\par
+        if self.music_enabled:\par
+            reproducir_musica_fondo(self._music_path, loop=-1, volumen=0.25)\par
+\par
+        # \f2\emdash\emdash\emdash\emdash\emdash\emdash  Barra de men\f0\'fa unificada \f2\emdash\emdash\emdash\emdash\emdash\emdash\par
+        self.menubar = tk.Menu(self.root)\par
+        # Estado de vista: 'decimal' o 'float'\par
+        self.display_mode = tk.StringVar(value='decimal')\par
+        self.float_precision = 2\par
+        self.ajustar_fuente_por_vista()\par
+        # 3) Submen\f0\'fa Vista\par
+        self._crear_menu_vista()\par
+        # Creamos submenu Opciones\par
+        self.config_menu   = tk.Menu(self.menubar, tearoff=0)\par
+        self.config_menu.add_command(label="Silenciar sonido", command=self.toggle_sound)\par
+        self.config_menu.add_command(label="Guardar captura", command=self.save_screenshot)\par
+        self.menubar.add_cascade(label="Opciones", menu=self.config_menu)\par
+        # \f2\emdash\emdash  Men\f0\'fa M\'fasica (independiente)\par
+        self.music_menu = tk.Menu(self.menubar, tearoff=0)\par
+        self.music_menu.add_command(label="Habilitar", command=self.music_enable)\par
+        self.music_menu.add_command(label="Desabilitar", command=self.music_disable)\par
+        self.menubar.add_cascade(label="M\'fasica", menu=self.music_menu)\par
+\par
+        # Ajustar coherencia inicial (deshabilitar el que no corresponda)\par
+        if self.music_enabled:\par
+            self.music_menu.entryconfig("Habilitar", state="disabled")\par
+        else:\par
+            self.music_menu.entryconfig("Desabilitar", state="disabled")\par
+\par
+        # \f2\emdash\emdash\emdash  Men\f0\'fa Archivo \f2\emdash\emdash\emdash\par
+        menu_archivo = tk.Menu(self.menubar, tearoff=0)\par
+        menu_archivo.add_command(label="Descargar historial...", command=self.descargar_historial)\par
+        menu_archivo.add_command(label="Descargar consola...", command=self.descargar_consola)\par
+        self.menubar.add_cascade(label="Archivo", menu=menu_archivo)\par
+\par
+        # \f0\'a1Solo aqu\'ed configuramos el men\'fa completo!\par
+        self.root.config(menu=self.menubar) \par
+        self.actualizar_ui()\par
+        self.inicializar_valores_iniciales()\par
+        self._aplicar_modus()\par
+\par
+        self._prev_price_ui = self.bot.precio_actual\par
+        # Baseline for color comparisons\par
+        self.sound_enabled = True\par
+        self.bot.sound_enabled = True\par
+\par
+        \par
+        # \f2\emdash\emdash  Men\f0\'fa Modus \f2\emdash\emdash\par
+        self.modus_menu = tk.Menu(self.menubar, tearoff=0)\par
+        self.modus_menu.add_radiobutton(\par
+            label="Avanzado",\par
+            variable=self.modus,\par
+            value="avanzado",\par
+            command=self._aplicar_modus\par
+        )\par
+        self.modus_menu.add_radiobutton(\par
+            label="Standard",\par
+            variable=self.modus,\par
+            value="standard",\par
+            command=self._aplicar_modus\par
+        )\par
+\par
+        self.menubar.add_cascade(label="Modus", menu=self.modus_menu)\par
+        \par
+    def reset_animaciones(self):\par
+            self._animaciones_activas = False\par
+            # Importante: no hay forma de cancelar los after activos a menos que guardes sus IDs.\par
+            # Pero este flag impide que nuevas animaciones se dupliquen.\par
+        \par
+    def _on_bot_stop(self, motivo=None):\par
+        """\par
+        Callback desde TradingBot.detener(motivo)\par
+        motivo: "TP" | "SL" | "TP/SL" (compat) | None/otros\par
+        """\par
+        # \f3\u-10179?\u-8959?\f2  \f0 Siempre resetear botones a un estado "limpio"\par
+        self.btn_inicio.config(text="Iniciar")\par
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')\par
+        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')\par
+        self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')\par
+\par
+        # Parada autom\'e1tica por TP/SL (nuevo y compat con el viejo "TP/SL")\par
+        if motivo in ("TP", "SL", "TP/SL"):\par
+            # mostrar solo 'Limpiar'\par
+            self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')\par
+\par
+            if motivo == "TP":\par
+                self.log_en_consola("\f3\u-10180?\u-8273?\f2  \f0 Take Profit alcanzado. Usa 'Limpiar' antes de reiniciar.")\par
+                try:\par
+                    self.set_take_profit_state("hit")   # altar TP \f4\u8594?\f2  \f0 Gozag\par
+                except Exception:\par
+                    pass\par
+\par
+            elif motivo == "SL":\par
+                self.log_en_consola("\f1\u-10179?\u-8479?\u-497?\f2  \f0 Stop Loss alcanzado. Usa 'Limpiar' antes de reiniciar.")\par
+                try:\par
+                    self.set_stop_loss_state("hit")     # altar SL \f4\u8594?\f2  \f0 Trog\par
+                except Exception:\par
+                    pass\par
+\par
+            else:  # "TP/SL" (llamadas antiguas, motivo ambiguo)\par
+                self.log_en_consola("\f3\u-10179?\u-9012?\f2  \f0 Bot detenido por Take Profit / Stop Loss. Usa 'Limpiar' antes de reiniciar.")\par
+            return\par
+\par
+        # Parada manual u otros motivos \f4\u8594?\f2  \f0 mostrar Configurar y (solo si hay config) Iniciar\par
+        if getattr(self, 'operativa_configurada', False):\par
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')\par
+        else:\par
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')\par
+        self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')\par
+\par
+\par
+    def _crear_menu_vista(self):\par
+        view_menu = tk.Menu(self.menubar, tearoff=0)\par
+        view_menu.add_radiobutton(\par
+            label="Decimal",\par
+            variable=self.display_mode,\par
+            value="decimal",\par
+            command=self._cambiar_precision\par
+        )\par
+        view_menu.add_radiobutton(\par
+            label="Float (2 decimales)",\par
+            variable=self.display_mode,\par
+            value="float",\par
+            command=lambda: self._cambiar_precision(2)\par
+        )\par
+        view_menu.add_radiobutton(\par
+            label="Float (4 decimales)",\par
+            variable=self.display_mode,\par
+            value="float",\par
+            command=lambda: self._cambiar_precision(4)\par
+        )\par
+\par
+        self.menubar.add_cascade(label="Vista", menu=view_menu)\par
+\par
+    def _aplicar_modus(self):\par
+        \par
+        modus = self.modus.get()\par
+\par
+        # Mostrar todo por defecto (labels + valores)\par
+        for _, (canvas, item_id) in getattr(self, "info_canvas", \{\}).items():\par
+            try: canvas.itemconfigure(item_id, state='normal')\par
+            except Exception: pass\par
+        for _, (canvas, lbl_id) in getattr(self, "info_labels", \{\}).items():\par
+            try: canvas.itemconfigure(lbl_id, state='normal')\par
+            except Exception: pass\par
+\par
+        # En Standard, ocultar los pedidos (label + valor)\par
+        if modus == "standard":\par
+            for key in getattr(self, "_keys_modus_standar", set()):\par
+                if key in getattr(self, "info_canvas", \{\}):\par
+                    canvas, item_id = self.info_canvas[key]\par
+                    try: canvas.itemconfigure(item_id, state='hidden')\par
+                    except Exception: pass\par
+                if key in getattr(self, "info_labels", \{\}):\par
+                    canvas, lbl_id = self.info_labels[key]\par
+                    try: canvas.itemconfigure(lbl_id, state='hidden')\par
+                    except Exception: pass\par
+\par
+    def _cambiar_precision(self, prec=None):\par
+        if prec is not None:\par
+            self.float_precision = prec\par
+\par
+        self.ajustar_fuente_por_vista()  \par
+        \par
+\par
+        # \f1\u-10178?\u-8708?\f2  \f0 Destruir y recrear paneles para que los textos fijos usen nueva fuente\par
+        try:\par
+            self.left_frame.destroy()\par
+            self.center_frame.destroy()\par
+            self.animation_frame.destroy()\par
+        except Exception:\par
+            pass\par
+        self.left_panel()\par
+        self.center_panel()\par
+        self.animation_panel()\par
+        self.init_animation()  \par
+\par
+        self._aplicar_modus()\par
+\par
+        self.actualizar_ui()\par
+        # 6) \f1\u9851?\u-497?\f2  \f0 Re-render retroactivo de la CONSOLA con la vista nueva\par
+        #    - Limpiamos el widget, reseteamos el puntero incremental\par
+        #      y volvemos a volcar TODO el buffer usando el nuevo modo.\par
+        try:\par
+            self.consola.configure(state='normal')\par
+            self.consola.delete("1.0", "end")\par
+            self.consola.configure(state='disabled')\par
+        except Exception:\par
+            pass\par
+        # Reiniciar el \'edndice incremental para que se reescriba todo\par
+        try:\par
+            self._consola_last_n = 0\par
+        except Exception:\par
+            self._consola_last_n = 0\par
+        # Vuelca el buffer completo re-formateando con _reformat_line\par
+        self.actualizar_consola()\par
+\par
+        # 7) Rehacer HISTORIAL (ya se formatea con format_var seg\'fan vista)\par
+        self.actualizar_historial()\par
+\par
+    def ajustar_fuente_por_vista(self):\par
+        modo = self.display_mode.get()\par
+\par
+        if modo == 'decimal':\par
+            size = 16\par
+            self.espaciado_vertical = 35\par
+        elif modo == 'float' and self.float_precision == 2:\par
+            size = 28\par
+            self.espaciado_vertical = 40\par
+        elif modo == 'float' and self.float_precision == 4:\par
+            size = 24\par
+            self.espaciado_vertical = 40\par
+        else:\par
+            size = 16  # fallback\par
+            self.espaciado_vertical = 35\par
+\par
+        self._font_normal = ("LondonBetween", size)\par
+\par
+        # Tama\'f1os FIJOS para consolas seg\'fan la vista\par
+        if modo == 'decimal':\par
+            hist_size = 16   \par
+            cons_size = 16\par
+        elif modo == 'float' and self.float_precision == 2:\par
+            hist_size = 20\par
+            cons_size = 20\par
+        elif modo == 'float' and self.float_precision == 4:\par
+            hist_size = 18\par
+            cons_size = 18\par
+        else:\par
+            hist_size = 16\par
+            cons_size = 16\par
+\par
+        self._font_historial = (self._font_normal[0], hist_size)\par
+        self._font_consola   = (self._font_normal[0], cons_size)\par
+\par
+        # aplicar inmediatamente a los widgets existentes\par
+        self._aplicar_fuente_consolas()\par
+\par
+    def music_enable(self):\par
+        if not self.music_enabled:\par
+            reproducir_musica_fondo("Musica/epicbfinal.wav", loop=-1, volumen=0.25)\par
+            self.music_enabled = True\par
+            self.log_en_consola("\f3\u-10180?\u-8267?\f2  \f0 M\'fasica habilitada.")\par
+            self.music_menu.entryconfig("Habilitar", state="disabled")\par
+            self.music_menu.entryconfig("Desabilitar", state="normal")\par
+\par
+    def music_disable(self):\par
+        if self.music_enabled:\par
+            detener_musica_fondo()\par
+            self.music_enabled = False\par
+            self.log_en_consola("\f3\u-10179?\u-8953?\f2  \f0 M\'fasica desabilitada.")\par
+            self.log_en_consola("- - - - - - - - - -")\par
+            self.music_menu.entryconfig("Desabilitar", state="disabled")\par
+            self.music_menu.entryconfig("Habilitar", state="normal")\par
+\par
+\par
+    def toggle_sound(self):\par
+        self.sound_enabled = not self.sound_enabled\par
+        self.bot.sound_enabled = self.sound_enabled\par
+        estado = "\f3\u-10179?\u-8953?\f2  \f0 Sonido desactivado" if not self.sound_enabled else "\f3\u-10179?\u-8950?\f2  \f0 Sonido activado"\par
+        \par
+        self.log_en_consola(estado)\par
+        self.log_en_consola("- - - - - - - - - -")\par
+        # Actualizamos tambi\'e9n el texto del men\'fa:\par
+        nuevo_label = "Activar sonido" if not self.sound_enabled else "Silenciar sonido"\par
+        # entryconfig(0, ...) act\'faa sobre la primera entrada que creamos en config_menu\par
+        self.config_menu.entryconfig(0, label=nuevo_label)\par
+  \par
+    def save_screenshot(self):\par
+        x = self.root.winfo_rootx()\par
+        y = self.root.winfo_rooty()\par
+        w = x + self.root.winfo_width()\par
+        h = y + self.root.winfo_height()\par
+        img = ImageGrab.grab(bbox=(x, y, w, h))\par
+        ruta = filedialog.asksaveasfilename(defaultextension=".png",\par
+                                           filetypes=[("PNG","*.png")])\par
+        if ruta:\par
+            img.save(ruta)\par
+            self.log_en_consola(f"\f3\u-10179?\u-8968?\f2  \f0 Captura guardada en: \{ruta\}")\par
+            self.log_en_consola("- - - - - - - - - -")\par
+# \f2\emdash\emdash\emdash  dentro de BotInterfaz \emdash\emdash\emdash\par
+\par
+    def _exportar_texto(self, widget_text, sugerencia="export"):\par
+        """\par
+        Exporta el contenido de un Text/ScrolledText:\par
+        - .txt (texto tal cual)\par
+        - .csv (una l\f0\'ednea por l\'ednea; Excel lo abre)\par
+        """\par
+        try:\par
+            contenido = widget_text.get("1.0", "end-1c")\par
+        except Exception as e:\par
+            messagebox.showerror("Error", f"No pude leer el widget: \{e\}")\par
+            return\par
+\par
+        if not contenido.strip():\par
+            messagebox.showinfo("Vac\'edo", f"No hay contenido para exportar en '\{sugerencia\}'.")\par
+            return\par
+\par
+        fecha = datetime.now().strftime("%Y%m%d_%H%M%S")\par
+        fname_sugerido = f"\{sugerencia\}_\{fecha\}.txt"\par
+\par
+        ruta = filedialog.asksaveasfilename(\par
+            defaultextension=".txt",\par
+            initialfile=fname_sugerido,\par
+            filetypes=[("Texto", "*.txt"), ("CSV (Excel)", "*.csv"), ("Todos", "*.*")],\par
+            title=f"Guardar \{sugerencia\}"\par
+        )\par
+        if not ruta:\par
+            return\par
+\par
+        try:\par
+            if ruta.lower().endswith(".csv"):\par
+                # Guardamos cada l\'ednea como una fila CSV (una sola columna)\par
+                lineas = contenido.splitlines()\par
+                with open(ruta, "w", newline="", encoding="utf-8") as f:\par
+                    w = csv.writer(f)\par
+                    for linea in lineas:\par
+                        w.writerow([linea])\par
+            else:\par
+                with open(ruta, "w", encoding="utf-8") as f:\par
+                    f.write(contenido)\par
+            messagebox.showinfo("Listo", f"Guardado en:\\n\{ruta\}")\par
+        except Exception as e:\par
+            messagebox.showerror("Error", f"No pude guardar el archivo:\\n\{e\}")\par
+\par
+\par
+    def descargar_historial(self):\par
+        self._exportar_texto(self.historial, "historial")\par
+\par
+    def descargar_consola(self):\par
+        self._exportar_texto(self.consola, "consola")\par
+\par
+\par
+    def _create_stringvars(self):\par
+        # Display and config variables\par
+        self.precio_act_str = tk.StringVar()\par
+        self.balance_str = tk.StringVar()\par
+        self.start_time_str = tk.StringVar()\par
+        self.runtime_str = tk.StringVar()\par
+        self.cant_btc_str = tk.StringVar()\par
+        self.btc_en_usdt = tk.StringVar()\par
+        self.varpor_set_compra_str = tk.StringVar()\par
+        self.varpor_set_venta_str = tk.StringVar()\par
+        self.precio_de_ingreso_str = tk.StringVar()\par
+        self.var_inicio_str = tk.StringVar()\par
+        self.ganancia_total_str = tk.StringVar()\par
+        self.cont_compras_fantasma_str = tk.StringVar()\par
+        self.cont_ventas_fantasma_str = tk.StringVar()\par
+        self.ghost_ratio_var = tk.StringVar()\par
+        self.compras_realizadas_str = tk.StringVar()\par
+        self.ventas_realizadas_str = tk.StringVar()\par
+        self.porc_objetivo_venta_str = tk.StringVar()\par
+        self.cant_usdt_str = tk.StringVar()\par
+        self.porc_desde_compra_str = tk.StringVar()\par
+        self.porc_desde_venta_str = tk.StringVar()\par
+        self.inv_por_compra_str = tk.StringVar()\par
+        self.fixed_buyer_str = tk.StringVar()\par
+        self.hold_usdt_str = tk.StringVar()\par
+        self.hold_btc_str = tk.StringVar()\par
+        self.var_total_str = tk.StringVar() \par
+        self.excedente_compras_str = tk.StringVar()\par
+        self.excedente_ventas_str = tk.StringVar()\par
+        self.excedente_total_str = tk.StringVar()\par
+        self.take_profit_str = tk.StringVar()\par
+        self.stop_loss_str = tk.StringVar()\par
+        self.cont_rebalances_str = tk.StringVar() \par
+        self.rebalance_loss_total_str = tk.StringVar()\par
+        self.rebalance_thr_str = tk.StringVar()\par
+        self.rebalance_pct_str = tk.StringVar()\par
+\par
+\par
+    def rellenar_mosaico(self, canvas, image_path, escala=1):\par
+\par
+        # Cargar imagen original\par
+        imagen_original = Image.open(image_path)\par
+        ancho, alto = imagen_original.size\par
+        imagen_redimensionada = imagen_original.resize((ancho * escala, alto * escala), Image.NEAREST)\par
+        imagen = ImageTk.PhotoImage(imagen_redimensionada)\par
+\par
+        # Guardar referencia en el canvas (evita que se borre de memoria)\par
+        if not hasattr(canvas, 'imagenes'):\par
+            canvas.imagenes = []\par
+        canvas.imagenes.append(imagen)\par
+\par
+        # Obtener tama\'f1o del canvas\par
+        width = int(canvas['width'])\par
+        height = int(canvas['height'])\par
+\par
+        # Dibujar la imagen en mosaico\par
+        for x in range(0, width, imagen.width()):\par
+            for y in range(0, height, imagen.height()):\par
+                canvas.create_image(x, y, image=imagen, anchor='nw')    \par
+    \par
+        \par
+    #Frames\par
+    def left_panel(self):\par
+        self.left_frame = tk.Frame(self.root, bd=0,                 # sin borde\par
+    highlightthickness=0, # sin \f2\ldblquote\f0 resaltado\f2\rdblquote  \f0 al enfoque\par
+    relief='flat')\par
+        self.left_frame.place(x=0, y=0, width=600, height=900)\par
+\par
+        self.canvas_uno = tk.Canvas(self.left_frame, width=600, height=900, highlightthickness=0)\par
+        self.canvas_uno.pack(fill="both", expand=True)\par
+        self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)\par
+        \par
+        y_offset = 10\par
+        row_height = self.espaciado_vertical \par
+\par
+\par
+        if not hasattr(self, 'info_canvas'):\par
+            self.info_canvas = \{\}\par
+        if not hasattr(self, 'nd_canvas'):\par
+            self.nd_canvas = []\par
+\par
+        def add(label_text, var, key=None):\par
+            nonlocal y_offset\par
+            # 1) etiqueta fija\par
+            color_etiqueta = self.colores_fijos.get(key, "White") if key else "White"\par
+\par
+            lbl_id = self.canvas_uno.create_text(10, y_offset,\par
+                                                 text=label_text,\par
+                                                 fill=color_etiqueta,\par
+                                                 font=self._font_normal,\par
+                                                 anchor="nw")\par
+            # 2) medir y posicionar valor a la derecha\par
+            bbox = self.canvas_uno.bbox(lbl_id)\par
+            x_val = bbox[2] + self.espaciado_horizontal\par
+            txt_id = self.canvas_uno.create_text(x_val, y_offset,\par
+                                                 text=var.get(),\par
+                                                 fill="gold",\par
+                                                 font=self._font_normal,\par
+                                                 anchor="nw")\par
+            self.nd_canvas.append((var, self.canvas_uno, txt_id, x_val, y_offset))\par
+            if key:\par
+                self.info_canvas[key] = (self.canvas_uno, txt_id)\par
+                y_offset += row_height\par
+            \par
+            if key:\par
+                self.info_labels[key] = (self.canvas_uno, lbl_id)\par
+                self.info_canvas[key] = (self.canvas_uno, txt_id)\par
+\par
+        add("Usdt + Btc:", self.balance_str, "balance")\par
+        add("Variaci\'f3n Total invertido:", self.var_total_str, "variacion_total_inv")\par
+        add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")\par
+        add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")    \par
+        add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")\par
+        add("Usdt Disponible:", self.cant_usdt_str, "usdt") \par
+        add("Btc Disponible:", self.cant_btc_str, "btc_dispo")\par
+        add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")\par
+        add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")\par
+        add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")\par
+        add("Compras Realizadas:", self.compras_realizadas_str, "compras_realizadas")\par
+        add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_realizadas")\par
+        add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_fantasma")\par
+        add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_fantasma")\par
+        add("Hold Btc/Usdt Gu\'eda:", self.hold_usdt_str, "hold_usdt")\par
+        add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")\par
+        add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")\par
+        add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")\par
+        add("Excedente total:",  self.excedente_total_str, "excedente_total")\par
+        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")\par
+        add("P\'e9rdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")\par
+        \par
+    def center_panel(self):\par
+        self.center_frame = tk.Frame(self.root, bd=0, relief='flat')\par
+        self.center_frame.place(x=600, y=0, width=700, height=450)\par
+\par
+        self.canvas_center = tk.Canvas(self.center_frame, width=700, height=450, highlightthickness=0, bd=0, relief='flat')\par
+        self.canvas_center.pack(fill="both", expand=True)\par
+        self.rellenar_mosaico(self.canvas_center, "imagenes/decoa/wall/wall_vines_1.png", escala=2)\par
+        \par
+\par
+        y_offset = 10\par
+        row_height = self.espaciado_vertical\par
+\par
+\par
+        def add(label_text, var, key=None):\par
+            nonlocal y_offset\par
+            # 1) etiqueta fija\par
+            lbl_id = self.canvas_center.create_text(10, y_offset,\par
+                                                    text=label_text,\par
+                                                    fill="MediumSpringGreen",\par
+                                                    font=self._font_normal,\par
+                                                    anchor="nw")\par
+            # 2) medir y posicionar valor\par
+            bbox = self.canvas_center.bbox(lbl_id)\par
+            x_val = bbox[2] + self.espaciado_horizontal\par
+            txt_id = self.canvas_center.create_text(x_val, y_offset,\par
+                                                    text=var.get(),\par
+                                                    fill="gold",\par
+                                                    font=self._font_normal,\par
+                                                    anchor="nw")\par
+            self.nd_canvas.append((var, self.canvas_center, txt_id, x_val, y_offset))\par
+            if key:\par
+                self.info_canvas[key] = (self.canvas_center, txt_id)\par
+            y_offset += row_height\par
+\par
+            if key:\par
+                self.info_labels[key] = (self.canvas_center, lbl_id)\par
+                self.info_canvas[key] = (self.canvas_center, txt_id)\par
+\par
+        add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")    \par
+        add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")\par
+        add("% Desde venta, para compra:", self.porc_desde_venta_str, "porc_desde_venta")\par
+        add("% Por operacion:", self.inv_por_compra_str, "porc_inv_por_compra")\par
+        add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")\par
+        add("Take Profit:", self.take_profit_str, "take_profit")\par
+        add("Stop Loss:", self.stop_loss_str, "stop_loss")\par
+   \par
+    def right_panel(self):\par
+        self.right_frame = tk.Frame(self.root, bd=0, # sin \f2\ldblquote\f0 resaltado\f2\rdblquote  \f0 al enfoque\par
+    relief='flat')\par
+        self.right_frame.place(x=1300, y=0, width=650, height=450)\par
+\par
+        self.canvas_right = tk.Canvas(self.right_frame, width=650, height=450, highlightthickness=0)\par
+        self.canvas_right.pack(fill="both", expand=True)\par
+        self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)\par
+        \par
+\par
+        self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_historial)\par
+\par
+        self.historial.place(x=70, y=70, width=500, height=310)\par
+\par
+\par
+   \par
+\par
+    def right_panel_b(self):\par
+        self.right_frame_b = tk.Frame(self.root)\par
+        self.right_frame_b.place(x=1300, y=450, width=620, height=450)\par
+\par
+        self.canvas_right_b = tk.Canvas(self.right_frame_b, width=640, height=450, highlightthickness=0)\par
+        self.canvas_right_b.pack(fill="both", expand=True)\par
+        self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)\par
+        \par
+\par
+        # Creamos la consola, pero la a\'f1adimos al canvas con create_window\par
+        self.consola = ScrolledText(\par
+            self.canvas_right_b,\par
+            bg="DarkGoldenRod",\par
+            relief="flat",\par
+            bd=0,\par
+            font=self._font_consola\par
+        )\par
+        self.consola_window = self.canvas_right_b.create_window(\par
+            70, 70,\par
+            anchor="nw",\par
+            window=self.consola,\par
+            width=500,   # ojo: que quepa dentro de los 650px\par
+            height=310\par
+        )\par
+\par
+      \par
+    def logf(self, tpl, **vals):\par
+        # Guarda en buffer\par
+        if not hasattr(self, "_consola_buffer"):\par
+            self._consola_buffer = []\par
+        self._consola_buffer.append(("fmt", tpl, vals))\par
+\par
+        # Formateo previo para detectar cambios de estado (sin escribir a\'fan)\par
+        def _fmt(v):\par
+            if isinstance(v, tuple):\par
+                val, sim = v\par
+            else:\par
+                val, sim = v, ""\par
+            return self.format_var(val, sim)\par
+\par
+        linea = tpl.format(**\{k: _fmt(v) for k, v in vals.items()\})\par
+        linea = self._reformat_line(linea)\par
+\par
+        # Si el log anuncia un cambio de estado, parchear IN-PLACE la l\'ednea vieja\par
+        try:\par
+            m = re.search(\par
+                r"Estado\\s+de\\s+compra\\s*#\\s*(\\d+)\\s*\\(id\\s*([A-Za-z0-9\\-_]+)\\)\\s*:\\s*([^\\-]+?)\\s*\f4\u8594?\f0\\s*(\\w+)",\par
+                linea, flags=re.IGNORECASE\par
+            )\par
+            if m:\par
+                numc_str, idc, _estado_viejo, estado_nuevo = m.groups()\par
+                numc = int(numc_str)\par
+                self._consola_patch_estado(id_compra=idc,  nuevo_estado=estado_nuevo)\par
+                self._consola_patch_estado(numcompra=numc, nuevo_estado=estado_nuevo)\par
+        except Exception:\par
+            pass\par
+\par
+        # NO escribir directo: render lo hace actualizar_consola() (incremental)\par
+        self.actualizar_consola()\par
+\par
+        \par
+\par
+    def _reformat_line(self, s: str) -> str:\par
+        # Reaplica el formateo para $, \u8383? y % usando la vista actual\par
+        def sub_money(m):\par
+            try:\par
+                return self.format_var(Decimal(m.group(1)), '$')\par
+            except Exception:\par
+                return m.group(0)\par
+\par
+        def sub_btc(m):\par
+            try:\par
+                return self.format_var(Decimal(m.group(1)), '\u8383?')\par
+            except Exception:\par
+                return m.group(0)\par
+\par
+        def sub_pct_sufijo(m):\par
+            try:\par
+                return self.format_var(Decimal(m.group(1)), '%')\par
+            except Exception:\par
+                return m.group(0)\par
+\par
+        def sub_pct_prefijo(m):\par
+            try:\par
+                return self.format_var(Decimal(m.group(1)), '%')\par
+            except Exception:\par
+                return m.group(0)\par
+\par
+        s = re.sub(r'\\$ ?(-?\\d+(?:\\.\\d+)?)', sub_money, s)\par
+        s = re.sub(r'\u8383? ?(-?\\d+(?:\\.\\d+)?)', sub_btc, s)\par
+        s = re.sub(r'(-?\\d+(?:\\.\\d+)?)\\s*%', sub_pct_sufijo, s)\par
+        s = re.sub(r'%\\s*(-?\\d+(?:\\.\\d+)?)', sub_pct_prefijo, s)\par
+        return s\par
+\par
+\par
+    def animation_panel(self):\par
+        self.animation_frame = tk.Frame(self.root)\par
+        self.animation_frame.place(x=600, y=450, width=700, height=450)\par
+\par
+        self.canvas_animation = tk.Canvas(self.animation_frame, width=700, height=450, highlightthickness=0)\par
+        self.canvas_animation.pack(fill="both", expand=True)\par
+        self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=3)\par
+\par
+        y_offset = 10\par
+        row_height = 30\par
+\par
+        def add(label_text, var, key=None, simbolo=""):\par
+            nonlocal y_offset\par
+\par
+            label_var = tk.StringVar(value=label_text)\par
+            val_var = var\par
+\par
+            # Texto fijo (etiqueta)\par
+            lbl_id = self.canvas_animation.create_text(\par
+                10, y_offset,\par
+                text=label_var.get(),\par
+                fill="Orange",\par
+                font=self._font_normal,\par
+                anchor="nw"\par
+            )\par
+\par
+            self.nd_canvas.append((label_var, self.canvas_animation, lbl_id, 10, y_offset, ""))\par
+\par
+            bbox = self.canvas_animation.bbox(lbl_id)\par
+            x_val = bbox[2] + self.espaciado_horizontal\par
+\par
+            # Texto din\'e1mico (valor)\par
+            txt_id = self.canvas_animation.create_text(\par
+                x_val, y_offset,\par
+                text=val_var.get(),\par
+                fill="Red",\par
+                font=self._font_normal,\par
+                anchor="nw"\par
+            )\par
+\par
+            self.nd_canvas.append((val_var, self.canvas_animation, txt_id, x_val, y_offset, simbolo))\par
+            if key:\par
+                self.info_canvas[key] = (self.canvas_animation, txt_id)\par
+\par
+            y_offset += row_height\par
+\par
+            if key:\par
+                self.info_labels[key] = (self.canvas_animation, lbl_id)\par
+                self.info_canvas[key] = (self.canvas_animation, txt_id)\par
+\par
+        add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio", "$")\par
+        add("Fecha de inicio:", self.start_time_str, "start_time")\par
+        add("Tiempo activo:", self.runtime_str, "runtime")\par
+        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "\u8383?")\par
+        add("Rebalance \f2\emdash  Umbral:", self.rebalance_thr_str, "rebalance_thr")\par
+        add("Rebalance \emdash  Porcentaje:", self.rebalance_pct_str, "rebalance_pct")\par
+\par
+        try:\par
+            img_ped = Image.open("imagenes/deco/pedestal.png")\par
+            # \f1\u11015?\u-497?\f2  \f0 Escala 2x (cambi\'e1 zoom_factor si quer\'e9s otro tama\'f1o)\par
+            zoom_factor = 2\par
+            w0, h0 = img_ped.size\par
+            img_ped = img_ped.resize((w0 * zoom_factor, h0 * zoom_factor), Image.NEAREST)  # o Image.LANCZOS\par
+\par
+            self._pedestal_img = ImageTk.PhotoImage(img_ped)  # mantener referencia\par
+\par
+            w = int(self.canvas_animation["width"])\par
+            h = int(self.canvas_animation["height"])\par
+            self.pedestal_it = self.canvas_animation.create_image(\par
+                w // 2 + 85, h - 30, image=self._pedestal_img, anchor="s"\par
+            )\par
+        except Exception as _e:\par
+            pass\par
+\par
+\par
+    def various_panel(self):\par
+        self.various_frame = tk.Frame(self.root)\par
+        self.various_frame.place(x=0, y=900, width=2000, height=100)\par
+\par
+        self.canvas_various = tk.Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)\par
+        self.canvas_various.pack(fill="both", expand=True)\par
+        self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=3)\par
+        \par
+        # Crear botones pero solo mostrar "Iniciar" al principio\par
+        self.btn_inicio = tk.Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")\par
+        self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)\par
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')\par
+\par
+        self.btn_limpiar = tk.Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")\par
+        self.btn_limpiar_id = self.canvas_various.create_window(250, 50, window=self.btn_limpiar)\par
+        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')\par
+\par
+        self.btn_calc = tk.Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")\par
+        self.canvas_various.create_window(400, 50, window=self.btn_calc)\par
+\par
+        self.btn_confi = tk.Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")\par
+        self.btn_confi_id = self.canvas_various.create_window(600, 50, window=self.btn_confi)\par
+\par
+    def toggle_bot(self):\par
+        if self.bot.running:\par
+            self.bot.detener()\par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/detener.wav")\par
+\par
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')\par
+            self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')\par
+            self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')\par
+        else:\par
+            self.bot.iniciar()\par
+            if not self.bot.running:\par
+                self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El bot no pudo iniciarse. Revisa configuraci\'f3n de operativa y coloca n\'fameros v\'e1lidos.")\par
+                return\par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/inicio.wav")\par
+\par
+            self.inicializar_valores_iniciales()\par
+\par
+            self.btn_inicio.config(text="Detener")\par
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')\par
+            self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')\par
+            self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')\par
+            # \f1\u11013?\u-497?\f2  \f0 A\'d1ADIR: reflejar configuraci\'f3n actual en altares al iniciar\par
+            if getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or 0) > 0:\par
+                self.set_take_profit_state("armed")\par
+            else:\par
+                self.set_take_profit_state("inactive")\par
+\par
+            if getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct or 0) > 0:\par
+                self.set_stop_loss_state("armed")\par
+            else:\par
+                self.set_stop_loss_state("inactive")\par
+\par
+            self._loop()\par
+\par
+    def clear_bot(self):\par
+        if self.bot.running:\par
+            return\par
+        \par
+        # La limpieza invalida la configuraci\'f3n\par
+        self.operativa_configurada = False\par
+\par
+# \f3\u-10179?\u-8942?\f2  \f0 bloquear cualquier ciclo residual\par
+        try:\par
+            self.bot._stop_flag = True\par
+            self.bot.running = False\par
+        except Exception:\par
+            pass\par
+\par
+        # 1) Sonido y reinicio completo del bot\par
+        if self.sound_enabled:\par
+            reproducir_sonido("Sounds/limpiar.wav")\par
+\par
+        # 2) Reiniciar bot y resetear estado l\'f3gico\par
+        self.bot.reiniciar()\par
+        \par
+\par
+        self.bot.log_fn = self.log_en_consola\par
+\par
+        #self.bot.sound_enabled = self.sound_enabled\par
+        modo_vista_actual = self.display_mode.get()\par
+        precision_actual = self.float_precision\par
+        self.ajustar_fuente_por_vista()\par
+       \par
+# \f5\u-10179?\u-8222?\f2  \f0 dejarlo \f2\ldblquote\f0 idle listo para iniciar\f2\rdblquote\f0\par
+        try:\par
+            self.bot._stop_flag = False\par
+            self.bot.running = False\par
+        except Exception:\par
+            pass\par
+# 5) Reset StringVars\par
+        for attr in vars(self).values():\par
+            if isinstance(attr, tk.StringVar):\par
+                attr.set("")\par
+\par
+        # 10) Restaurar la vista del usuario\par
+        self.display_mode.set(modo_vista_actual)\par
+        self.float_precision = precision_actual\par
+\par
+        for key in list(self.info_canvas.keys()):\par
+            canvas, item_id = self.info_canvas[key]\par
+            try:\par
+                canvas.delete(item_id)\par
+            except Exception:\par
+                pass\par
+        self.info_canvas.clear()\par
+        # limpiar labels guardados\par
+        for key in list(getattr(self, "info_labels", \{\}).keys()):\par
+            canvas, lbl_id = self.info_labels[key]\par
+            try:\par
+                canvas.delete(lbl_id)\par
+            except Exception:\par
+                pass\par
+        self.info_labels.clear()\par
+\par
+        self.nd_canvas.clear()\par
+\par
+        # 4) Reset variables visuales\par
+        self.valores_iniciales.clear()\par
+        self.colores_actuales.clear()\par
+\par
+        # 6) Vaciar historial y consola\par
+        try:\par
+            self.historial.delete("1.0", tk.END)\par
+        except Exception:\par
+            pass\par
+\par
+        try:\par
+            # habilitar, borrar y volver a deshabilitar la consola\par
+            self.consola.configure(state='normal')\par
+            self.consola.delete("1.0", tk.END)\par
+            self.consola.configure(state='disabled')\par
+        except Exception:\par
+            pass\par
+\par
+       \par
+        self._consola_buffer.clear()\par
+        # resetear \'edndices/contexto de la consola\par
+        self._consola_last_n = 0\par
+        self._ctx_ultimo_id = None\par
+        self._ctx_ultimo_num = None\par
+\par
+\par
+        # 7) Guardar la vista actual del usuario\par
+        self.reset_animaciones()\par
+\par
+\par
+        # 8) Destruir frames viejos\par
+        try:\par
+            self.left_frame.destroy()\par
+            self.center_frame.destroy()\par
+            self.animation_frame.destroy()\par
+        except Exception:\par
+            pass\par
+\par
+        # 9) Reconstruir paneles\par
+        self.left_panel()\par
+        self.center_panel()\par
+        self.animation_panel() \par
+        self.init_animation()\par
+        self._aplicar_modus()\par
+        # \f1\u11013?\u-497?\f2  \f0 A\'d1ADIR: reset visual de altares al limpiar\par
+        try:\par
+            self.set_take_profit_state("inactive")\par
+            self.set_stop_loss_state("inactive")\par
+        except Exception:\par
+            pass\par
+\par
+        # 8) Redibujar datos actuales (aunque est\'e9n vac\'edos)\par
+        self.actualizar_ui()\par
+\par
+        # 9) Restaurar botones\par
+        self.btn_inicio.config(text="Iniciar")\par
+        # Solo mostrar 'Iniciar' si ya hay operativa configurada\par
+        if getattr(self, 'operativa_configurada', False):\par
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')\par
+        else:\par
+            self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')\par
+\par
+        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')\par
+        self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')\par
+        \par
+        # 10) Forzar primer log de limpieza\par
+        self.log_en_consola("\f1\u-10178?\u-8711?\f2  \f0 Bot limpiado.")\par
+        self.log_en_consola("- - - - - - - - - -")\par
+\par
+\par
+    def _thread_callback(self, future):\par
+        if future.cancelled():\par
+            return\par
+        if exc := future.exception():\par
+            # Lo logueamos en la UI\par
+            if self.root.winfo_exists():\par
+                self.root.after(0, lambda:\par
+                    self.log_en_consola(f"\f1\u9888?\u-497?\f2  \f0 Excepcion en hilo: \{exc\}")\par
+                )\par
+    \par
+    def open_calculator(self):\par
+         # pasamos los balances actuales\par
+        usdt_avail = self.bot.usdt\par
+        btc_avail  = self.bot.btc\par
+        CalculatorWindow(self.root, usdt_avail, btc_avail)\par
+\par
+    def abrir_configuracion_subventana(self):\par
+        # Si ya est\'e1 abierta y no fue destruida, traerla al frente\par
+        if self.config_ventana is not None and self.config_ventana.winfo_exists():\par
+            self.config_ventana.lift()\par
+            self.config_ventana.focus_force()\par
+            return  # No abrir otra\par
+        \par
+        # Mientras estoy configurando, el bot\'f3n Iniciar NO debe verse\par
+        \par
+\par
+        self.config_ventana = tk.Toplevel(self.root)\par
+        self.config_ventana.title("Configuracion de operativa")\par
+        self.config_ventana.configure(bg="DarkGoldenRod")\par
+\par
+        # \f2\emdash\emdash  Tama\f0\'f1o de ventana (ajustable en 1 lugar) \f2\emdash\emdash\par
+        win_w, win_h = 900, 620\par
+        self.config_ventana.geometry(f"\{win_w\}x\{win_h\}")\par
+\par
+        \par
+        def cerrar_config():\par
+            detener_sonido_y_cerrar(self.config_ventana)\par
+            self.config_ventana.destroy()\par
+            self.config_ventana = None\par
+        self.config_ventana.protocol("WM_DELETE_WINDOW", cerrar_config)\par
+\par
+        # ===== Canvas principal =====\par
+        pad= 0\par
+        cfg_w, cfg_h = win_w - pad*2, win_h - pad*2\par
+        self.cfg_canvas = tk.Canvas(self.config_ventana, width=cfg_w, height=cfg_h,\par
+                                    highlightthickness=0, bd=0, relief='flat')\par
+        self.cfg_canvas.pack(fill="both", expand=True)\par
+\par
+\par
+        # ===== Fondo escalado a todo el canvas =====\par
+        # (sin tocar rellenar_mosaico; ac\f0\'e1 lo hacemos con una sola imagen escalada)\par
+        \par
+                # ===== Fondo tipo mosaico (como los paneles principales) =====\par
+        self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/rect_gray_0_new.png", escala=2)\par
+\par
+\par
+        # ===== Helpers de layout sobre canvas =====\par
+        left_x = 20              # margen izquierdo de etiquetas\par
+        y = 24                   # primer rengl\'f3n\par
+        row = 42                 # separaci\'f3n vertical por fila\par
+        font_lbl = ("LondonBetween", 18)\par
+        color_lbl = "lime"\par
+\par
+        def put_text(ypos, texto, color=color_lbl, size=16):\par
+            return self.cfg_canvas.create_text(\par
+                left_x, ypos, text=texto, anchor="nw",\par
+                fill=color, font=("LondonBetween", size)\par
+            )\par
+\par
+        def put_entry_next_to(label_id, textvariable, width=14):\par
+            # coloca el Entry pegado al texto (bbox del label)\par
+            bbox = self.cfg_canvas.bbox(label_id)  # (x1, y1, x2, y2)\par
+            x_entry = (bbox[2] + 12) if bbox else (left_x + 340)  # fallback\par
+            e = tk.Entry(self.config_ventana, textvariable=textvariable,\par
+                        bg="navy", fg="PaleGoldenRod",\par
+                        insertbackground="PaleGoldenRod",\par
+                        relief="flat", bd=0, highlightthickness=0,\par
+                        font=("LondonBetween", 16), width=width)\par
+\par
+            self.cfg_canvas.create_window(x_entry, bbox[1], anchor="nw", window=e)\par
+            return e\par
+\par
+        def put_check(ypos, text, variable):\par
+            cb = tk.Checkbutton(self.config_ventana, text=text, variable=variable,\par
+                                bg="navy", fg="PaleGoldenRod",\par
+                                activebackground="PaleGoldenRod", activeforeground="PaleGoldenRod",\par
+                                selectcolor="PaleGoldenRod",\par
+                                font=("LondonBetween", 16),\par
+                                highlightthickness=0, bd=0)\par
+            self.cfg_canvas.create_window(left_x, ypos, anchor="nw", window=cb)\par
+            return cb\par
+\par
+        self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)\par
+        # ===== Checks de comportamiento (label en canvas + check centrado con bbox) =====\par
+        # --- Comisiones ---\par
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Aplicar comisi\'f3n (%)",\par
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")\par
+        bbox = self.cfg_canvas.bbox(text_id)\par
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)\par
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y\par
+        self.var_comisiones_enabled = tk.BooleanVar(value=getattr(self.bot, "comisiones_enabled", True))\par
+        self.chk_fee = tk.Checkbutton(self.config_ventana, variable=self.var_comisiones_enabled,\par
+                                    text="", bg="navy", activebackground="navy",\par
+                                    relief="flat", bd=0, highlightthickness=0,\par
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)\par
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_fee)\par
+        y += row\par
+\par
+        lbl = self.cfg_canvas.create_text(left_x, y, text="Porcentaje de comisi\'f3n:",\par
+                                        fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")\par
+        self.var_comision_pct = tk.StringVar(value=str(getattr(self.bot, "comision_pct", "0.1")))\par
+        put_entry_next_to(lbl, self.var_comision_pct, width=8)\par
+        y += row\par
+\par
+        # --- Ghost ---\par
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Habilitar compra tras venta fantasma",\par
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")\par
+        bbox = self.cfg_canvas.bbox(text_id)\par
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)\par
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y\par
+        self.var_ghost = tk.BooleanVar(value=self.bot.compra_en_venta_fantasma)\par
+        self.chk_ghost = tk.Checkbutton(self.config_ventana, variable=self.var_ghost,\par
+                                        text="", bg="navy", activebackground="navy",\par
+                                        relief="flat", bd=0, highlightthickness=0,\par
+                                        selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)\par
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_ghost)\par
+        y += row\par
+\par
+        # --- Take Profit ---\par
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Take Profit",\par
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")\par
+        bbox = self.cfg_canvas.bbox(text_id)\par
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)\par
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y\par
+        self.var_tp_enabled = tk.BooleanVar(value=getattr(self.bot, "tp_enabled", False))\par
+        self.chk_tp = tk.Checkbutton(self.config_ventana, variable=self.var_tp_enabled,\par
+                                    text="", bg="navy", activebackground="navy",\par
+                                    relief="flat", bd=0, highlightthickness=0,\par
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)\par
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_tp)\par
+        y += row\par
+\par
+        # --- Stop Loss ---\par
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Stop Loss",\par
+                                            fill="lime", font=("LondonBetween", 18), anchor="nw")\par
+        bbox = self.cfg_canvas.bbox(text_id)\par
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)\par
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y\par
+        self.var_sl_enabled = tk.BooleanVar(value=getattr(self.bot, "sl_enabled", False))\par
+        self.chk_sl = tk.Checkbutton(self.config_ventana, variable=self.var_sl_enabled,\par
+                                    text="", bg="navy", activebackground="navy",\par
+                                    relief="flat", bd=0, highlightthickness=0,\par
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)\par
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_sl)\par
+        y += row + 6\par
+\par
+        # --- Rebalance ---\par
+        text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Rebalance",\par
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")\par
+        bbox = self.cfg_canvas.bbox(text_id)\par
+        x_check = bbox[2] + 10 if bbox else (left_x + 350)\par
+        y_center = (bbox[1] + bbox[3]) / 2 if bbox else y\par
+        self.var_rebalance_enabled = tk.BooleanVar(value=getattr(self.bot, "rebalance_enabled", False))\par
+        self.chk_reb = tk.Checkbutton(self.config_ventana, variable=self.var_rebalance_enabled,\par
+                                    text="", bg="navy", activebackground="navy",\par
+                                    relief="flat", bd=0, highlightthickness=0,\par
+                                    selectcolor="PaleGoldenRod", padx=0, pady=0, takefocus=0)\par
+        self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_reb)\par
+        y += row + 6\par
+\par
+\par
+\par
+\par
+        # ===== Rebalance =====\par
+        put_text(y, "* Rebalance *", color="PaleGoldenRod", size=18); y += row\par
+\par
+        # Compras (umbral)\par
+        lbl = put_text(y, "- - - - Compras Fantasma (umbral):", color="PaleGoldenRod")\par
+        self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))\par
+        put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row\par
+\par
+        # Porcentaje a vender\par
+        lbl = put_text(y, "- - - - Porcentaje a vender (%):", color="PaleGoldenRod")\par
+        self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))\par
+        put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row\par
+\par
+        \par
+        \par
+        \par
+\par
+        # ===== Campos num\'e9ricos (MISMO ORDEN; entries intacto) =====\par
+        campos = [\par
+            ("% Desde compra, para compra: %", self.bot.porc_desde_compra),\par
+            ("% Desde venta, para compra: %", self.bot.porc_desde_venta),\par
+            ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),\par
+            ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),\par
+            ("Total Usdt: $", self.bot.inv_inic),\par
+            ("Take Profit Global (%):", self.bot.take_profit_pct or Decimal("0")),\par
+            ("Stop Loss Global (%):", self.bot.stop_loss_pct or Decimal("0")),\par
+        ]\par
+        entries = []  # <- tu guardar_config depende de este nombre\par
+\par
+        for etiqueta, valor in campos:\par
+            lbl = put_text(y, etiqueta)\par
+            var = tk.StringVar(value=str(valor))\par
+            put_entry_next_to(lbl, var, width=16)\par
+            entries.append(var)\par
+            y += row\par
+\par
+        # ===== guardar_config (tu l\'f3gica id\'e9ntica) =====\par
+        def guardar_config():\par
+            try:\par
+                # 1) Leemos la cadena exacta\par
+                txt_compra = entries[0].get().strip()   # p.e. "0.0003234" o "5"\par
+                txt_venta  = entries[1].get().strip()\par
+                txt_profit  = entries[2].get().strip()\par
+                txt_porc_inv = entries[3].get().strip()\par
+                txt_usdt_inic = entries[4].get().strip()\par
+                txt_tp  = entries[5].get().strip()\par
+                txt_sl  = entries[6].get().strip()\par
+\par
+                # 2) Construimos Decimal desde cadena (sin pasar por Decimal)\par
+                porc_compra = Decimal(txt_compra)\par
+                porc_venta  = Decimal(txt_venta)\par
+                porc_profit  = Decimal(txt_profit)\par
+                porc_inv = Decimal(txt_porc_inv)\par
+                usdtinit = Decimal(txt_usdt_inic)\par
+                tp = Decimal(txt_tp)\par
+                sl = Decimal(txt_sl)\par
+                \par
+                self.bot.comisiones_enabled = self.var_comisiones_enabled.get()\par
+                try:\par
+                    self.bot.comision_pct = Decimal(self.var_comision_pct.get())\par
+                except InvalidOperation:\par
+                    self.bot.comision_pct = Decimal("0.0")\par
+\par
+                # Validaciones Rebalance\par
+                try:\par
+                    rb_thr = int(self.var_rebalance_threshold.get())\par
+                except (TypeError, ValueError):\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 Umbral de rebalance inv\'e1lido (debe ser entero).")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                try:\par
+                    rb_pct = int(self.var_rebalance_pct.get())\par
+                except (TypeError, ValueError):\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 % de rebalance inv\'e1lido (debe ser entero).")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if rb_thr < 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El umbral de rebalance no puede ser negativo.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if not (1 <= rb_pct <= 100):\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El % de rebalance debe estar entre 1 y 100.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                \par
+                # 3) Validaciones > 0\par
+                if porc_compra <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El porcentaje desde compra debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if porc_venta <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El porcentaje desde venta debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if porc_profit <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El porcentaje de profit por venta debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if porc_inv <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El porcentaje de inversi\'f3n por compra debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if usdtinit <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El capital inicial debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if tp < 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El Take Profit debe ser 0 o mayor.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if sl < 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El Stop Loss debe ser 0 o mayor.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                # Si se activan, deben ser > 0 (evitar detener instant\'e1neamente)\par
+                if self.var_tp_enabled.get() and tp <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 Si activ\'e1s el Take Profit, debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+                if self.var_sl_enabled.get() and sl <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 Si activ\'e1s el Stop Loss, debe ser mayor que 0.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    return\par
+\par
+                # 3) Asignamos al bot (para los c\'e1lculos internos)\par
+                self.bot.porc_desde_compra = porc_compra\par
+                self.bot.porc_desde_venta = porc_venta\par
+                self.bot.porc_profit_x_venta = porc_profit\par
+                self.bot.porc_inv_por_compra = porc_inv\par
+                self.bot.inv_inic = usdtinit\par
+                self.bot.take_profit_pct = (tp if tp > 0 else None)\par
+                self.bot.stop_loss_pct = (sl if sl > 0 else None)\par
+                self.bot.tp_enabled = self.var_tp_enabled.get()\par
+                self.bot.sl_enabled = self.var_sl_enabled.get()\par
+                # \f1\u11013?\u-497?\f2  \f0 reflejar en altares la config reci\'e9n guardada\par
+                if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:\par
+                    self.set_take_profit_state("armed")\par
+                else:\par
+                    self.set_take_profit_state("inactive")\par
+\par
+                if self.bot.sl_enabled and (self.bot.stop_loss_pct or 0) > 0:\par
+                    self.set_stop_loss_state("armed")\par
+                else:\par
+                    self.set_stop_loss_state("inactive")\par
+\par
+                self.bot.rebalance_enabled = self.var_rebalance_enabled.get()\par
+                self.bot.rebalance_threshold = rb_thr\par
+                self.bot.rebalance_pct = rb_pct\par
+                try:\par
+                    self._update_lamp_genie()\par
+                except Exception:\par
+                    pass\par
+\par
+                if not self.bot.running:\par
+                    self.bot.usdt = usdtinit\par
+\par
+                self.bot.fixed_buyer = (\par
+                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100'))\par
+\par
+                # 5) Calculamos fixed_buyer y validamos\par
+                self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')\par
+                if self.bot.fixed_buyer <= 0:\par
+                    self.log_en_consola("\f1\u9888?\u-497?\f2  \f0 El monto de compra fijo debe ser mayor que 0.")\par
+                    return\par
+                \par
+                self.bot.compra_en_venta_fantasma = self.var_ghost.get()\par
+\par
+                tp_txt     = self.format_var(self.bot.take_profit_pct or Decimal('0'), '%')\par
+                sl_txt     = self.format_var(self.bot.stop_loss_pct  or Decimal('0'), '%')\par
+                rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')\par
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")\par
+                self.logf(f"\{ts\} \'b7 Configuraci\'f3n actualizada:\\n \'b7 TP: \{\{tp_state\}\} (\{\{tp\}\})\\n \'b7 SL: \{\{sl_state\}\} (\{\{sl\}\})",\par
+                    tp_state='ON' if self.bot.tp_enabled else 'OFF',\par
+                    tp=(self.bot.take_profit_pct or Decimal('0'), '%'),\par
+                    sl_state='ON' if self.bot.sl_enabled else 'OFF',\par
+                    sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),\par
+                )\par
+                self.log_en_consola("- - - - - - - - - -")\par
+                \par
+                \par
+                self.logf(\par
+                    " \'b7 Rebalance: \{rb_state\} (Umbral = \{thr\}, Pct = \{pct\})",\par
+                    rb_state='ON' if self.bot.rebalance_enabled else 'OFF',\par
+                    thr=self.bot.rebalance_threshold,\par
+                    pct=(self.bot.rebalance_pct, '%'),\par
+                )\par
+                self.log_en_consola("- - - - - - - - - -")\par
+                \par
+                self.operativa_configurada = True\par
+                self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')\par
+\par
+                \par
+                cerrar_config()\par
+\par
+            except (InvalidOperation, IndexError):\par
+                self.log_en_consola("Error: ingresa valores numericos validos.")\par
+\par
+        # ===== Bot\'f3n Guardar (centrado abajo; se adapta si la ventana cambia) =====\par
+        def _place_save_btn(event=None):\par
+            # dejar 16 px del borde inferior\par
+            cy = self.cfg_canvas.winfo_height() - 16\par
+            cx = self.cfg_canvas.winfo_width() // 1.5\par
+            try:\par
+                self.cfg_canvas.coords(btn_id, cx, cy)\par
+            except Exception:\par
+                pass\par
+\par
+        btn_guardar = tk.Button(self.config_ventana, text="Guardar",\par
+                                bg="Crimson", fg="PaleGoldenRod",\par
+                                font=("LondonBetween", 16),\par
+                                command=guardar_config)\par
+        btn_id = self.cfg_canvas.create_window(cfg_w // 2, cfg_h - 16, anchor="s", window=btn_guardar)\par
+        self.cfg_canvas.bind("<Configure>", _place_save_btn)\par
+\par
+\par
+\par
+    def _on_close(self):\par
+\par
+        detener_musica_fondo()\par
+\par
+        # 1) Cancelar after programado si existe\par
+        if hasattr(self, 'loop_id') and self.loop_id is not None:\par
+            try:\par
+                self.root.after_cancel(self.loop_id)\par
+            except Exception:\par
+                pass\par
+\par
+        # 2) Detener el bot si sigue corriendo\par
+        try:\par
+            if self.bot.running:\par
+                self.bot.detener()\par
+        except Exception:\par
+            pass\par
+\par
+        # 3) Apagar el ThreadPoolExecutor\par
+        try:\par
+            self.executor.shutdown(wait=False, cancel_futures=True)\par
+        except Exception:\par
+            pass\par
+\par
+        # 4) Cerrar ventana\par
+        try:\par
+            self.root.destroy()\par
+        except Exception:\par
+            pass\par
+\par
+            \par
+    def _loop(self):\par
+        # Si el bot ya no corre o la ventana ya no existe, salimos\par
+        if not self.bot.running:\par
+            return\par
+        if not self.root.winfo_exists():\par
+            return\par
+\par
+        # Ejecutamos el ciclo de trading en segundo plano\par
+        future = self.executor.submit(self._run_trading_cycle)\par
+\par
+        # Cuando termine, planificamos el pr\'f3ximo _loop (solo si root sigue viva)\par
+        def replanear(_):\par
+            try:\par
+                if self.root.winfo_exists() and self.bot.running:\par
+                    self.root.after(3000, self._loop)\par
+            except Exception as e:\par
+                print(f"[\f1\u9888?\u-497?\f2  \f0 Error after loop]: \{e\}")\par
+\par
+        future.add_done_callback(replanear)\par
+\par
+\par
+    def _run_trading_cycle(self):\par
+        try:\par
+            # \f1\u9940?\u-497?\f2  \f0 si ya est\'e1 detenido, no hacemos nada\par
+            if not self.bot.running or getattr(self.bot, "_stop_flag", False):\par
+                return\par
+            # 1) Intentamos obtener el ticker\par
+            ticker = self.bot.exchange.fetch_ticker('BTC/USDT')\par
+            price = ticker['last']\par
+            if not self.bot.running or getattr(self.bot, "_stop_flag", False):\par
+                return\par
+            # \f2\endash  Si sali\f0\'f3 bien, guardamos el precio y ejecutamos el ciclo de trading:\par
+            self.bot.precio_actual = price\par
+            self.bot.modus_actual = self.modus.get()\par
+            self.bot.loop()\par
+        except Exception as exc:\par
+            # Si falla, dejamos precio_actual en None para detectar desconexi\'f3n\par
+            self.bot.precio_actual = None\par
+\par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/sin_conexion.wav")\par
+\par
+            self.root.after(0, lambda exc=exc: self.log_en_consola(f"\f1\u9888?\u-497?\f2  \f0 Error de trading (sin precio): \{exc\}"))\par
+        finally:\par
+            # Solo aqu\'ed reprogramamos la actualizaci\'f3n de la UI (una vez por ciclo)\par
+            try:\par
+                if self.root.winfo_exists():\par
+                    self.root.after_idle(self.actualizar_ui)\par
+            except:\par
+                pass  # la ventana ya no existe\par
+\par
+    \par
+\par
+    def format_var(self, valor, simbolo=""):\par
+        if valor is None:\par
+            return ""\par
+        if isinstance(valor, str):\par
+            s = valor.strip()\par
+            return f"\{simbolo\} \{s\}" if simbolo and s else s\par
+\par
+        modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'\par
+        prec = self.float_precision if hasattr(self, 'float_precision') else 2\par
+\par
+        if modo == 'decimal':\par
+            # \f4\u8681?\u8681?\u8681?\f2  \f0 CAMBIO: sin normalize(), sin strip de ceros \f2\emdash  crudo\par
+            if not isinstance(valor, Decimal):\par
+                try:\par
+                    valor = Decimal(str(valor))\par
+                except Exception:\par
+                    # si no se puede, lo mostramos tal cual\par
+                    texto = str(valor)\par
+                else:\par
+                    texto = str(valor)  # crudo del Decimal\par
+            else:\par
+                texto = str(valor)      # crudo del Decimal\par
+        else:\par
+            # vista float con 2/4 decimales, sin ceros sobrantes\par
+            try:\par
+                v = valor\par
+            except Exception:\par
+                v = str(valor)\par
+            texto = f"\{v:.\{prec\}f\}"\par
+            if '.' in texto:\par
+                texto = texto.rstrip('0').rstrip('.')\par
+\par
+        # Normalizar -0 \f4\u8594?\f2  \f0 0\par
+        try:\par
+            if texto == 0.0:\par
+                texto = "0"\par
+        except Exception:\par
+            pass\par
+\par
+        return f"\{simbolo\} \{texto\}" if simbolo else texto\par
+\par
+\par
+    def format_fijo(self, clave, valor):\par
+        if isinstance(valor, tuple):\par
+            valor_real, simbolo = valor\par
+        else:\par
+            valor_real, simbolo = valor, ""\par
+        return self.format_var(valor_real, simbolo)\par
+\par
+\par
+\par
+    def actualizar_ui(self):\par
+        try:\par
+            # --- Siempre actualizamos la UI, con o sin bot corriendo ---\par
+            # 1) Fetch inicial de datos internos\par
+            #    (si quieres evitar re-fetch dentro de UI, s\'f3lo toma valores de self.bot ya guardados)\par
+            # 2) Pintado din\'e1mico (colores) y fijo (texto), sin verificar self.bot.running\par
+\par
+            # \f2\emdash\emdash  Din\f0\'e1micos (comparan contra baseline) \f2\emdash\emdash\par
+            pintar = \{\par
+                "precio_actual": (self.bot.precio_actual, "$"),\par
+                "balance": (self.bot.usdt_mas_btc, "$"),\par
+                "desde_ult_comp": (self.bot.varCompra, "%"),\par
+                "ult_vent": (self.bot.varVenta, "%"),\par
+                "variacion_desde_inicio": (self.bot.var_inicio, "%"),\par
+                "variacion_total_inv": (self.bot.var_total, "%"),\par
+                "hold_usdt": (self.bot.hold_usdt_var, "$"),\par
+            \}\par
+            for clave, valor in pintar.items():\par
+                self.actualizar_color(clave, valor)\par
+\par
+            # \emdash\emdash  Fijos (texto) \emdash\emdash  \par
+            texto_fijo = \{\par
+                "start_time": self.bot.get_start_time_str() or "",\par
+                "runtime": self.bot.get_runtime_str() or "",\par
+                "porc_inv_por_compra": (self.bot.porc_inv_por_compra, "%"),\par
+                "usdt": (self.bot.usdt, "$"),\par
+                "btc_dispo": (self.bot.btc, "\f0\u8383?"),\par
+                "desde_inicio": (self.bot.precio_ingreso or Decimal("0"), "$"), \par
+                # compras/ventas y dem\'e1s siguen igual:\par
+                "compras_realizadas": self.bot.contador_compras_reales,\par
+                "ventas_realizadas": self.bot.contador_ventas_reales,\par
+                "compras_fantasma": self.bot.contador_compras_fantasma,\par
+                "ventas_fantasma": self.bot.contador_ventas_fantasma,\par
+                "ghost_ratio": (self.bot.calcular_ghost_ratio(), "%"),\par
+                "porc_obj_venta": (self.bot.porc_profit_x_venta, "%"),\par
+                "porc_desde_compra": (self.bot.porc_desde_compra, "%"),\par
+                "porc_desde_venta": (self.bot.porc_desde_venta, "%"),\par
+                "fixed_buyer": (self.bot.fixed_buyer, "$"),\par
+                "inv_inicial": (self.bot.inv_inic, "$"),\par
+                "ganancia_neta": (self.bot.total_ganancia, "$"),\par
+                "hold_btc": (self.bot.hold_btc_var, "\u8383?"),\par
+                "btcnusdt": (self.bot.btc_usdt, "$"),\par
+                "excedente_compras": (self.bot.excedente_total_compras, "%"),\par
+                "excedente_ventas": (self.bot.excedente_total_ventas, "%"),\par
+                "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),\par
+                "take_profit": ((self.bot.take_profit_pct, "%") if (getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or Decimal("0")) > 0) else ("", "")),\par
+                "stop_loss":  ((self.bot.stop_loss_pct, "%")  if (getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct  or Decimal("0")) > 0) else ("", "")),\par
+                "rebalances": self.bot.rebalance_count,\par
+                "rebalance_loss_total": (getattr(self.bot, "rebalance_loss_total", Decimal("0")), "$"),\par
+                "rebalance_thr": (self.bot.rebalance_threshold if getattr(self.bot, "rebalance_enabled", False) else ""),\par
+                "rebalance_pct": ((self.bot.rebalance_pct, "%") if getattr(self.bot, "rebalance_enabled", False) else ("","")),\par
+\par
+            \}\par
+\par
+            for clave, valor in texto_fijo.items():\par
+                if clave not in self.info_canvas:\par
+                    continue\par
+                canvas, item_id = self.info_canvas[clave]\par
+                coords = canvas.coords(item_id)\par
+                if coords and len(coords) == 2:\par
+                    x, y = coords\par
+                else:\par
+                    continue  # No redibujar si no hay coordenadas\par
+\par
+                # \f3\u-10179?\u-8959?\f2  \f0 Redibujar s\'f3lo el nuevo texto (valor) pero no cambiar el color aqu\'ed\par
+                canvas.delete(item_id)\par
+                texto = self.format_fijo(clave, valor)\par
+\par
+                # Usamos el color actual ya calculado o default oro (evita colisiones)\par
+                color = self.colores_actuales.get(clave, "Gold")\par
+\par
+                # Reescribimos s\'f3lo el valor\par
+                new_id = canvas.create_text(\par
+                    x, y,\par
+                    text=texto,\par
+                    fill=color,\par
+                    font=self._font_normal,\par
+                    anchor="nw"\par
+                )\par
+\par
+                # Actualizamos la referencia\par
+                self.info_canvas[clave] = (canvas, new_id)\par
+\par
+            self.actualizar_historial()\par
+            # \f6\u9472?\u9472?\u9472?\f2  \f0 Ocultar TP/SL si est\'e1n desactivados \f6\u9472?\u9472?\u9472?\f0\par
+            try:\par
+                if not getattr(self.bot, "tp_enabled", False):\par
+                    if "take_profit" in self.info_canvas:\par
+                        canvas, item_id = self.info_canvas["take_profit"]\par
+                        canvas.itemconfigure(item_id, state='hidden')\par
+                    if "take_profit" in self.info_labels:\par
+                        canvas, lbl_id = self.info_labels["take_profit"]\par
+                        canvas.itemconfigure(lbl_id, state='hidden')\par
+                else:\par
+                    if "take_profit" in self.info_canvas:\par
+                        canvas, item_id = self.info_canvas["take_profit"]\par
+                        canvas.itemconfigure(item_id, state='normal')\par
+                    if "take_profit" in self.info_labels:\par
+                        canvas, lbl_id = self.info_labels["take_profit"]\par
+                        canvas.itemconfigure(lbl_id, state='normal')\par
+\par
+                if not getattr(self.bot, "sl_enabled", False):\par
+                    if "stop_loss" in self.info_canvas:\par
+                        canvas, item_id = self.info_canvas["stop_loss"]\par
+                        canvas.itemconfigure(item_id, state='hidden')\par
+                    if "stop_loss" in self.info_labels:\par
+                        canvas, lbl_id = self.info_labels["stop_loss"]\par
+                        canvas.itemconfigure(lbl_id, state='hidden')\par
+                else:\par
+                    if "stop_loss" in self.info_canvas:\par
+                        canvas, item_id = self.info_canvas["stop_loss"]\par
+                        canvas.itemconfigure(item_id, state='normal')\par
+                    if "stop_loss" in self.info_labels:\par
+                        canvas, lbl_id = self.info_labels["stop_loss"]\par
+                        canvas.itemconfigure(lbl_id, state='normal')\par
+                        # \f6\u9472?\u9472?\u9472?\f2  \f0 Ocultar/mostrar Umbral y % de Rebalance seg\'fan rebalance_enabled \f6\u9472?\u9472?\u9472?\f0\par
+                    \par
+                    if not getattr(self.bot, "rebalance_enabled", False):\par
+                        if "rebalance_thr" in self.info_canvas:\par
+                            canvas, item_id = self.info_canvas["rebalance_thr"]\par
+                            canvas.itemconfigure(item_id, state='hidden')\par
+                        if "rebalance_thr" in self.info_labels:\par
+                            canvas, lbl_id = self.info_labels["rebalance_thr"]\par
+                            canvas.itemconfigure(lbl_id, state='hidden')\par
+\par
+                        if "rebalance_pct" in self.info_canvas:\par
+                            canvas, item_id = self.info_canvas["rebalance_pct"]\par
+                            canvas.itemconfigure(item_id, state='hidden')\par
+                        if "rebalance_pct" in self.info_labels:\par
+                            canvas, lbl_id = self.info_labels["rebalance_pct"]\par
+                            canvas.itemconfigure(lbl_id, state='hidden')\par
+                    else:\par
+                        if "rebalance_thr" in self.info_canvas:\par
+                            canvas, item_id = self.info_canvas["rebalance_thr"]\par
+                            canvas.itemconfigure(item_id, state='normal')\par
+                        if "rebalance_thr" in self.info_labels:\par
+                            canvas, lbl_id = self.info_labels["rebalance_thr"]\par
+                            canvas.itemconfigure(lbl_id, state='normal')\par
+\par
+                        if "rebalance_pct" in self.info_canvas:\par
+                            canvas, item_id = self.info_canvas["rebalance_pct"]\par
+                            canvas.itemconfigure(item_id, state='normal')\par
+                        if "rebalance_pct" in self.info_labels:\par
+                            canvas, lbl_id = self.info_labels["rebalance_pct"]\par
+                            canvas.itemconfigure(lbl_id, state='normal')\par
+\par
+            except Exception:\par
+                pass\par
+\par
+        except Exception as e:\par
+            self.log_en_consola(f"\f6\u10060?\f2  \f0 Error UI: \{e\}")\par
+        try:\par
+            # Si el bot est\'e1 corriendo, procedemos (no volvemos a fetchear en UI)\par
+            if self.bot.running:\par
+                # Detectar reconexi\'f3n bas\'e1ndose en que precio anterior era None\par
+                prev = getattr(self, "_prev_price_ui", None)\par
+                actual = self.bot.precio_actual\par
+                \par
+                if prev is None and actual is not None:\par
+                    self.log_en_consola("\f3\u-10179?\u-8956?\f2  \f0 Conexi\'f3n restablecida, Khazad reactivado.")\par
+                    self.log_en_consola("- - - - - - - - - -")\par
+                    \par
+                    if self.sound_enabled:\par
+                        reproducir_sonido("Sounds/reconexion.wav")\par
+                    \par
+                    self.inicializar_valores_iniciales()\par
+                self._prev_price_ui = actual\par
+\par
+                # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading\par
+                if actual is None:\par
+                    return\par
+                \par
+                \par
+        except Exception as exc_ui:\par
+                self.log_en_consola(f"\f6\u10060?\f2  \f0 Error UI: \{exc_ui\}")       \par
+\par
+        self.actualizar_consola()\par
+        # Vuelve a aplicar ocultamiento tras redibujar valores\par
+        try:\par
+            self._aplicar_modus()\par
+        except Exception:\par
+            pass\par
+\par
+\par
+    def actualizar_historial(self):\par
+        \par
+\par
+        self.historial.delete('1.0', tk.END)\par
+\par
+        # \f2\emdash\emdash\emdash  COMPRAS \emdash\emdash\emdash\par
+        for t in self.bot.transacciones:\par
+            ts = t.get("timestamp", "")\par
+            estado = t.get("estado", "activa")\par
+            self.historial.insert(tk.END, "\f5\u-10179?\u-8218?\f2  \f0 Compra realizada:\\n", 'compra_tag')\par
+            self.historial.insert(tk.END, f"Precio de compra: \{self.format_var(t['compra'], '$')\}\\n")\par
+            self.historial.insert(tk.END, f"Id: \{t['id']\}\\n")\par
+            self.historial.insert(tk.END, f"N\'famero de compra: \{t['numcompra']\}\\n")\par
+            self.historial.insert(tk.END, f"Estado: \{estado\}\\n")\par
+            self.historial.insert(tk.END, f"Fecha y hora: \{ts\}\\n")\par
+            if "venta_obj" in t:\par
+                self.historial.insert(tk.END, f"Objetivo de venta: \{self.format_fijo('venta_obj', t['venta_obj'])\}\\n")\par
+            self.historial.insert(tk.END, "-"*40 + "\\n")\par
+\par
+        # \f2\emdash\emdash\emdash  VENTAS \emdash\emdash\emdash\par
+        for v in self.bot.precios_ventas:\par
+            ts = v.get("timestamp", "")\par
+            self.historial.insert(tk.END, "\f5\u-10179?\u-8215?\f2  \f0 Venta realizada:\\n", 'venta_tag')\par
+            self.historial.insert(tk.END, f"Precio de compra: \{self.format_fijo('compra', v['compra'])\}\\n")\par
+            self.historial.insert(tk.END, f"Precio de venta: \{self.format_fijo('venta', v['venta'])\}\\n")\par
+            self.historial.insert(tk.END, f"Id compra: \{v['id_compra']\}\\n")\par
+            if 'ganancia' in v:\par
+                self.historial.insert(tk.END, f"Ganancia: \{self.format_fijo('ganancia', v['ganancia'])\}\\n")\par
+            self.historial.insert(tk.END, f"N\'famero de venta: \{v['venta_numero']\}\\n")\par
+            self.historial.insert(tk.END, f"Fecha y hora: \{ts\}\\n")\par
+            self.historial.insert(tk.END, "-"*40 + "\\n")\par
+\par
+    def _consola_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):\par
+        """\par
+        Corrige IN-PLACE la \'faltima l\'ednea '\f3\u-10179?\u-8996?\f2  \f0 Estado: ...' del bloque que\par
+        corresponde a id_compra o numcompra. No borra todo, no toca scroll.\par
+        """\par
+        txt = self.consola\par
+        if (not id_compra) and (numcompra in (None, "")):\par
+            return\par
+\par
+        if id_compra:\par
+            patron_ancla = rf"\\bId(?:\\s+compra)?\\s*:\\s*\{re.escape(str(id_compra))\}\\b"\par
+        else:\par
+            patron_ancla = rf"(?:Compra\\s+Num|N[\'fau]mero\\s+de\\s+compra)\\s*:\\s*\{re.escape(str(numcompra))\}\\b"\par
+\par
+        try:\par
+            start_idx = txt.search(patron_ancla, "end-1c", stopindex="1.0", backwards=True, regexp=True)\par
+            if not start_idx:\par
+                return\par
+\par
+            divisor = r"^\\s*-\\s-(?:\\s-)+\\s*$"\par
+            end_bloque = txt.search(divisor, start_idx, stopindex="end-1c", forwards=True, regexp=True)\par
+            if not end_bloque:\par
+                end_bloque = "end-1c"\par
+\par
+            estado_pat = r"^\\s*\f3\u-10179?\u-8996?\f0\\s*Estado\\s*:\\s*.*$"\par
+            estado_idx = txt.search(estado_pat, start_idx, stopindex=end_bloque, forwards=True, regexp=True)\par
+            if not estado_idx:\par
+                return\par
+\par
+            line_start = estado_idx.split(".")[0] + ".0"\par
+            line_end   = str(int(estado_idx.split(".")[0]) + 1) + ".0"\par
+\par
+            txt.configure(state="normal")\par
+            txt.delete(line_start, line_end)\par
+            txt.insert(line_start, f"\f3\u-10179?\u-8996?\f2  \f0 Estado: \{nuevo_estado\}\\n")\par
+            txt.configure(state="disabled")\par
+        except Exception:\par
+            pass\par
+\par
+    def actualizar_consola(self):\par
+        """\par
+        Incremental append-only:\par
+        - NO borra contenido existente.\par
+        - NO usa see() / yview_*().\par
+        - Corrige '\f3\u-10179?\u-8996?\f2  \f0 Estado' SOLO en l\'edneas nuevas bas\'e1ndose en estado vivo.\par
+        - Mantiene contexto incremental de Id/Num.\par
+        """\par
+        try:\par
+            def _fmt(v):\par
+                if isinstance(v, tuple):\par
+                    val, sim = v\par
+                else:\par
+                    val, sim = v, ""\par
+                return self.format_var(val, sim)\par
+\par
+            # mapa vivo de estados\par
+            estado_por_id = \{\}\par
+            estado_por_num = \{\}\par
+            try:\par
+                for t in self.bot.transacciones:\par
+                    tx_id = t.get("id")\par
+                    if tx_id:\par
+                        estado_por_id[str(tx_id).strip()] = t.get("estado", "activa")\par
+                    numc = t.get("numcompra")\par
+                    if numc is not None:\par
+                        estado_por_num[str(numc).strip()] = t.get("estado", "activa")\par
+            except Exception:\par
+                pass\par
+\par
+            re_id = re.compile(\par
+                r'(?:\f1\u-10178?\u-8551?\f0\\s*)?Compra\\s+id\\s*:\\s*([A-Za-z0-9\\-_]+)|\\bId(?:\\s+compra)?\\s*:\\s*([A-Za-z0-9\\-_]+)',\par
+                re.IGNORECASE\par
+            )\par
+            re_num = re.compile(\par
+                r'(?:\f1\u-10178?\u-8551?\f0\\s*)?Compra\\s+Num\\s*:\\s*(\\d+)|N[\'fau]mero\\s+de\\s+compra\\s*:\\s*(\\d+)',\par
+                re.IGNORECASE\par
+            )\par
+            re_estado = re.compile(r'^\\s*\f3\u-10179?\u-8996?\f0\\s*Estado\\s*:\\s*(.+)\\s*$')\par
+            re_divisor = re.compile(r'^\\s*-\\s-(?:\\s-)+\\s*$')\par
+\par
+            # Reinicio seguro del puntero de consola (corrige bug tras limpiar)\par
+            start = getattr(self, "_consola_last_n", 0)\par
+            if start > len(self._consola_buffer):\par
+                start = 0  # evita \'edndice fuera de rango si se limpi\'f3\par
+            self._consola_last_n = start  # asegura coherencia\par
+            nuevos = self._consola_buffer[start:]\par
+            if not nuevos:\par
+                return\par
+\par
+            self.consola.configure(state='normal')\par
+\par
+            # contexto incremental previo\par
+            ultimo_id = getattr(self, "_ctx_ultimo_id", None)\par
+            ultimo_num = getattr(self, "_ctx_ultimo_num", None)\par
+\par
+            for entry in nuevos:\par
+                kind = entry[0]\par
+                if kind == "raw":\par
+                    _, msg = entry\par
+                    linea = self._reformat_line(msg)\par
+                elif kind == "fmt":\par
+                    _, tpl, vals = entry\par
+                    linea = tpl.format(**\{k: _fmt(v) for k, v in vals.items()\})\par
+                    linea = self._reformat_line(linea)\par
+                else:\par
+                    continue\par
+\par
+                m_id = re_id.search(linea)\par
+                if m_id:\par
+                    ultimo_id = (m_id.group(1) or m_id.group(2) or "").strip() or ultimo_id\par
+\par
+                m_num = re_num.search(linea)\par
+                if m_num:\par
+                    ultimo_num = (m_num.group(1) or m_num.group(2) or "").strip() or ultimo_num\par
+\par
+                if re_estado.match(linea):\par
+                    estado_actual = None\par
+                    if ultimo_id and ultimo_id in estado_por_id:\par
+                        estado_actual = estado_por_id[ultimo_id]\par
+                    elif ultimo_num and ultimo_num in estado_por_num:\par
+                        estado_actual = estado_por_num[ultimo_num]\par
+                    if estado_actual:\par
+                        linea = f"\f3\u-10179?\u-8996?\f2  \f0 Estado: \{estado_actual\}"\par
+\par
+                if re_divisor.match(linea):\par
+                    ultimo_id = None\par
+                    ultimo_num = None\par
+\par
+                self.consola.insert(tk.END, linea + "\\n")\par
+\par
+            self.consola.configure(state='disabled')\par
+\par
+            # guardar progreso y contexto\par
+            self._consola_last_n = start + len(nuevos)\par
+            self._ctx_ultimo_id = ultimo_id\par
+            self._ctx_ultimo_num = ultimo_num\par
+\par
+        except Exception:\par
+            pass\par
+\par
+\par
+    def actualizar_color(self, key, valor_actual):\par
+        if valor_actual is None or key not in self.info_canvas:\par
+            return\par
+\par
+        try:\par
+            # desempaquetar si viene como (valor, simbolo)\par
+            if isinstance(valor_actual, tuple):\par
+                val_act_raw, _ = valor_actual\par
+            else:\par
+                val_act_raw = valor_actual\par
+\par
+            # \f3\u-10179?\u-8942?\f2  \f0 si no hay valor num\'e9rico, no comparo ni convierto\par
+            if val_act_raw in (None, ""):\par
+                color = "Gold"\par
+            else:\par
+                val_act = Decimal(str(val_act_raw).strip())\par
+\par
+                val_ini_raw = self.valores_iniciales.get(key)\par
+                if val_ini_raw in (None, ""):\par
+                    color = "Gold"\par
+                else:\par
+                    val_ini = Decimal(str(val_ini_raw).strip())\par
+                    if val_act > val_ini:\par
+                        color = "lime"\par
+                    elif val_act < val_ini:\par
+                        color = "Crimson"\par
+                    else:\par
+                        color = "Gold"\par
+\par
+        except Exception:\par
+            # antes imprim\'eda el error; lo silenciamo s para no ensuciar la consola\par
+            color = "Gold"\par
+\par
+        # redibujar el texto con el color decidido\par
+        self.colores_actuales[key] = color\par
+        canvas, item_id = self.info_canvas[key]\par
+        coords = canvas.coords(item_id)\par
+        x, y = coords if coords and len(coords) == 2 else (20, 10)\par
+\par
+        canvas.delete(item_id)\par
+        texto = self.format_fijo(key, valor_actual)  # si el valor es None, ya devuelve ""\par
+        text_id = canvas.create_text(\par
+            x, y,\par
+            text=texto,\par
+            fill=color,\par
+            font=self._font_normal,\par
+            anchor="nw"\par
+        )\par
+        self.info_canvas[key] = (canvas, text_id)\par
+\par
+\par
+    def _aplicar_fuente_consolas(self):\par
+        try:\par
+            self.consola.configure(font=self._font_consola)\par
+        except Exception:\par
+            pass\par
+        try:\par
+            self.historial.configure(font=self._font_historial)\par
+        except Exception:\par
+            pass\par
+\par
+        \par
+    def log_en_consola(self, msg):\par
+        if not hasattr(self, "_consola_buffer"):\par
+            self._consola_buffer = []\par
+\par
+        texto = self._reformat_line(str(msg))\par
+\par
+        # Si el mensaje anuncia cambio de estado, parchear IN-PLACE\par
+        try:\par
+            m = re.search(\par
+                r"Estado\\s+de\\s+compra\\s*#\\s*(\\d+)\\s*\\(id\\s*([A-Za-z0-9\\-_]+)\\)\\s*:\\s*([^\\-]+?)\\s*\f4\u8594?\f0\\s*(\\w+)",\par
+                texto, flags=re.IGNORECASE\par
+            )\par
+            if m:\par
+                numc_str, idc, _estado_viejo, estado_nuevo = m.groups()\par
+                numc = int(numc_str)\par
+                self._consola_patch_estado(id_compra=idc,  nuevo_estado=estado_nuevo)\par
+                self._consola_patch_estado(numcompra=numc, nuevo_estado=estado_nuevo)\par
+        except Exception:\par
+            pass\par
+\par
+        # Solo buffer; NO insert directo (para evitar duplicados)\par
+        self._consola_buffer.append(("raw", str(msg)))\par
+\par
+        # Render incremental de lo nuevo\par
+        self.actualizar_consola()\par
+\par
+\par
+\par
+    def inicializar_valores_iniciales(self):\par
+        self.bot.actualizar_balance()\par
+\par
+        def safe(val):\par
+            try:\par
+                return Decimal(str(val)) if val is not None else Decimal("0")\par
+            except:\par
+                return Decimal("0")\par
+\par
+        if self.bot.precio_actual is None:\par
+            return  # No inicializar con datos vac\'edos\par
+        self.bot.hold_usdt_var = self.bot.hold_usdt()\par
+        self.bot.hold_btc_var = self.bot.hold_btc()\par
+        self.valores_iniciales = \{\par
+            'precio_actual':         safe(self.bot.precio_actual),\par
+            'balance':               safe(self.bot.usdt_mas_btc),\par
+            'desde_ult_comp':        safe(self.bot.varCompra),\par
+            'ult_vent':              safe(self.bot.varVenta),\par
+            'variacion_desde_inicio': safe(self.bot.var_inicio),\par
+            'variacion_total_inv':   safe(self.bot.var_total),\par
+            'hold_usdt':             safe(self.bot.hold_usdt_var),\par
+            'hold_btc':              safe(self.bot.hold_btc_var),\par
+        \}\par
+\par
+    def run(self):\par
+        try:\par
+            self.root.mainloop()\par
+        except KeyboardInterrupt:\par
+            # Puedes optar por destruir la ventana o simplemente ignorar\par
+            pass\lang10\par
+}
+ 

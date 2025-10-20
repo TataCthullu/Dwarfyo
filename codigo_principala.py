@@ -34,10 +34,10 @@ class TradingBot:
         self.parametro_venta_fantasma = False
         self.param_a_enabled = True 
         self.precio_ult_venta = Decimal('0')
-        self.porc_desde_compra = Decimal("0.005")
-        self.porc_desde_venta = Decimal("0.005")
+        self.porc_desde_compra = Decimal("0.5")
+        self.porc_desde_venta = Decimal("0.5")
         self.porc_inv_por_compra = Decimal("10")
-        self.porc_profit_x_venta = Decimal("0.005")
+        self.porc_profit_x_venta = Decimal("0.5")
         self.rebalance_threshold = int(6)
         self.rebalance_pct = int(50)  # porcentaje del BTC a vender
         self.fixed_buyer = self.cant_inv()
@@ -86,31 +86,42 @@ class TradingBot:
         self.rebalance_loss_total = Decimal('0')  # pérdidas acumuladas por rebalances
         self.ultimo_evento = None
         self.rebalance_concretado = False
+        self.comisiones_enabled = True
+        self.comision_pct = Decimal("0.04")  # ejemplo 0.1%
 
     def format_fn(self, valor, simbolo=""):
+        # Nada → vacío
         if valor is None:
             return ""
+
+        # Si ya es texto, lo devolvemos limpio
         if isinstance(valor, str):
-            return valor.strip()
-        if valor == 0:
-            return f"{simbolo} 0" if simbolo else "0"
+            s = valor.strip()
+            return f"{simbolo} {s}" if simbolo and s else s
 
         try:
+            # A Decimal sin perder precisión
             if not isinstance(valor, Decimal):
                 valor = Decimal(str(valor))
 
-            with localcontext():
-                valor = +valor
+            # Cualquier tipo de cero → "0"
+            if valor == 0:
+                return f"{simbolo} 0" if simbolo else "0"
 
-            # Si es entero exacto, no mostrar parte decimal
-            if valor == valor.to_integral():
-                texto = f"{valor:.0f}"  # fuerza entero sin decimales
-            else:
-                texto = format(valor, 'f').rstrip('0').rstrip('.')
+            # Forzamos salida "decimal plana" (sin E+…)
+            texto = format(valor, 'f')          # ej. "123.450000"
+            texto = texto.rstrip('0').rstrip('.') or "0"  # sin redondear
+
+            # Evitar "-0" por si queda algo así en algún borde
+            if texto in ("-0", "-0.0"):
+                texto = "0"
+
             return f"{simbolo} {texto}" if simbolo else texto
-        
+
         except (InvalidOperation, ValueError):
+            # Si algo falla, devolvemos “tal cual”
             return f"{simbolo} {valor}" if simbolo else str(valor)
+
 
     def estado_compra_func(self):
         return "activa"
@@ -398,6 +409,16 @@ class TradingBot:
             self.usdt -= self.fixed_buyer             
             self.precio_ult_comp = self.precio_actual       
             self.btc_comprado = self.fixed_buyer / self.precio_actual
+
+            # === Comisión de compra ===
+            # Se cobra en BTC (resta BTC), pero se muestra en USDT al precio de compra
+            comision_btc = Decimal("0")
+            fee_buy_usdt = Decimal("0")
+            if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
+                comision_btc = (self.btc_comprado * self.comision_pct) / Decimal("100")
+                self.btc_comprado -= comision_btc            # afecta realmente al monto en BTC
+                fee_buy_usdt = comision_btc * self.precio_actual  # para mostrar en USDT
+
             self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
             self.btc = (self.btc or Decimal("0")) + self.btc_comprado
             self.contador_compras_reales += 1 
@@ -409,6 +430,7 @@ class TradingBot:
                     "venta_obj": self.precio_objetivo_venta,
                     "btc": self.btc_comprado,
                     "invertido_usdt": self.fixed_buyer,
+                    "fee_usdt": fee_buy_usdt,
                     "ejecutado": False,
                     "numcompra": self.contador_compras_reales,
                     "timestamp": self.timestamp,
@@ -420,6 +442,10 @@ class TradingBot:
             self.log(f" . Fecha y Hora: {self.timestamp}")
             self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
             self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
+            self.log(f"🧾 Comisión: {self.format_fn(fee_buy_usdt, '$')}")
+
+
+ 
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"📜 Estado: {self.transacciones[-1].get('estado', 'activa')}")
@@ -534,10 +560,19 @@ class TradingBot:
                 self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 # capturamos el id de la compra original
                 id_compra = transaccion["id"]     
-                usdt_obtenido = btc_vender * self.precio_actual                              
+                                            
+                
+                usdt_bruto = btc_vender * self.precio_actual
+                fee_sell_usdt = Decimal("0")
+                usdt_obtenido = usdt_bruto
+
+                if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
+                    fee_sell_usdt = (usdt_bruto * self.comision_pct) / Decimal("100")
+                    usdt_obtenido = usdt_bruto - fee_sell_usdt
+
                 self.usdt = (self.usdt or Decimal("0")) + usdt_obtenido
-                self.btc = (self.btc or Decimal("0")) - btc_vender
-                self.precio_ult_venta = self.precio_actual  
+                self.btc  = (self.btc or Decimal("0")) - btc_vender
+                self.precio_ult_venta = self.precio_actual
                 invertido_usdt = transaccion.get("invertido_usdt", self.fixed_buyer)
                 self.ganancia_neta = usdt_obtenido - invertido_usdt
                 
@@ -562,6 +597,7 @@ class TradingBot:
                     "btc_vendido": btc_vender,
                     "ganancia": self.ganancia_neta,
                     "invertido_usdt": invertido_usdt,
+                    "fee_usdt": fee_sell_usdt,
                     "venta_numero": self.contador_ventas_reales,
                     "timestamp": self.timestamp,
                     "id_compra": id_compra
@@ -577,6 +613,7 @@ class TradingBot:
                 self.log(f"📈 Precio de venta: {self.format_fn(self.precio_actual, '$')}")
                 self.log(f"📈 Venta numero: {self.contador_ventas_reales}")
                 self.log(f"📤 Btc vendido: {self.format_fn(btc_vender, '₿')}")
+                self.log(f"🧾 Comisión: {self.format_fn(fee_sell_usdt, '$')}")
                 self.log(f"💹 Ganancia de esta operacion: {self.format_fn(self.ganancia_neta, '$')}")
                 
                 

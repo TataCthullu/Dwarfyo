@@ -1,0 +1,1002 @@
+{\rtf1\fbidis\ansi\ansicpg1252\deff0\nouicompat\deflang2058{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Cambria Math;}{\f3\fnil\fcharset1 Segoe UI Emoji;}{\f4\fnil\fcharset1 Segoe UI Symbol;}{\f5\fnil\fcharset1 Segoe UI Symbol;}{\f6\fnil\fcharset1 Segoe UI Emoji;}}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mmathFont2\mwrapIndent1440 }\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang10 # \'a9 2025 Dungeon Market (Khaz\'e2d - Trading Bot)\par
+# Todos los derechos reservados.\par
+\par
+import ccxt\par
+from utils import reproducir_sonido\par
+import datetime\par
+from decimal import Decimal, InvalidOperation, DivisionByZero, localcontext, ROUND_UP\par
+from secrets import token_hex\par
+\par
+class TradingBot:\par
+    def __init__(self):\par
+        self.exchange = ccxt.binance(\{\par
+            'enableRateLimit': True,\par
+            'timeout': 10000,                # 10 segundos\par
+            'options': \{'defaultType': 'spot'\}\par
+        \})\par
+\par
+        self.log_fn = None\par
+        self.sound_enabled = True\par
+        self.start_time = None\par
+        self.run_time = self.get_runtime_str()\par
+        self.inv_inic = Decimal("5000")\par
+        self.usdt = self.inv_inic\par
+        self.btc = Decimal('0')      \par
+        self.btc_comprado = Decimal('0')\par
+        self.take_profit_pct = Decimal("3")   # % de ganancia total donde cerrar\par
+        self.stop_loss_pct   = Decimal("1")            # lo dejamos para m\'e1s adelante\par
+        self.ui_callback_on_stop = None\par
+        self.precio_actual = self._fetch_precio()\par
+        self.btc_usdt = Decimal('0')\par
+        self.parametro_compra_desde_compra = False\par
+        self.parametro_compra_desde_venta = False\par
+        self.parametro_compra_desde_venta_fantasma = False\par
+        self.parametro_venta_fantasma = False\par
+        self.param_a_enabled = True \par
+        self.precio_ult_venta = Decimal('0')\par
+        self.porc_desde_compra = Decimal("0.5")\par
+        self.porc_desde_venta = Decimal("0.5")\par
+        self.porc_inv_por_compra = Decimal("10")\par
+        self.porc_profit_x_venta = Decimal("0.5")\par
+        self.rebalance_threshold = int(6)\par
+        self.rebalance_pct = int(50)  # porcentaje del BTC a vender\par
+        self.fixed_buyer = self.cant_inv()\par
+        self.running = False\par
+        self._stop_flag = False  # flag de parada \f1\ldblquote\f0 dura\f1\rdblquote\f0\par
+        self.valores_iniciales = \{\}\par
+        self.precio_ult_comp = None\par
+        self.usdt_mas_btc = Decimal('0')\par
+        self.estado_compra = self.estado_compra_func()\par
+        self.precios_ventas = []\par
+        self.ventas_fantasma = []\par
+        self.compras_fantasma = []\par
+        self.transacciones = []\par
+        self.kant_usdt_vendido = Decimal('0')       \par
+        self.varCompra = Decimal('0')\par
+        self.varVenta = Decimal('0')       \par
+        self.btc_vendido = Decimal('0')\par
+        self.precio_objetivo_venta = Decimal('0')\par
+        self.precio_ingreso = Decimal('0')\par
+        self.var_inicio = Decimal('0')\par
+        self.log_fn = None\par
+        self.usdt_obtenido = Decimal('0')\par
+        self.contador_compras_fantasma = 0\par
+        self.contador_ventas_fantasma = 0\par
+        self.parametro_compra_fantasma = False\par
+        self.total_ganancia = Decimal('0')\par
+        self.ganancia_neta = Decimal('0')\par
+        self.reportado_trabajando = False \par
+        self.hold_btc_var = Decimal('0')\par
+        self.hold_usdt_var = Decimal('0')\par
+        self.contador_compras_reales = 0\par
+        self.contador_ventas_reales = 0\par
+        self.param_b_enabled = True  \par
+        self.excedente_total_compras = Decimal('0')\par
+        self.excedente_total_ventas = Decimal('0')\par
+        self.timestamp = None\par
+        self.compra_en_venta_fantasma = False\par
+        self.activar_compra_tras_vta_fantasma = False\par
+        self.venta_fantasma_ocurrida = False\par
+        self.var_total = Decimal('0')\par
+        self.ghost_ratio = Decimal('0')\par
+        self.sl_enabled = False\par
+        self.tp_enabled = False\par
+        self.rebalance_enabled = False\par
+        self.rebalance_count = 0 \par
+        self.rebalance_loss_total = Decimal('0')  # p\'e9rdidas acumuladas por rebalances\par
+        self.ultimo_evento = None\par
+        self.rebalance_concretado = False\par
+        self.comisiones_enabled = True\par
+        self.comision_pct = Decimal("0.04")  # ejemplo 0.1%\par
+\par
+    def format_fn(self, valor, simbolo=""):\par
+        """\par
+        Formatea n\'fameros seg\'fan el modo de vista:\par
+        - 'decimal' \f2\u8594?\f1  \f0 muestra el valor crudo completo (sin redondear ni recortar)\par
+        - '2dec' o '4dec' \f2\u8594?\f1  \f0 muestra el n\'famero con la cantidad de decimales definida\par
+        """\par
+\par
+        if valor is None:\par
+            return ""\par
+        if isinstance(valor, str):\par
+            return valor.strip()\par
+        if valor == 0:\par
+            return f"\{simbolo\} 0" if simbolo else "0"\par
+\par
+        try:\par
+            # --- Convertir a Decimal ---\par
+            if not isinstance(valor, Decimal):\par
+                valor = Decimal(str(valor))\par
+\par
+            with localcontext():\par
+                valor = +valor\par
+\par
+            # --- Obtener modo de vista y precisi\'f3n ---\par
+            modo = getattr(self, "display_mode", "decimal")\par
+            prec = getattr(self, "float_precision", 2)\par
+\par
+            # --- Modo Decimal: mostrar crudo, sin recortes ---\par
+            if modo == "decimal":\par
+                texto = str(valor)\par
+\par
+            # --- Modo flotante: redondear a prec decimales ---\par
+            else:\par
+                try:\par
+                    texto = f"\{float(valor):.\{prec\}f\}"\par
+                except Exception:\par
+                    texto = str(valor)\par
+\par
+            return f"\{simbolo\} \{texto\}" if simbolo else texto\par
+\par
+        except (InvalidOperation, ValueError):\par
+            return f"\{simbolo\} \{valor\}" if simbolo else str(valor)\par
+\par
+\par
+    def estado_compra_func(self):\par
+        return "activa"\par
+    \par
+    def es_activa(self, tx) -> bool:\par
+        try:\par
+            return tx.get("estado", "activa") == "activa" and tx.get("btc", Decimal("0")) > 0\par
+        except Exception:\par
+            return False\par
+\par
+\par
+    def log(self, mensaje):\par
+        if self.log_fn:\par
+            self.log_fn(mensaje)  \par
+\par
+    def set_valores_iniciales(self, valores):\par
+        self.valores_iniciales = valores  # un dict con los datos iniciales\par
+                        \par
+    def _fetch_precio(self) -> Decimal:\par
+        try:\par
+            ticker = self.exchange.fetch_ticker('BTC/USDT')\par
+            info = ticker.get('info', \{\}) or \{\}\par
+            raw = info.get('lastPrice')\par
+            \par
+            if raw is None:\par
+                # No usamos str(ticker['last']) que es float, sino que fallamos.\par
+                self.log("\f3\u9888?\u-497?\f1  \f0 No se encontr\'f3 lastPrice en la respuesta cruda; precio no actualizado.")\par
+                return None\par
+            \par
+            # Convertimos directamente el string ("12345.67000000") a Decimal\par
+            try:\par
+                return Decimal(raw)\par
+            \par
+            except InvalidOperation as e:\par
+                self.log(f"\f3\u9888?\u-497?\f1  \f0 lastPrice no v\'e1lido (\f1\lquote\f0\{raw\}\f1\rquote\f0 ): \{e\}")\par
+                return None\par
+        \par
+        except (ccxt.NetworkError, ccxt.RequestTimeout) as e:\par
+            self.log(f"\f3\u9888?\u-497?\f1  \f0 Error de red al obtener precio: \{e\}")\par
+        except ccxt.ExchangeError as e:\par
+            self.log(f"\f3\u9888?\u-497?\f1  \f0 Error del exchange al obtener precio: \{e\}")\par
+        except Exception as e:\par
+            self.log(f"\f4\u10060?\f1  \f0 Error inesperado obteniendo el precio: \{e\}")\par
+\par
+        return None\par
+        \par
+    def actualizar_balance(self):\par
+        """\par
+        Actualiza BTC valorado en USDT y balance total usando Decimal.\par
+        Si btc o precio_actual no son v\'e1lidos, pone ambos balances a Decimal('0').\par
+        """\par
+        try:\par
+            # Convertir btc y usdt a Decimal si no lo son ya\par
+            btc = self.btc if isinstance(self.btc, Decimal) else Decimal(self.btc or "0")\par
+            usdt = self.usdt if isinstance(self.usdt, Decimal) else Decimal(self.usdt or "0")\par
+            # precio_actual puede ser None o float/int; lo convertimos o damos cero\par
+            if self.precio_actual is None:\par
+                precio = Decimal('0')\par
+            else:\par
+                precio = self.precio_actual if isinstance(self.precio_actual, Decimal) else Decimal(self.precio_actual)\par
+            # C\'e1lculo principal\par
+            self.btc_usdt = btc * precio\par
+            self.usdt_mas_btc = usdt + self.btc_usdt\par
+\par
+        except (InvalidOperation, TypeError, ValueError):\par
+            # En caso de cualquier error de conversi\'f3n, reiniciamos a cero\par
+            self.btc_usdt = Decimal('0')\par
+            self.usdt_mas_btc = Decimal('0')\par
+\par
+    def cant_inv(self) -> Decimal:\par
+        """\par
+        Calcula cu\'e1nto invertir (inv_inic * porc_inv_por_compra / 100),\par
+        devolviendo 0 en Decimal si hay cualquier problema.\par
+        """\par
+        try:\par
+            inv = self.inv_inic if isinstance(self.inv_inic, Decimal) else Decimal(self.inv_inic)\par
+            pct = self.porc_inv_por_compra if isinstance(self.porc_inv_por_compra, Decimal) \\\par
+                else Decimal(self.porc_inv_por_compra)\par
+            return inv * pct / Decimal('100')\par
+        except (InvalidOperation, TypeError, ValueError):\par
+            return Decimal('0')       \par
+\par
+    def varpor_compra(self, precio_ult_comp: Decimal, precio_act_btc: Decimal) -> Decimal:\par
+        """Variaci\'f3n porcentual desde la \'faltima compra, o 0 si no aplicable."""\par
+        if self.contador_compras_reales == 0:\par
+            return Decimal("0")\par
+        else:\par
+            try:\par
+                # Si alguno es None o cero, devolvemos 0\par
+                if precio_ult_comp is None or precio_act_btc is None or precio_ult_comp == Decimal("0"):\par
+                    return Decimal("0")\par
+                # (nuevo \f2\u8722?\f1  \f0 viejo) / viejo * 100\par
+                else:\par
+                    return (precio_act_btc - precio_ult_comp) / precio_ult_comp * Decimal("100")\par
+            except (InvalidOperation, DivisionByZero) as e:\par
+                self.log(f"\f4\u10060?\f1  \f0 Error calculando varpor_compra: \{e\}")\par
+                return Decimal("0")\par
+\par
+    def varpor_venta(self, precio_ult_venta: Decimal, precio_act_btc: Decimal) -> Decimal:\par
+        """Variaci\'f3n porcentual desde la \'faltima venta, o 0 si no aplicable."""\par
+        if self.contador_ventas_reales == 0:\par
+            return Decimal("0")\par
+        else:\par
+            try:\par
+                if precio_ult_venta is None or precio_act_btc is None or precio_ult_venta == Decimal("0"):\par
+                    return Decimal("0")\par
+                else:\par
+                    return (precio_act_btc - precio_ult_venta) / precio_ult_venta * Decimal("100")\par
+            except (InvalidOperation, DivisionByZero) as e:\par
+                self.log(f"\f4\u10060?\f1  \f0 Error calculando varpor_venta: \{e\}")\par
+                return Decimal("0")\par
+\par
+    def varpor_ingreso(self) -> Decimal:\par
+        """Variaci\'f3n porcentual desde el precio de ingreso, o 0 si no aplicable."""\par
+        if self.contador_compras_reales == 0:\par
+            return Decimal("0")\par
+        else:\par
+            try:\par
+                if self.precio_ingreso is None or self.precio_actual is None or self.precio_ingreso == Decimal("0"):\par
+                    return Decimal("0")\par
+                else:\par
+                    return (self.precio_actual - self.precio_ingreso) / self.precio_ingreso * Decimal("100")\par
+            except (InvalidOperation, DivisionByZero) as e:\par
+                self.log(f"\f4\u10060?\f1  \f0 Error calculando varpor_ingreso: \{e\}")\par
+                return Decimal("0")\par
+    \par
+    def _new_id(self):\par
+        # Genera 4 d\'edgitos hex aleatorios\par
+        return token_hex(2)  # e.g. '9f3b'\par
+    \par
+    def check_rebalance(self):\par
+        if not getattr(self, "rebalance_enabled", False):\par
+            self.log("\f3\u9878?\u-497?\f1  \f0 Rebalance: desactivado.")\par
+            return\par
+        \par
+        if not self.running or self._stop_flag:\par
+            return\par
+        \par
+        if self.contador_compras_fantasma < self.rebalance_threshold or not self.precio_actual:\par
+            return\par
+\par
+        # usar SOLO compras activas con BTC > 0\par
+        activos = [tx for tx in self.transacciones\par
+                if self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0]\par
+        n_total = len(activos)\par
+        rebalance_loss_event = Decimal("0")  # \f5\u-10179?\u-8901?\f1  \f0 p\'e9rdida total SOLO de este rebalance\par
+\par
+        if n_total == 0:\par
+            self.log("\f3\u9878?\u-497?\f1  \f0 Rebalance: no hay transacciones activas. Se omite.")\par
+            self.contador_compras_fantasma = 0  # evita loops\par
+            return\par
+        \par
+        _rebalance_done = False\par
+        \par
+        if n_total > 1:\par
+             # purgar % de las m\'e1s antiguas (redondeo hacia ARRIBA)\par
+            raw = (Decimal(n_total) * Decimal(self.rebalance_pct)) / Decimal("100")\par
+            n_a_vender = int(raw.to_integral_value(rounding=ROUND_UP))\par
+            n_a_vender = max(1, min(n_total, n_a_vender))  # clamp entre 1 y n_total\par
+\par
+\par
+            activos_ordenados = sorted(activos, key=lambda tx: tx.get("numcompra", 0))\par
+            a_vender = activos_ordenados[:n_a_vender]\par
+\par
+            total_btc_vendido = Decimal("0")\par
+            total_usdt_obtenido = Decimal("0")\par
+            for tx in a_vender:\par
+                btc_vender = tx.get("btc", Decimal("0"))\par
+                if btc_vender <= 0:\par
+                    continue\par
+                usdt_obtenido = btc_vender * self.precio_actual\par
+                self.usdt += usdt_obtenido\par
+                self.btc  -= btc_vender\par
+                # marcar estado y vaciar btc\par
+                \par
+                tx["estado"] = "anulada"\par
+                tx["btc"]    = Decimal("0")\par
+                self.log(f"\f5\u-10179?\u-8995?\f1  \f0 Estado de compra #\{tx.get('numcompra')\} (id \{tx.get('id')\}): activa \f2\u8594?\f1  \f0 anulada")\par
+                self.log("- - - - - - - - - -")\par
+            # \f5\u-10179?\u-8901?\f1  \f0 P\'e9rdida de esta compra\par
+                precio_compra_tx = tx.get("compra", None)\par
+                if isinstance(precio_compra_tx, Decimal) and btc_vender > 0:\par
+                    costo_base = btc_vender * precio_compra_tx\par
+                    perdida = costo_base - usdt_obtenido\par
+                    rebalance_loss_event += perdida\par
+                    self.log(\par
+                        f" \f1\bullet  P\f0\'e9rdida por rebalance en esta compra: "\par
+                        f"\{self.format_fn(perdida, '$')\} (base \{self.format_fn(costo_base, '$')\} \f2\u8594?\f1  \f0 "\par
+                    )\par
+\par
+                total_btc_vendido += btc_vender\par
+                total_usdt_obtenido += usdt_obtenido\par
+                _rebalance_done = True\par
+            self.log(f"   \f1\bullet  Estado actualizado: anulada")\par
+            self.log(f"\f3\u9878?\u-497?\f1  \f0 Rebalance: purga \{n_a_vender\}/\{n_total\} compras antiguas.")\par
+            self.log(f"\f5\u-10179?\u-9015?\f1  \f0 BTC vendido: \{self.format_fn(total_btc_vendido, '\u8383?')\}")\par
+            self.log(f"\f5\u-10179?\u-9040?\f1  \f0 USDT recibido: \{self.format_fn(total_usdt_obtenido, '$')\}")\par
+            self.log("- - - - - - - - - -")\par
+\par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/rebalance.wav")\par
+\par
+        else:\par
+            # una sola compra activa: vender % de esa compra\par
+            tx = activos[0]\par
+            btc_total_tx = tx.get("btc", Decimal("0"))\par
+            if btc_total_tx > 0:\par
+                cantidad_a_vender = (btc_total_tx * self.rebalance_pct) / Decimal("100")\par
+                usdt_obtenido = cantidad_a_vender * self.precio_actual\par
+\par
+                self.usdt += usdt_obtenido\par
+                self.btc  -= cantidad_a_vender\par
+                tx["btc"]   = btc_total_tx - cantidad_a_vender\par
+\par
+                \par
+            # \f5\u-10179?\u-8901?\f1  \f0 NUEVO: p\'e9rdida parcial\par
+            precio_compra_tx = tx.get("compra", None)\par
+            if isinstance(precio_compra_tx, Decimal) and cantidad_a_vender > 0:\par
+                costo_base = cantidad_a_vender * precio_compra_tx\par
+                perdida = costo_base - usdt_obtenido\par
+                rebalance_loss_event += perdida\par
+                self.log(\par
+                    f" \f1\bullet  P\f0\'e9rdida por rebalance (parcial): "\par
+                    f"\{self.format_fn(perdida, '$')\} (base \{self.format_fn(costo_base, '$')\} \f2\u8594?\f1  \f0 "\par
+                )\par
+                \par
+                self.log(f"   \f1\bullet  Estado se mantiene: activa (parcialmente reducida)")\par
+                self.log(f"\f3\u9878?\u-497?\f1  \f0 Rebalance: vendiendo \{self.rebalance_pct\}% de la \'fanica compra activa.")\par
+                self.log(f"\f5\u-10179?\u-9015?\f1  \f0 BTC vendido: \{self.format_fn(cantidad_a_vender, '\u8383?')\}")\par
+                self.log(f"\f5\u-10179?\u-9040?\f1  \f0 USDT recibido: \{self.format_fn(usdt_obtenido, '$')\}")\par
+                self.log("- - - - - - - - - -")\par
+                _rebalance_done = True\par
+\par
+                if self.sound_enabled:\par
+                    reproducir_sonido("Sounds/rebalance.wav")\par
+\par
+        # reset del trigger para no rebotar\par
+        self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')\par
+        self.contador_compras_fantasma = 0\par
+        # \f4\u9989?\f1  \f0 actualizar balances y dejar constancia\par
+        self.actualizar_balance()\par
+        self.log(f"\f5\u-10179?\u-9028?\f1  \f0 Balance tras rebalance \f2\u8594?\f1  \f0 USDT: \{self.format_fn(self.usdt, '$')\}\\n \'b7 BTC: \{self.format_fn(self.btc, '\u8383?')\}")\par
+        self.log("- - - - - - - - - -")\par
+        \par
+        if '_rebalance_done' in locals() and _rebalance_done:\par
+            self.rebalance_count += 1\par
+            self.log(f"\f5\u-10179?\u-9014?\f1  \f0 Rebalance #\{self.rebalance_count\} ejecutado")\par
+            self.rebalance_concretado = True   # \f2\u8592?\f1  \f0 encender jade\par
+    # \f5\u-10179?\u-8901?\f1  \f0 NUEVO: totales de p\'e9rdida\par
+        if rebalance_loss_event > 0:\par
+            self.rebalance_loss_total = (self.rebalance_loss_total or Decimal("0")) + rebalance_loss_event\par
+            self.log(f"\f5\u-10179?\u-8901?\f1  \f0 P\'e9rdida total en este rebalance: \{self.format_fn(rebalance_loss_event, '$')\}")\par
+            self.log(f"\f5\u-10179?\u-9015?\f1  \f0 P\'e9rdida acumulada por rebalances: \{self.format_fn(self.rebalance_loss_total, '$')\}")\par
+            self.log("- - - - - - - - - -")\par
+    def hay_base_rebalance(self):\par
+        return any(self.es_activa(tx) and tx.get("btc", Decimal("0")) > 0 for tx in self.transacciones)\par
+\par
+    def comprar(self, trigger=None):\par
+            if not self.running or self._stop_flag:\par
+                return\par
+            nuevo_precio = self._fetch_precio()\par
+\par
+            if nuevo_precio is None:\par
+                return\par
+            \par
+            self.precio_actual = nuevo_precio\par
+            \par
+            if not self.condiciones_para_comprar():\par
+                self.log("Condiciones inv\'e1lidas. No se realiza compra")\par
+                self.log("- - - - - - - - - -")\par
+                return\par
+            \par
+            if self.usdt is None or self.usdt < self.fixed_buyer:\par
+                self.log("\f3\u9888?\u-497?\f1  \f0 Usdt insuficiente para comprar.")\par
+                self.log("- - - - - - - - - -")\par
+                return\par
+            \par
+            if self.precio_actual is None or self.precio_actual == 0:\par
+                self.log("\f3\u9888?\u-497?\f1  \f0 Precio actual inv\'e1lido para calcular BTC comprado.")\par
+                self.log("- - - - - - - - - -")\par
+                return\par
+            \par
+            id_op = self._new_id()\par
+            self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")\par
+            self.usdt -= self.fixed_buyer             \par
+            self.precio_ult_comp = self.precio_actual       \par
+            self.btc_comprado = self.fixed_buyer / self.precio_actual\par
+\par
+            # === Comisi\'f3n de compra ===\par
+            # Se cobra en BTC (resta BTC), pero se muestra en USDT al precio de compra\par
+            comision_btc = Decimal("0")\par
+            fee_buy_usdt = Decimal("0")\par
+            if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:\par
+                comision_btc = (self.btc_comprado * self.comision_pct) / Decimal("100")\par
+                self.btc_comprado -= comision_btc            # afecta realmente al monto en BTC\par
+                fee_buy_usdt = comision_btc * self.precio_actual  # para mostrar en USDT\par
+\par
+            self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')\par
+            self.btc = (self.btc or Decimal("0")) + self.btc_comprado\par
+            self.contador_compras_reales += 1 \par
+            self.rebalance_concretado = False\par
+            \par
+            self.transacciones.append(\{\par
+                    "compra": self.precio_ult_comp,\par
+                    "id": id_op,     \par
+                    "venta_obj": self.precio_objetivo_venta,\par
+                    "btc": self.btc_comprado,\par
+                    "invertido_usdt": self.fixed_buyer,\par
+                    "fee_usdt": fee_buy_usdt,\par
+                    "ejecutado": False,\par
+                    "numcompra": self.contador_compras_reales,\par
+                    "timestamp": self.timestamp,\par
+                    "estado": self.estado_compra_func()\par
+                \})\par
+                            \par
+            self.actualizar_balance()            \par
+            self.log("\f4\u9989?\f1  \f0 Compra realizada.")\par
+            self.log(f" . Fecha y Hora: \{self.timestamp\}")\par
+            self.log(f"\f5\u-10179?\u-9015?\f1  \f0 Precio de compra: \{self.format_fn(self.precio_actual, '$')\}")\par
+            self.log(f"\f3\u-10178?\u-8551?\f1  \f0 Btc comprado: \{self.format_fn(self.btc_comprado, '\u8383?')\}")\par
+            self.log(f"\f3\u-10178?\u-8706?\f1  \f0 Comisi\'f3n: \{self.format_fn(fee_buy_usdt, '$')\}")\par
+\par
+\par
+ \par
+            self.log(f"\f3\u-10178?\u-8551?\f1  \f0 Compra id: \{id_op\}")\par
+            self.log(f"\f3\u-10178?\u-8551?\f1  \f0 Compra Num: \{self.contador_compras_reales\}")\par
+            self.log(f"\f5\u-10179?\u-8996?\f1  \f0 Estado: \{self.transacciones[-1].get('estado', 'activa')\}")\par
+            self.log(f"\f5\u-10180?\u-8273?\f1  \f0 Objetivo de venta: \{self.format_fn(self.precio_objetivo_venta, '$')\}")\par
+            \par
+            \par
+\par
+            # Excedente de bajada \par
+            if trigger == 'A':\par
+                exceso = abs(self.varCompra) - self.porc_desde_compra\par
+                if exceso > 0:               \par
+                    self.excedente_total_compras += exceso\par
+                    self.log(f"\f5\u-10179?\u-9014?\f1  \f0 Excedente de bajada: \{self.format_fn(exceso, '%')\}")\par
+            elif trigger == 'B':\par
+                exceso = abs(self.varVenta) - self.porc_desde_venta\par
+                if exceso > 0:\par
+                    self.excedente_total_compras += exceso\par
+                    self.log(f"\f5\u-10179?\u-9014?\f1  \f0 Excedente de bajada: \{self.format_fn(exceso, '%')\}")\par
+\par
+            if self.sound_enabled:          \par
+                reproducir_sonido("Sounds/compra.wav")   \par
+            \par
+            self.ultimo_evento = datetime.datetime.now()         \par
+            self.reportado_trabajando = False\par
+\par
+    def parametro_compra_A(self):\par
+        if not self.param_a_enabled:\par
+            return False\par
+    \par
+        if self.porc_desde_compra <= Decimal('0'):\par
+            return False\par
+        #Compra con referencia a la ultima compra\par
+        if self.varCompra <= -self.porc_desde_compra:\par
+            if self.condiciones_para_comprar():                                   \par
+                self.comprar(trigger='A')\par
+                self.log("\f5\u-10179?\u-8907?\f1  \f0 [Parametro A].") \par
+                self.log("- - - - - - - - - -")\par
+                self.precio_ult_comp = self.precio_actual   \par
+            else:                               \par
+                self.compras_fantasma.append(self.precio_actual)\par
+                self.contador_compras_fantasma += 1\par
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")\par
+                self.log(f"\f5\u-10179?\u-9012?\f0 (A) \{ts\} \'b7 Sin Usdt para comprar, nueva compra fantasma registrada a \{self.format_fn(self.precio_actual, '$')\}, Num: \{self.contador_compras_fantasma\}.")\par
+                self.log("- - - - - - - - - -")                 \par
+                self.precio_ult_comp = self.precio_actual   \par
+                self.ultimo_evento = datetime.datetime.now()                             \par
+                self.reportado_trabajando = False\par
+                if self.sound_enabled:\par
+                    reproducir_sonido("Sounds/compra_fantasma.wav")\par
+            return False \par
+    def parametro_compra_B(self):\par
+        if self.porc_desde_venta <= Decimal('0'):\par
+            return False\par
+        #Compra con referencia a la ultima venta\par
+        if not self.param_b_enabled:\par
+            return\par
+        if self.varVenta <= -self.porc_desde_venta:            \par
+            if self.condiciones_para_comprar():                     \par
+                self.comprar(trigger='B')\par
+                self.log("\f5\u-10179?\u-8907?\f1  \f0 [Parametro B].")\par
+                self.log("- - - - - - - - - -")\par
+                self.precio_ult_comp = self.precio_actual\par
+                self.param_a_enabled = True\par
+                self.param_b_enabled = False  # Deshabilitamos B hasta la pr\'f3xima venta                                \par
+            else:         \par
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")                 \par
+                self.log(f"\f3\u9888?\u-497?\f1   \f0\{ts\} \'b7 Fondos insuficientes, nueva compra fantasma registrada a: \{self.format_fn(self.precio_actual, '$')\}")\par
+                self.log("- - - - - - - - - -")\par
+                self.contador_compras_fantasma += 1                 \par
+                self.param_b_enabled = False  \par
+                self.ultimo_evento = datetime.datetime.now()     \par
+                self.reportado_trabajando = False\par
+                if self.sound_enabled:\par
+                    reproducir_sonido("Sounds/compra_fantasma.wav")                                         \par
+                return      \par
+        return False\par
+    \par
+    def vender(self):\par
+        if not self.running or self._stop_flag:\par
+            return\par
+        # refrescar precio\par
+        nuevo_precio = self._fetch_precio()\par
+       \par
+        if nuevo_precio is None:\par
+            return\par
+       \par
+        self.precio_actual = nuevo_precio\par
+        self.actualizar_balance()\par
+        ejecutadas = []\par
+       \par
+        for transaccion in self.transacciones:\par
+            #  Aseguramos que haya BTC v\'e1lido\par
+            if self.btc is None or self.btc <= Decimal('0'):\par
+                continue\par
+#  Solo transacciones ACTIVAS\par
+            if transaccion.get("estado", "activa") != "activa":\par
+                continue\par
+\par
+            #  Validamos tambi\'e9n que la transacci\'f3n tenga BTC v\'e1lido\par
+            if "btc" not in transaccion or not isinstance(transaccion["btc"], Decimal):\par
+                continue\par
+\par
+            if self.btc < transaccion["btc"]:\par
+                continue  # Evita vender m\'e1s BTC del disponible  \par
+\par
+            venta_obj = transaccion.get('venta_obj')\par
+            if not isinstance(venta_obj, Decimal):\par
+                continue\par
+\par
+            if self.precio_actual >= venta_obj:                        \par
+                btc_vender = transaccion["btc"]\par
+                self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")\par
+                # capturamos el id de la compra original\par
+                id_compra = transaccion["id"]     \par
+                                            \par
+                \par
+                usdt_bruto = btc_vender * self.precio_actual\par
+                fee_sell_usdt = Decimal("0")\par
+                usdt_obtenido = usdt_bruto\par
+\par
+                if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:\par
+                    fee_sell_usdt = (usdt_bruto * self.comision_pct) / Decimal("100")\par
+                    usdt_obtenido = usdt_bruto - fee_sell_usdt\par
+\par
+                self.usdt = (self.usdt or Decimal("0")) + usdt_obtenido\par
+                self.btc  = (self.btc or Decimal("0")) - btc_vender\par
+                self.precio_ult_venta = self.precio_actual\par
+                invertido_usdt = transaccion.get("invertido_usdt", self.fixed_buyer)\par
+                self.ganancia_neta = usdt_obtenido - invertido_usdt\par
+                \par
+                if self.total_ganancia is None:\par
+                    self.total_ganancia = Decimal("0")\par
+\par
+                self.total_ganancia += self.ganancia_neta\par
+                excedente_pct = Decimal("0")\par
+\par
+                if self.precio_actual > venta_obj:\par
+                    try:\par
+                        excedente_pct = ((self.precio_actual - venta_obj) / venta_obj) * Decimal("100")\par
+                        self.excedente_total_ventas += excedente_pct\par
+                    except (InvalidOperation, DivisionByZero):\par
+                        excedente_pct = Decimal("0")\par
+\par
+                self.contador_ventas_reales += 1\par
+                \par
+                self.precios_ventas.append(\{\par
+                    "compra": transaccion["compra"],\par
+                    "venta": self.precio_actual,\par
+                    "btc_vendido": btc_vender,\par
+                    "ganancia": self.ganancia_neta,\par
+                    "invertido_usdt": invertido_usdt,\par
+                    "fee_usdt": fee_sell_usdt,\par
+                    "venta_numero": self.contador_ventas_reales,\par
+                    "timestamp": self.timestamp,\par
+                    "id_compra": id_compra\par
+                \})\par
+                \par
+                precio_compra = transaccion.get('compra', Decimal('0'))\par
+                transaccion["ejecutado"] = True                                \par
+                self.log(f"\f4\u9989?\f1  \f0 Venta realizada.")\par
+                self.log(f"Fecha y hora: \{self.timestamp\}")\par
+                self.log(f"\f5\u-10179?\u-8878?\f1  \f0 Compra original: \{self.format_fn(precio_compra, '$')\}")\par
+                self.log(f"\f4\u-10180?\u-8812?\f1  \f0 Id: \{id_compra\}")\par
+                self.log(f"\f3\u-10178?\u-8551?\f1  \f0 Compra Num: \{transaccion.get('numcompra')\}")\par
+                self.log(f"\f5\u-10179?\u-9016?\f1  \f0 Precio de venta: \{self.format_fn(self.precio_actual, '$')\}")\par
+                self.log(f"\f5\u-10179?\u-9016?\f1  \f0 Venta numero: \{self.contador_ventas_reales\}")\par
+                self.log(f"\f5\u-10179?\u-8988?\f1  \f0 Btc vendido: \{self.format_fn(btc_vender, '\u8383?')\}")\par
+                self.log(f"\f3\u-10178?\u-8706?\f1  \f0 Comisi\'f3n: \{self.format_fn(fee_sell_usdt, '$')\}")\par
+                self.log(f"\f5\u-10179?\u-9031?\f1  \f0 Ganancia de esta operacion: \{self.format_fn(self.ganancia_neta, '$')\}")\par
+                \par
+                \par
+\par
+                if excedente_pct > 0:\par
+                    self.log(f"\f5\u-10179?\u-9014?\f1  \f0 Excedente sobre objetivo: \{self.format_fn(excedente_pct, '%')\}")\par
+                \par
+                self.log("- - - - - - - - - -")\par
+\par
+                # marcar y luego remover fuera del loop\par
+                \par
+                transaccion["estado"] = "vendida"\par
+                transaccion["btc"]    = Decimal("0")\par
+                self.log(f"\f5\u-10179?\u-8995?\f1  \f0 Estado de compra #\{transaccion.get('numcompra')\} (id \{transaccion.get('id')\}): activa \f2\u8594?\f1  \f0 vendida")\par
+                self.log("- - - - - - - - - -")\par
+                ejecutadas.append(transaccion)\par
+                \par
+                if self.sound_enabled:               \par
+                    reproducir_sonido("Sounds/venta.wav")\par
+\par
+                self.ultimo_evento = datetime.datetime.now()\par
+                self.reportado_trabajando = False\par
+                break\par
+\par
+         # ----- remover transacciones vendidas (FUERA DEL LOOP) -----\par
+        # ----- remover transacciones vendidas (FUERA DEL LOOP) -----\par
+        if ejecutadas:\par
+            # Solo borrar en modo Standard\par
+            if getattr(self, "modus_actual", "standard") == "standard":\par
+                for transaccion in ejecutadas:\par
+                    if transaccion in self.transacciones:\par
+                        self.transacciones.remove(transaccion)\par
+\par
+            # Reinicio de par\'e1metros siempre\par
+            self.param_b_enabled = True\par
+            self.param_a_enabled = False\par
+\par
+\par
+        self.actualizar_balance()             \par
+\par
+    def venta_fantasma(self) -> bool:\par
+        if self.precio_ult_venta is None:\par
+            return False\par
+\par
+        self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)\par
+\par
+        # Comprueba si la variaci\'f3n (%) supera el umbral\par
+        if self.btc is not None and self.btc_comprado is not None and self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:\par
+            id_f = token_hex(2)\par
+            self.contador_ventas_fantasma += 1\par
+            self.venta_fantasma_ocurrida = True\par
+            self.activar_compra_tras_vta_fantasma = True\par
+            # Actualiza el punto de referencia para el pr\'f3ximo umbral\par
+            self.precio_ult_venta = self.precio_actual\par
+            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")\par
+            self.ventas_fantasma.append(\{\par
+                'id': id_f,\par
+                'precio': self.precio_actual,\par
+                'timestamp': ts,\par
+            \})\par
+            self.log(f"\f5\u-10179?\u-9012?\f1  \f0\{ts\} \'b7 Venta fantasma #\{self.contador_ventas_fantasma\} a \{self.format_fn(self.precio_actual, '$')\}")\par
+            self.log("- - - - - - - - - -")\par
+            self.ultimo_evento = datetime.datetime.now()\par
+            self.reportado_trabajando = False\par
+\par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/venta_fantasma.wav")\par
+            return True\par
+\par
+        # Aseguramos que no quede activa si no se cumpli\'f3 la condici\'f3n\par
+        self.activar_compra_tras_vta_fantasma = False\par
+        self.venta_fantasma_ocurrida = False\par
+        return False\par
+\par
+    def variacion_total(self) -> Decimal:\par
+        """\par
+        % de variaci\'f3n sobre la inversi\'f3n inicial.\par
+        Si no hay precio de ingreso o inv_inic es cero, devolvemos 0.\par
+        """\par
+        # validaciones iniciales\par
+        if not self.precio_ingreso or self.inv_inic == Decimal('0'):\par
+            return Decimal('0')\par
+        \par
+        # calculamos el valor actual de la cartera en USDT\par
+        usdt = self.usdt or Decimal("0")\par
+        btc = self.btc or Decimal("0")\par
+        precio = self.precio_actual or Decimal("0")\par
+        actual = usdt + (btc * precio)\par
+        # porcentaje\par
+        delta = (actual - self.inv_inic) * Decimal('100') / self.inv_inic\par
+        # si por redondeo diera 0, devolvemos expl\'edcitamente Decimal('0')\par
+        return delta if delta != 0 else Decimal('0')\par
+    \par
+    def condiciones_para_comprar(self) -> bool:\par
+        try:\par
+            if any(x is None for x in [self.fixed_buyer, self.usdt, self.precio_actual]):\par
+                return False\par
+            if self.fixed_buyer <= Decimal('0'):\par
+                return False\par
+            if self.usdt < self.fixed_buyer:\par
+                return False\par
+            if not isinstance(self.precio_actual, (int, float, Decimal)):\par
+                return False\par
+            if Decimal(self.precio_actual) <= 0:\par
+                return False\par
+            return True\par
+\par
+        except Exception as e:\par
+            self.log(f"\f4\u10060?\f1  \f0 Error en condiciones_para_comprar: \{e\}")\par
+            return False\par
+\par
+    def hold_usdt(self):\par
+        try:\par
+            if not self.running or self.contador_compras_reales == 0:\par
+                return Decimal("0")\par
+            if not self.precio_ingreso or not self.precio_actual or not self.inv_inic:\par
+                return Decimal("0")\par
+\par
+            btc_hold = self.inv_inic / self.precio_ingreso\par
+            return btc_hold * self.precio_actual\par
+\par
+        except (InvalidOperation, ZeroDivisionError, TypeError):\par
+            return Decimal("0")\par
+\par
+    def hold_btc(self) -> Decimal:\par
+        """\par
+        Devuelve cu\'e1nto BTC habr\'edas comprado con la inversi\'f3n inicial y el precio de ingreso.\par
+        """\par
+        try:\par
+            if not self.precio_ingreso or self.inv_inic == Decimal("0"):\par
+                return Decimal("0")\par
+\par
+            ingreso = self.precio_ingreso if isinstance(self.precio_ingreso, Decimal) else Decimal(str(self.precio_ingreso))\par
+            inv     = self.inv_inic       if isinstance(self.inv_inic, Decimal)       else Decimal(str(self.inv_inic))\par
+            btc_resultado = inv / ingreso\par
+            return btc_resultado if btc_resultado != 0 else Decimal("0")\par
+\par
+        except (InvalidOperation, ZeroDivisionError, TypeError, ValueError) as e:\par
+            self.log(f"\f4\u10060?\f1  \f0 Error en hold_btc: \{e\}")\par
+            return Decimal("0")    \par
+                   \par
+    def calcular_ghost_ratio(self) -> Decimal:\par
+        total = (self.contador_compras_reales + self.contador_ventas_reales +\par
+                 self.contador_compras_fantasma + self.contador_ventas_fantasma)\par
+        if total == 0:\par
+            return Decimal("0")\par
+        return (self.contador_compras_fantasma + self.contador_ventas_fantasma) / Decimal(total)\par
+             \par
+    def realizar_primera_compra(self):\par
+        if self.condiciones_para_comprar():\par
+            self.comprar()\par
+            self.log("- - - - - - - - - -")\par
+        else:\par
+            self.log("No cumple las condiciones para comprar")\par
+\par
+    def iniciar(self):\par
+        # Capturamos precio de ingreso justo al arrancar\par
+        self.precio_actual = self._fetch_precio()\par
+        if self.precio_actual is None:\par
+            return\par
+        if self.condiciones_para_comprar():\par
+            #self.log(f"\f3\u-10178?\u-8726?\f1  \f0 Init check: precio_actual=\{self.precio_actual\}, fixed_buyer=\{self.fixed_buyer\}, usdt=\{self.usdt\}")\par
+\par
+            self.precio_ingreso = self.precio_actual\par
+            self.precio_ult_comp = self.precio_actual\par
+            self.inv_inic = self.usdt\par
+            self.start_time = datetime.datetime.now()\par
+            self._stop_flag = False\par
+            self.running = True\par
+            \par
+            self.log("\f6\u-10179?\u-8223?\f1  \f0 Khaz\'e2d iniciado.")\par
+            self.log("- - - - - - - - - -")\par
+            self.realizar_primera_compra()\par
+\par
+        else:\par
+            self.log("No se puede iniciar por montos invalidos")    \par
+            return\par
+        \par
+    def get_start_time_str(self) -> str:    \par
+        if not self.start_time:\par
+            return \par
+        return self.start_time.strftime("%Y-%m-%d %H:%M:%S")\par
+\par
+    def get_runtime_str(self) -> str:\par
+        """\par
+        Devuelve una cadena tipo 'Xd Yh Zm' con\par
+        d\'edas, horas y minutos transcurridos desde start_time.\par
+        """\par
+        if not self.start_time:\par
+            return \par
+        delta = datetime.datetime.now() - self.start_time\par
+        days = delta.days\par
+        hours, rem = divmod(delta.seconds, 3600)\par
+        minutes = rem // 60\par
+        parts = []\par
+        if days:\par
+            parts.append(f"\{days\} d\'eda\{'s' if days!=1 else ''\}")\par
+        if hours:\par
+            parts.append(f"\{hours\} h")\par
+        if minutes or not parts:\par
+            parts.append(f"\{minutes\} min")\par
+        return " ".join(parts) \par
+                                        \par
+    def loop(self, after_fn=None):\par
+            try:    \par
+                if not self.running or self._stop_flag:\par
+                    return\par
+                self.precio_actual = self._fetch_precio()\par
+                if self.precio_actual is None:\par
+                    return  \par
+                           \par
+                else:      \par
+                    if self.precio_ult_comp is None:\par
+                        self.varCompra = Decimal("0")\par
+                    else:\par
+                        self.varCompra = self.varpor_compra(self.precio_ult_comp, self.precio_actual)\par
+\par
+                    if self.precio_ult_venta is None:\par
+                        self.varVenta = Decimal("0")\par
+                    else:\par
+                        self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)\par
+                                             \par
+                    self.actualizar_balance()\par
+                    self.hold_btc_var = self.hold_btc()\par
+                    self.hold_usdt_var = self.hold_usdt()\par
+                    self.var_total = self.variacion_total()\par
+\par
+                    # Check global TP/SL\par
+                    if self.check_take_profit_stop_loss():\par
+                        return\par
+\par
+                    self.vender()                \par
+                    self.parametro_compra_desde_compra = self.parametro_compra_A()                \par
+                    self.parametro_compra_desde_venta = self.parametro_compra_B()\par
+                    self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  \par
+                    self.parametro_venta_fantasma = self.venta_fantasma() \par
+\par
+                    if (self.rebalance_enabled \par
+                        and self.contador_compras_fantasma >= self.rebalance_threshold \par
+                        and self.hay_base_rebalance()):\par
+                        self.check_rebalance()\par
+\par
+                    if self.precio_ingreso is None:\par
+                        self.var_inicio = Decimal("0")\par
+                    else:\par
+                        self.var_inicio = self.varpor_ingreso()\par
+\par
+                    ahora = datetime.datetime.now()\par
+                    if self.ultimo_evento is None:\par
+                        self.ultimo_evento = ahora\par
+\par
+                    # si pasaron \f2\u8805?\f0 5 segundos desde el \'faltimo evento y todav\'eda no lo reportamos\par
+                    if (ahora - self.ultimo_evento).total_seconds() >= 5 and not self.reportado_trabajando:\par
+                        self.log("\f6\u-10179?\u-8223?\f1  \f0 Trabajando...")\par
+                        self.log("- - - - - - - - - -")\par
+                        self.reportado_trabajando = True\par
+\par
+                if self.btc < 0:\par
+                    self.log("\f5\u-10179?\u-8908?\f0 Error: btc negativo")\par
+                    self.ultimo_evento = datetime.datetime.now()\par
+                    self.reportado_trabajando = False\par
+                    \par
+                    if self.sound_enabled: \par
+                        reproducir_sonido("Sounds/error.wav")\par
+                    \par
+                    self.detener()\par
+            \par
+            except Exception as e:\par
+                self.log(f"\f5\u-10179?\u-8908?\f1  \f0 Excepci\'f3n en bucle: \{e\}")\par
+                reproducir_sonido("Sounds/error.wav")    \par
+                    \par
+            finally:                                            \par
+                if after_fn:\par
+                    after_fn(3000, lambda: self.loop(after_fn))\par
+\par
+    def parametro_compra_C(self):\par
+        if not self.compra_en_venta_fantasma:\par
+            return False\par
+        #self.log(f"\f3\u-10178?\u-8726?\f1  \f0 Parametro C: habilitado=\{self.compra_en_venta_fantasma\}, activado=\{self.activar_compra_tras_vta_fantasma\}, ocurrida=\{self.venta_fantasma_ocurrida\}")\par
+        if self.activar_compra_tras_vta_fantasma and self.venta_fantasma_ocurrida:\par
+            \par
+            if self.condiciones_para_comprar():\par
+                self.comprar()\par
+                self.param_b_enabled = False  # \f5\u-10179?\u-8942?\f1  \f0 Desactivar B luego de C\par
+                self.param_a_enabled = True\par
+                self.log("\f5\u-10179?\u-8907?\f1  \f0 [Parametro C] Compra tras venta fantasma.")\par
+                self.log("- - - - - - - - - -")\par
+            else:\par
+                self.log("\f3\u9888?\u-497?\f1  \f0 Fondos o condiciones insuficientes para Parametro C.")\par
+                self.log("- - - - - - - - - -")\par
+                self.precio_ult_venta = self.precio_actual  # \f4\u9989?\f1  \f0 Siempre actualizamos\par
+                self.param_b_enabled = True  # \f6\u-10179?\u-8222?\f1  \f0 B vuelve a activarse si no se pudo comprar\par
+\par
+            self.activar_compra_tras_vta_fantasma = False\par
+            self.venta_fantasma_ocurrida = False\par
+            return True\par
+        \par
+        return False\par
+\par
+    def detener(self, motivo=None):\par
+        self.running = False\par
+        self._stop_flag = True\par
+        if motivo:\par
+            self.log(f"\f5\u-10179?\u-8908?\f1  \f0 Khaz\'e2d detenido. Motivo: \{motivo\}")\par
+        else:\par
+            self.log("\f5\u-10179?\u-8908?\f1  \f0 Khaz\'e2d detenido.")\par
+        self.log("- - - - - - - - - -")\par
+        if self.ui_callback_on_stop:\par
+            self.ui_callback_on_stop(motivo)\par
+\par
+    def reiniciar(self):\par
+        # estado base\par
+        self.running = False\par
+        self._stop_flag = False\par
+        self.precio_actual = None\par
+\par
+        # 1) Guarda lo que queremos preservar\par
+        _exchange = self.exchange\par
+        _logfn = self.log_fn\par
+\par
+        # 2) Re-inicializa \par
+        self.__init__()\par
+\par
+        # 3) Restaura exchange y callback\par
+        self.exchange = _exchange\par
+        self.log_fn = _logfn\par
+\par
+        # 4) Anota el reinicio\par
+        if self.log_fn:\par
+            self.log("\f5\u-10179?\u-8956?\f1  \f0 Khaz\'e2d reseteado")\par
+            self.log("- - - - - - - - - -")\par
+        \par
+    def check_take_profit_stop_loss(self):\par
+        variacion = self.variacion_total()\par
+\par
+        # nada que hacer si no hay compras reales\par
+        if self.contador_compras_reales == 0:\par
+            return False\par
+\par
+        if self.tp_enabled and self.take_profit_pct and variacion >= self.take_profit_pct:\par
+            self.log(f"\f5\u-10180?\u-8273?\f1  \f0 Take Profit alcanzado: \{variacion\}%")\par
+            \par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/take_profit.wav")\par
+\par
+            if self.btc > 0:\par
+                self.usdt += self.btc * self.precio_actual\par
+                self.log(f"\f5\u-10179?\u-9040?\f1  \f0 Vendido todo el BTC (\{self.btc\} \u8383?) a \{self.format_fn(self.precio_actual, '$')\}")\par
+                self.btc = Decimal("0")\par
+            self.detener(motivo="TP")\par
+            return True\par
+\par
+        if self.sl_enabled and self.stop_loss_pct and variacion <= -self.stop_loss_pct:\par
+            self.log(f"\f5\u-10179?\u-8495?\f1  \f0 Stop Loss alcanzado: \{variacion\}%")\par
+            \par
+            if self.sound_enabled:\par
+                reproducir_sonido("Sounds/stop_loss.wav")\par
+\par
+            if self.btc > 0:\par
+                self.usdt += self.btc * self.precio_actual\par
+                self.log(f"\f5\u-10179?\u-9040?\f1  \f0 Vendido todo el BTC (\{self.btc\} \u8383?) a \{self.format_fn(self.precio_actual, '$')\}")\par
+                self.btc = Decimal("0")\par
+            self.detener(motivo="SL")\par
+            return True\par
+\par
+        return False\par
+\par
+\par
+\par
+\par
+\par
+\par
+\lang10\par
+}
+ 
