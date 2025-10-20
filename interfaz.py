@@ -1503,7 +1503,8 @@ class BotInterfaz(AnimationMixin):
             if "." in s and prec >= 0:
                 entero, frac = s.split(".", 1)
                 s = entero if prec == 0 else f"{entero}.{frac[:prec]}"
-
+                s = s.rstrip("0").rstrip(".") or "0"
+                
         if s in ("-0", "-0.0"):
             s = "0"
 
