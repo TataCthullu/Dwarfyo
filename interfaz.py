@@ -237,26 +237,25 @@ class BotInterfaz(AnimationMixin):
 
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
+
+        # Decimal (auto, sin ceros basura)
         view_menu.add_radiobutton(
             label="Decimal",
             variable=self.display_mode,
             value="decimal",
-            command=self._cambiar_precision
+            command=self._cambiar_precision  # no pasa prec, solo refresca
         )
+
+        # 4 decimales (corte duro, sin redondeo)
         view_menu.add_radiobutton(
-            label="Float (2 decimales)",
+            label="4 decimales (cortar)",
             variable=self.display_mode,
-            value="float",
-            command=lambda: self._cambiar_precision(2)
-        )
-        view_menu.add_radiobutton(
-            label="Float (4 decimales)",
-            variable=self.display_mode,
-            value="float",
+            value="p4",
             command=lambda: self._cambiar_precision(4)
         )
 
         self.menubar.add_cascade(label="Vista", menu=view_menu)
+
 
     def _aplicar_modus(self):
         
@@ -325,31 +324,20 @@ class BotInterfaz(AnimationMixin):
         self.actualizar_historial()
 
     def ajustar_fuente_por_vista(self):
-        modo = self.display_mode.get()
+        modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
+        # default
+        size = 16
+        self.espaciado_vertical = 35
 
-        if modo == 'decimal':
-            size = 16
-            self.espaciado_vertical = 35
-        elif modo == 'float' and self.float_precision == 2:
-            size = 28
+        if modo == 'p4':
+            size = 24           # un poco más grande si querés
             self.espaciado_vertical = 40
-        elif modo == 'float' and self.float_precision == 4:
-            size = 24
-            self.espaciado_vertical = 40
-        else:
-            size = 16  # fallback
-            self.espaciado_vertical = 35
+            #self.float_precision = 4  # aseguramos 4
 
         self._font_normal = ("LondonBetween", size)
 
         # Tamaños FIJOS para consolas según la vista
-        if modo == 'decimal':
-            hist_size = 16   
-            cons_size = 16
-        elif modo == 'float' and self.float_precision == 2:
-            hist_size = 20
-            cons_size = 20
-        elif modo == 'float' and self.float_precision == 4:
+        if modo == 'p4':
             hist_size = 18
             cons_size = 18
         else:
@@ -361,6 +349,7 @@ class BotInterfaz(AnimationMixin):
 
         # aplicar inmediatamente a los widgets existentes
         self._aplicar_fuente_consolas()
+
 
     def music_enable(self):
         if not self.music_enabled:
@@ -1485,34 +1474,41 @@ class BotInterfaz(AnimationMixin):
     
 
     def format_var(self, valor, simbolo=""):
-        """
-        Formatea números sin notación científica, sin redondear
-        y sin ceros de más al final. También corrige '-0' -> '0'.
-        Si no se puede parsear como número, devuelve el string tal cual.
-        """
         if valor is None:
             return ""
 
-        # Intentar tratar SIEMPRE como Decimal (incluye cuando viene como string)
+        # intenta Decimal siempre, incluso si vino como string
         try:
             d = Decimal(str(valor))
         except Exception:
             s = str(valor).strip()
             return f"{simbolo} {s}" if simbolo and s else s
 
-        # Cualquier cero (incluye 0E-8, -0, etc.)
         if d == 0:
             return f"{simbolo} 0" if simbolo else "0"
 
-        # Salida plana (sin 'E+…') y sin ceros sobrantes
-        s = format(d, "f")            # p. ej. "499.7950000000"
-        if "." in s:
-            s = s.rstrip("0").rstrip(".") or "0"
+        # base en string plano
+        s = format(d, "f")  # sin notación científica
+
+        # === modo de vista ===
+        modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
+        prec = self.float_precision if hasattr(self, 'float_precision') else 4
+
+        if modo == 'decimal':
+            # limpiar ceros de más, sin redondear
+            if "." in s:
+                s = s.rstrip("0").rstrip(".") or "0"
+        else:
+            # cortar decimales a 'prec' (sin redondeo)
+            if "." in s and prec >= 0:
+                entero, frac = s.split(".", 1)
+                s = entero if prec == 0 else f"{entero}.{frac[:prec]}"
 
         if s in ("-0", "-0.0"):
             s = "0"
 
         return f"{simbolo} {s}" if simbolo else s
+
 
 
 
