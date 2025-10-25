@@ -1730,6 +1730,13 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, f"Número de compra: {t['numcompra']}\n")
             self.historial.insert(tk.END, f"Estado: {estado}\n")
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
+            
+            if "fee_usdt" in t:
+                self.historial.insert(
+                    tk.END,
+                    f"Comisión: {self.format_fijo('fee_usdt', (t['fee_usdt'], '$'))}\n"
+                )
+
             if "venta_obj" in t:
                 self.historial.insert(tk.END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")
             self.historial.insert(tk.END, "-"*40 + "\n")
@@ -1740,6 +1747,13 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, "🟩 Venta realizada:\n", 'venta_tag')
             self.historial.insert(tk.END, f"Precio de compra: {self.format_fijo('compra', v['compra'])}\n")
             self.historial.insert(tk.END, f"Precio de venta: {self.format_fijo('venta', v['venta'])}\n")
+            
+            if "fee_usdt" in v:
+                self.historial.insert(
+                    tk.END,
+                    f"Comisión: {self.format_fijo('fee_usdt', (v['fee_usdt'], '$'))}\n"
+                )
+
             self.historial.insert(tk.END, f"Id compra: {v['id_compra']}\n")
             if 'ganancia' in v:
                 self.historial.insert(tk.END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
