@@ -482,6 +482,10 @@ class BotInterfaz(AnimationMixin):
         self.rebalance_loss_total_str = tk.StringVar()
         self.rebalance_thr_str = tk.StringVar()
         self.rebalance_pct_str = tk.StringVar()
+        self.total_fees_buy_str = tk.StringVar()
+        self.total_fees_sell_str = tk.StringVar()
+        self.total_fees_total_str = tk.StringVar()
+
 
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
@@ -575,7 +579,10 @@ class BotInterfaz(AnimationMixin):
         add("Excedente total:",  self.excedente_total_str, "excedente_total")
         add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
         add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
-        
+        add("Comisiones de compra:", self.total_fees_buy_str, "total_fees_buy")
+        add("Comisiones de venta:", self.total_fees_sell_str, "total_fees_sell")
+        add("Comisiones totales:", self.total_fees_total_str, "total_fees_total")
+
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
         self.center_frame.place(x=600, y=0, width=700, height=450)
@@ -1573,7 +1580,9 @@ class BotInterfaz(AnimationMixin):
                 "rebalance_loss_total": (getattr(self.bot, "rebalance_loss_total", Decimal("0")), "$"),
                 "rebalance_thr": (self.bot.rebalance_threshold if getattr(self.bot, "rebalance_enabled", False) else ""),
                 "rebalance_pct": ((self.bot.rebalance_pct, "%") if getattr(self.bot, "rebalance_enabled", False) else ("","")),
-
+                "total_fees_buy": (self.bot.total_fees_buy, "$"),
+                "total_fees_sell": (self.bot.total_fees_sell, "$"),
+                "total_fees_total": (self.bot.total_fees_buy + self.bot.total_fees_sell, "$"),
             }
 
             for clave, valor in texto_fijo.items():

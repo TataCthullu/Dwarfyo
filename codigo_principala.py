@@ -84,6 +84,9 @@ class TradingBot:
         self.rebalance_enabled = False
         self.rebalance_count = 0 
         self.rebalance_loss_total = Decimal('0')  # pérdidas acumuladas por rebalances
+                # Totales de comisiones
+        self.total_fees_buy = Decimal('0')
+        self.total_fees_sell = Decimal('0')
         self.ultimo_evento = None
         self.rebalance_concretado = False
         self.comisiones_enabled = True
@@ -436,7 +439,9 @@ class TradingBot:
                     "timestamp": self.timestamp,
                     "estado": self.estado_compra_func()
                 })
-                            
+                        # Acumular total de comisiones de compra
+            self.total_fees_buy += fee_buy_usdt
+                
             self.actualizar_balance()            
             self.log("✅ Compra realizada.")
             self.log(f" . Fecha y Hora: {self.timestamp}")
@@ -569,7 +574,8 @@ class TradingBot:
                 if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
                     fee_sell_usdt = (usdt_bruto * self.comision_pct) / Decimal("100")
                     usdt_obtenido = usdt_bruto - fee_sell_usdt
-
+                # Acumular total de comisiones de venta
+                self.total_fees_sell += fee_sell_usdt
                 self.usdt = (self.usdt or Decimal("0")) + usdt_obtenido
                 self.btc  = (self.btc or Decimal("0")) - btc_vender
                 self.precio_ult_venta = self.precio_actual
