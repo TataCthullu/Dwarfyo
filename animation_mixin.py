@@ -32,7 +32,182 @@ class AnimationMixin:
             # Abajo-derecha del left panel
             self.wand_item = self.canvas_various.create_image(1450, 20, image=(self.wand_img or ''), anchor='nw')
     
-        
+            # ─── CARGA DE TENTÁCULOS ELDRITCH Y KRAKEN ───
+        eld_dirs = {
+            "corners": os.path.join("imagenes", "deco", "lianas", "eldritch_corners"),
+            "ends":    os.path.join("imagenes", "deco", "lianas", "eldritch_ends"),
+        }
+        kr_dirs = {
+            "corners": os.path.join("imagenes", "deco", "lianas", "kraken_corners"),
+            "ends":    os.path.join("imagenes", "deco", "lianas", "kraken_ends"),
+            "segments":os.path.join("imagenes", "deco", "lianas", "kraken_segments"),
+        }
+
+        tokens = ("north","south","east","west")
+        diag_map = {
+            "northeast": ("north","east"),
+            "northwest": ("north","west"),
+            "southeast": ("south","east"),
+            "southwest": ("south","west"),
+        }
+
+        # Diccionarios de secuencia
+        self.eldritch_seq = {t: [] for t in tokens}
+        self.kraken_seq   = {t: [] for t in tokens}
+
+                # — Cargar ELDRITCH —
+        def _add_to_seq_from_name(seq_map, fname):
+            # Busca tokens de dirección en cualquier parte del nombre
+            name = os.path.splitext(fname)[0].lower()
+
+            # tokens y diagonales (mismos que arriba)
+            tokens = ("north", "south", "east", "west")
+            diag_map = {
+                "northeast": ("north", "east"),
+                "northwest": ("north", "west"),
+                "southeast": ("south", "east"),
+                "southwest": ("south", "west"),
+            }
+
+            found = set()
+
+            # 1) diagonales primero (evita que “east” machaque “northeast”)
+            for diag, pair in diag_map.items():
+                if diag in name:
+                    found.update(pair)
+
+            # 2) direcciones simples
+            for t in tokens:
+                if f"_{t}_" in name or name.endswith(f"_{t}") or name.startswith(f"{t}_"):
+                    found.add(t)
+
+            # 3) si aparece “segment_east_northwest” u otras combinaciones
+            if "segment_" in name:
+                # capturar después de "segment_"
+                seg_tail = name.split("segment_", 1)[1]
+                for diag, pair in diag_map.items():
+                    if diag in seg_tail:
+                        found.update(pair)
+                for t in tokens:
+                    if t in seg_tail:
+                        found.add(t)
+
+            # 4) si no encontró nada pero viene de carpetas “corners” o “ends”,
+            #    distribuimos en todos (para que no se pierdan)
+            if not found:
+                found.update(tokens)
+
+            img = PhotoImage(file=os.path.join(folder, fname)).zoom(2, 2)
+            for b in found:
+                seq_map[b].append(img)
+
+        # Recorrer carpetas de eldritch (corners / ends)
+        for folder in eld_dirs.values():
+            if not os.path.isdir(folder):
+                continue
+            for fname in os.listdir(folder):
+                if not fname.lower().endswith(".png"):
+                    continue
+                _add_to_seq_from_name(self.eldritch_seq, fname)
+
+
+                # — Cargar KRAKEN —
+        def _add_kraken_from_name(seq_map, fname):
+            name = os.path.splitext(fname)[0].lower()
+
+            tokens = ("north", "south", "east", "west")
+            diag_map = {
+                "northeast": ("north", "east"),
+                "northwest": ("north", "west"),
+                "southeast": ("south", "east"),
+                "southwest": ("south", "west"),
+            }
+
+            found = set()
+
+            # diagonales primero
+            for diag, pair in diag_map.items():
+                if diag in name:
+                    found.update(pair)
+
+            # simples
+            for t in tokens:
+                if f"_{t}_" in name or name.endswith(f"_{t}") or name.startswith(f"{t}_"):
+                    found.add(t)
+
+            # segmentos compuestos
+            if "segment_" in name:
+                seg_tail = name.split("segment_", 1)[1]
+                for diag, pair in diag_map.items():
+                    if diag in seg_tail:
+                        found.update(pair)
+                for t in tokens:
+                    if t in seg_tail:
+                        found.add(t)
+
+            # fallback: si no detecta dirección, repartir a todos
+            if not found:
+                found.update(tokens)
+
+            img = PhotoImage(file=os.path.join(folder, fname)).zoom(2, 2)
+            for b in found:
+                seq_map[b].append(img)
+
+        # Recorrer carpetas de kraken (corners / ends / segments)
+        for folder in kr_dirs.values():
+            if not os.path.isdir(folder):
+                continue
+            for fname in os.listdir(folder):
+                if not fname.lower().endswith(".png"):
+                    continue
+                _add_kraken_from_name(self.kraken_seq, fname)
+
+
+        # ─ Crear ítems en el canvas del HISTORIAL (igual que vines)
+        self.hist_items   = []                # (borde, item_id)
+        self.hist_indices = {t: 0 for t in tokens}
+
+        W = int(self.canvas_right["width"])
+        H = int(self.canvas_right["height"])
+
+        # Toma un ancho/alto de referencia (nombres consistentes)
+        width_top      = self.eldritch_seq["north"][0].width()   if self.eldritch_seq["north"] else 0
+        height_left    = self.eldritch_seq["west"][0].height()   if self.eldritch_seq["west"]  else 0
+        width_right    = self.eldritch_seq["east"][0].width()    if self.eldritch_seq["east"]  else 0
+        height_right   = self.eldritch_seq["east"][0].height()   if self.eldritch_seq["east"]  else 0
+        width_bottom   = self.eldritch_seq["south"][0].width()   if self.eldritch_seq["south"] else 0
+        height_bottom  = self.eldritch_seq["south"][0].height()  if self.eldritch_seq["south"] else 0
+
+        # Top (north)
+        if width_top > 0:
+            for x in range(0, W, width_top):
+                iid = self.canvas_right.create_image(x, 0, image="", anchor="nw")
+                self.hist_items.append(("north", iid))
+
+        # Bottom (south)
+        if width_bottom > 0:
+            for x in range(0, W, width_bottom):
+                iid = self.canvas_right.create_image(x, H, image="", anchor="sw")
+                self.hist_items.append(("south", iid))
+
+        # Left (west)
+        if height_left > 0:
+            for y in range(0, H, height_left):
+                iid = self.canvas_right.create_image(0, y, image="", anchor="nw")
+                self.hist_items.append(("west", iid))
+
+        # Right (east)
+        if width_right > 0:
+            x0 = W - width_right
+            for y in range(0, H, height_right):
+                iid = self.canvas_right.create_image(x0, y, image="", anchor="nw")
+                self.hist_items.append(("east", iid))
+
+        # Iniciar animación
+        self.root.after(1500, self._animate_historial_edges)
+
+
+
 
         # ─── CARGA SEARING RAY ───
         self.searing_frames = []
@@ -539,6 +714,46 @@ class AnimationMixin:
             self.canvas_center.itemconfig(self.abyss_item, image=self.abyss_static_img)
 
         self.animar(500, self._update_abyss)
+    
+
+    def _animate_historial_edges(self):
+        """
+        Anima tentáculos en el panel del HISTORIAL:
+        - Eldritch si falta USDT para comprar
+        - Kraken si falta BTC para vender
+        - Ninguno si todo está bien
+        """
+        if not hasattr(self, "bot") or self.bot is None:
+            return self.root.after(1500, self._animate_historial_edges)
+
+        bot = self.bot
+        # Eldritch si no hay suficiente USDT
+        show_eldritch = bot.usdt < bot.fixed_buyer
+        # Kraken si no hay suficiente BTC para cubrir transacciones activas
+        activos = [tx for tx in bot.transacciones if bot.es_activa(tx)]
+        total_btc_necesario = sum(tx.get("btc", 0) for tx in activos)
+        show_kraken = bot.btc < total_btc_necesario and len(activos) > 0
+
+        # Elegir mapa
+        seq_map = None
+        if show_eldritch:
+            seq_map = self.eldritch_seq
+        elif show_kraken:
+            seq_map = self.kraken_seq
+
+        # Animar bordes
+        for border, iid in self.hist_items:
+            if seq_map is None or not seq_map.get(border):
+                img = ""
+            else:
+                frames = seq_map[border]
+                idx = (self.hist_indices[border] + 1) % len(frames)
+                self.hist_indices[border] = idx
+                img = frames[idx]
+            self.canvas_right.itemconfig(iid, image=img)
+
+        self.root.after(1500, self._animate_historial_edges)
+
 
     def _update_lamp_genie(self):
         """
@@ -631,7 +846,7 @@ class AnimationMixin:
             except Exception:
                 pass
 
-
+    
 
     def _refresh_altar_image(self, kind: str):
         # decide imagen según estado actual y frame

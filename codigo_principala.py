@@ -476,6 +476,23 @@ class TradingBot:
             self.ultimo_evento = datetime.datetime.now()         
             self.reportado_trabajando = False
 
+    # Umbral minúsculo para considerar "cero" (residuos por fees/redondeos)
+    EPS = Decimal("0.00000001")
+
+    def _btc_vendible(self) -> Decimal:
+        """
+        Suma el BTC de las transacciones activas (estado 'activa').
+        Es lo realmente vendible por tu lógica de 'vender()'.
+        """
+        try:
+            return sum(
+                (tx.get("btc", Decimal("0")) or Decimal("0"))
+                for tx in self.transacciones
+                if self.es_activa(tx)
+            ) or Decimal("0")
+        except Exception:
+            return Decimal("0")
+
     def parametro_compra_A(self):
         if not self.param_a_enabled:
             return False
@@ -661,19 +678,29 @@ class TradingBot:
         self.actualizar_balance()             
 
     def venta_fantasma(self) -> bool:
-        if self.precio_ult_venta is None:
+        # Si todavía no hubo ninguna venta real, no hay baseline de venta
+        if self.contador_ventas_reales == 0:
             return False
 
+        # Variación desde la última venta (tu función ya protege Nones/0)
         self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
 
-        # Comprueba si la variación (%) supera el umbral
-        if self.btc is not None and self.btc_comprado is not None and self.btc < self.btc_comprado and self.varVenta >= self.porc_desde_venta:
+        # BTC realmente vendible según transacciones activas
+        btc_vendible = self._btc_vendible()
+
+        # Condición de "sin BTC para vender" robusta: vendible ~ 0 (considerando fees/residuos)
+        sin_btc_vendible = btc_vendible <= self.EPS
+
+        # Disparo de venta fantasma:
+        if sin_btc_vendible and self.varVenta >= self.porc_profit_x_venta:
             id_f = token_hex(2)
             self.contador_ventas_fantasma += 1
             self.venta_fantasma_ocurrida = True
-            self.activar_compra_tras_vta_fantasma = True
-            # Actualiza el punto de referencia para el próximo umbral
+            self.activar_compra_tras_vta_fantasma = True  # ← re-activa C si querés
+
+            # Baseline para la próxima ventana de % desde venta
             self.precio_ult_venta = self.precio_actual
+
             ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.ventas_fantasma.append({
                 'id': id_f,
@@ -682,6 +709,7 @@ class TradingBot:
             })
             self.log(f"📌 {ts} · Venta fantasma #{self.contador_ventas_fantasma} a {self.format_fn(self.precio_actual, '$')}")
             self.log("- - - - - - - - - -")
+
             self.ultimo_evento = datetime.datetime.now()
             self.reportado_trabajando = False
 
@@ -689,10 +717,12 @@ class TradingBot:
                 reproducir_sonido("Sounds/venta_fantasma.wav")
             return True
 
-        # Aseguramos que no quede activa si no se cumplió la condición
+        # Si no se disparó, no dejar flags “pegados”
         self.activar_compra_tras_vta_fantasma = False
         self.venta_fantasma_ocurrida = False
         return False
+
+
 
     def variacion_total(self) -> Decimal:
         """
