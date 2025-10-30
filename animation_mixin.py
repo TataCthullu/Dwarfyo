@@ -15,6 +15,7 @@ class AnimationMixin:
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
 
+
             # ─── PEDESTAL ───
         pedestal_path = "imagenes/deco/pedestal.png"
         if os.path.exists(pedestal_path):
@@ -32,179 +33,8 @@ class AnimationMixin:
             # Abajo-derecha del left panel
             self.wand_item = self.canvas_various.create_image(1450, 20, image=(self.wand_img or ''), anchor='nw')
     
-            # ─── CARGA DE TENTÁCULOS ELDRITCH Y KRAKEN ───
-        eld_dirs = {
-            "corners": os.path.join("imagenes", "deco", "lianas", "eldritch_corners"),
-            "ends":    os.path.join("imagenes", "deco", "lianas", "eldritch_ends"),
-        }
-        kr_dirs = {
-            "corners": os.path.join("imagenes", "deco", "lianas", "kraken_corners"),
-            "ends":    os.path.join("imagenes", "deco", "lianas", "kraken_ends"),
-            "segments":os.path.join("imagenes", "deco", "lianas", "kraken_segments"),
-        }
+        
 
-        tokens = ("north","south","east","west")
-        diag_map = {
-            "northeast": ("north","east"),
-            "northwest": ("north","west"),
-            "southeast": ("south","east"),
-            "southwest": ("south","west"),
-        }
-
-        # Diccionarios de secuencia
-        self.eldritch_seq = {t: [] for t in tokens}
-        self.kraken_seq   = {t: [] for t in tokens}
-
-                # — Cargar ELDRITCH —
-        def _add_to_seq_from_name(seq_map, fname):
-            # Busca tokens de dirección en cualquier parte del nombre
-            name = os.path.splitext(fname)[0].lower()
-
-            # tokens y diagonales (mismos que arriba)
-            tokens = ("north", "south", "east", "west")
-            diag_map = {
-                "northeast": ("north", "east"),
-                "northwest": ("north", "west"),
-                "southeast": ("south", "east"),
-                "southwest": ("south", "west"),
-            }
-
-            found = set()
-
-            # 1) diagonales primero (evita que “east” machaque “northeast”)
-            for diag, pair in diag_map.items():
-                if diag in name:
-                    found.update(pair)
-
-            # 2) direcciones simples
-            for t in tokens:
-                if f"_{t}_" in name or name.endswith(f"_{t}") or name.startswith(f"{t}_"):
-                    found.add(t)
-
-            # 3) si aparece “segment_east_northwest” u otras combinaciones
-            if "segment_" in name:
-                # capturar después de "segment_"
-                seg_tail = name.split("segment_", 1)[1]
-                for diag, pair in diag_map.items():
-                    if diag in seg_tail:
-                        found.update(pair)
-                for t in tokens:
-                    if t in seg_tail:
-                        found.add(t)
-
-            # 4) si no encontró nada pero viene de carpetas “corners” o “ends”,
-            #    distribuimos en todos (para que no se pierdan)
-            if not found:
-                found.update(tokens)
-
-            img = PhotoImage(file=os.path.join(folder, fname)).zoom(2, 2)
-            for b in found:
-                seq_map[b].append(img)
-
-        # Recorrer carpetas de eldritch (corners / ends)
-        for folder in eld_dirs.values():
-            if not os.path.isdir(folder):
-                continue
-            for fname in os.listdir(folder):
-                if not fname.lower().endswith(".png"):
-                    continue
-                _add_to_seq_from_name(self.eldritch_seq, fname)
-
-
-                # — Cargar KRAKEN —
-        def _add_kraken_from_name(seq_map, fname):
-            name = os.path.splitext(fname)[0].lower()
-
-            tokens = ("north", "south", "east", "west")
-            diag_map = {
-                "northeast": ("north", "east"),
-                "northwest": ("north", "west"),
-                "southeast": ("south", "east"),
-                "southwest": ("south", "west"),
-            }
-
-            found = set()
-
-            # diagonales primero
-            for diag, pair in diag_map.items():
-                if diag in name:
-                    found.update(pair)
-
-            # simples
-            for t in tokens:
-                if f"_{t}_" in name or name.endswith(f"_{t}") or name.startswith(f"{t}_"):
-                    found.add(t)
-
-            # segmentos compuestos
-            if "segment_" in name:
-                seg_tail = name.split("segment_", 1)[1]
-                for diag, pair in diag_map.items():
-                    if diag in seg_tail:
-                        found.update(pair)
-                for t in tokens:
-                    if t in seg_tail:
-                        found.add(t)
-
-            # fallback: si no detecta dirección, repartir a todos
-            if not found:
-                found.update(tokens)
-
-            img = PhotoImage(file=os.path.join(folder, fname)).zoom(2, 2)
-            for b in found:
-                seq_map[b].append(img)
-
-        # Recorrer carpetas de kraken (corners / ends / segments)
-        for folder in kr_dirs.values():
-            if not os.path.isdir(folder):
-                continue
-            for fname in os.listdir(folder):
-                if not fname.lower().endswith(".png"):
-                    continue
-                _add_kraken_from_name(self.kraken_seq, fname)
-
-
-        # ─ Crear ítems en el canvas del HISTORIAL (igual que vines)
-        self.hist_items   = []                # (borde, item_id)
-        self.hist_indices = {t: 0 for t in tokens}
-
-        W = int(self.canvas_right["width"])
-        H = int(self.canvas_right["height"])
-
-        # Toma un ancho/alto de referencia (nombres consistentes)
-        width_top      = self.eldritch_seq["north"][0].width()   if self.eldritch_seq["north"] else 0
-        height_left    = self.eldritch_seq["west"][0].height()   if self.eldritch_seq["west"]  else 0
-        width_right    = self.eldritch_seq["east"][0].width()    if self.eldritch_seq["east"]  else 0
-        height_right   = self.eldritch_seq["east"][0].height()   if self.eldritch_seq["east"]  else 0
-        width_bottom   = self.eldritch_seq["south"][0].width()   if self.eldritch_seq["south"] else 0
-        height_bottom  = self.eldritch_seq["south"][0].height()  if self.eldritch_seq["south"] else 0
-
-        # Top (north)
-        if width_top > 0:
-            for x in range(0, W, width_top):
-                iid = self.canvas_right.create_image(x, 0, image="", anchor="nw")
-                self.hist_items.append(("north", iid))
-
-        # Bottom (south)
-        if width_bottom > 0:
-            for x in range(0, W, width_bottom):
-                iid = self.canvas_right.create_image(x, H, image="", anchor="sw")
-                self.hist_items.append(("south", iid))
-
-        # Left (west)
-        if height_left > 0:
-            for y in range(0, H, height_left):
-                iid = self.canvas_right.create_image(0, y, image="", anchor="nw")
-                self.hist_items.append(("west", iid))
-
-        # Right (east)
-        if width_right > 0:
-            x0 = W - width_right
-            for y in range(0, H, height_right):
-                iid = self.canvas_right.create_image(x0, y, image="", anchor="nw")
-                self.hist_items.append(("east", iid))
-
-        # Iniciar animación
-        self.root.after(1500, self._animate_historial_edges)
 
 
 
@@ -414,8 +244,8 @@ class AnimationMixin:
         height_left  = self.vine_sequence_green["west"][0].height()  if self.vine_sequence_green["west"] else 0
         height_right = self.vine_sequence_green["east"][0].height()  if self.vine_sequence_green["east"] else 0
         width_right  = self.vine_sequence_green["east"][0].width()   if self.vine_sequence_green["east"] else 0
+        height_bottom = self.vine_sequence_green["south"][0].height() if self.vine_sequence_green["south"] else 0
 
-      
 
         if width_top > 0:
             for x in range(0, W, width_top):
@@ -426,13 +256,11 @@ class AnimationMixin:
                 )
                 self.vine_items.append(("north", iid))
 
-        if width_bottom > 0:
+         # Bottom (south) correcto sobre canvas_right_b
+        if width_bottom > 0 and height_bottom > 0:
+            y_bottom = H - height_bottom
             for x in range(0, W, width_bottom):
-                iid = self.canvas_right_b.create_image(
-                    x, H,
-                    image='',     # arranca vacío
-                    anchor="sw"
-                )
+                iid = self.canvas_right_b.create_image(x, y_bottom, image="", anchor="nw")
                 self.vine_items.append(("south", iid))
 
         if height_left > 0:
@@ -444,17 +272,14 @@ class AnimationMixin:
                 )
                 self.vine_items.append(("west", iid))
 
+        # Right (east) correcto sobre canvas_right_b
         if width_right > 0:
-            x0 = W - width_right
-            for y in range(0, H, height_right):
-                iid = self.canvas_right_b.create_image(
-                    x0, y,
-                    image='',     # arranca vacío
-                    anchor="nw"
-                )
+            x_right = W - width_right
+            for y in range(0, H, height_right if height_right > 0 else 1):
+                iid = self.canvas_right_b.create_image(x_right, y, image="", anchor="nw")
                 self.vine_items.append(("east", iid))
 
-
+        
         
         # —————— (1) Carga de los iconos de sonido ——————
         on_path  = "imagenes/deco/i-noise_new.png"
@@ -607,6 +432,11 @@ class AnimationMixin:
             image=initial,
             anchor='nw'
         )
+        
+
+
+
+
 
         # Oro e hidra en canvas_animation
         self.sales_item       = self.canvas_various.create_image(1350,15,  image='', anchor='nw')
@@ -626,6 +456,104 @@ class AnimationMixin:
 
         # Garantizar que esté al frente después de que todo cargue
         #self.canvas_uno.tag_raise(self.abyss_item)
+        # ─── HISTORIAL: ELDRITCH / KRAKEN (solo ENDS y HEAD, sin corners/segments) ───
+        base_dir_hist = os.path.join("imagenes", "deco", "lianas")
+
+        tokens_hist = ("north","south","east","west")
+
+        def _load_sorted(folder, prefix=None):
+            """Carga y ordena por sufijo numérico si existe (…_1, …_2, …)."""
+            frames = []
+            if not os.path.isdir(folder):
+                return frames
+            # ordenar por número si lo hay; si no, por nombre
+            def _key(fn):
+                name = fn[:-4]  # sin .png
+                parts = name.split("_")
+                try:
+                    return (0, int(parts[-1]))
+                except Exception:
+                    return (1, name)
+            for fname in sorted([f for f in os.listdir(folder) if f.lower().endswith(".png")],
+                                key=_key):
+                if prefix and not fname.startswith(prefix):
+                    continue
+                try:
+                    frames.append(PhotoImage(file=os.path.join(folder, fname)).zoom(2,2))
+                except Exception:
+                    pass
+            return frames
+
+        # --- ELDRITCH: solo ENDS (se aplican a los 4 bordes)
+        eld_ends_dir = os.path.join(base_dir_hist, "eldritch", "eldritch_ends")
+        eld_ends = _load_sorted(eld_ends_dir, prefix="eldritch_tentacle_")
+
+        # --- KRAKEN: HEAD + ENDS (se aplican a los 4 bordes)
+        kra_head_dir = os.path.join(base_dir_hist, "kraken", "kraken_head")
+        kra_ends_dir = os.path.join(base_dir_hist, "kraken", "kraken_ends")
+        kra_head = _load_sorted(kra_head_dir, prefix="kraken_head_")      # new/old
+        kra_ends = _load_sorted(kra_ends_dir, prefix="kraken_tentacle_")  # 1..6
+        kra_all  = kra_head + kra_ends                                    # primero head, luego tentáculos
+
+        # mapas por borde (mismo set de frames en cada lado)
+        self.eldritch_seq = {t: list(eld_ends) for t in tokens_hist}
+        self.kraken_seq   = {t: list(kra_all)  for t in tokens_hist}
+
+        # ─── ITEMS DEL BORDE DEL HISTORIAL (canvas_right) ───
+        self.hist_items = []
+
+        def _dim(seq, k, kind):
+            arr = seq.get(k, [])
+            if not arr: return 0
+            return arr[0].width() if kind=="w" else arr[0].height()
+
+        try:
+            WH = int(self.canvas_right["width"])
+            HH = int(self.canvas_right["height"])
+        except Exception:
+            WH, HH = 640, 360
+
+        w_top     = max(_dim(self.eldritch_seq,"north","w"), _dim(self.kraken_seq,"north","w"))
+        w_bottom  = max(_dim(self.eldritch_seq,"south","w"), _dim(self.kraken_seq,"south","w"))
+        h_left    = max(_dim(self.eldritch_seq,"west","h"),  _dim(self.kraken_seq,"west","h"))
+        h_right   = max(_dim(self.eldritch_seq,"east","h"),  _dim(self.kraken_seq,"east","h"))
+        w_right   = max(_dim(self.eldritch_seq,"east","w"),  _dim(self.kraken_seq,"east","w"))
+        h_bottom  = max(_dim(self.eldritch_seq,"south","h"), _dim(self.kraken_seq,"south","h"))
+
+        # Creación por orden de flujo (quedan arriba sin usar tags)
+        if w_top > 0:
+            for x in range(0, WH, w_top):
+                iid = self.canvas_right.create_image(x, 0, image="", anchor="nw")
+                self.hist_items.append(("north", iid))
+
+        if w_bottom > 0 and h_bottom > 0:
+            yb = HH - h_bottom
+            for x in range(0, WH, w_bottom):
+                iid = self.canvas_right.create_image(x, yb, image="", anchor="nw")
+                self.hist_items.append(("south", iid))
+
+        if h_left > 0:
+            for y in range(0, HH, h_left):
+                iid = self.canvas_right.create_image(0, y, image="", anchor="nw")
+                self.hist_items.append(("west", iid))
+
+        if h_right > 0:
+            xr = WH - (w_right if w_right > 0 else 1)
+            for y in range(0, HH, h_right):
+                iid = self.canvas_right.create_image(xr, y, image="", anchor="nw")
+                self.hist_items.append(("east", iid))
+
+        # Agrupar items por borde para poder “mover” el tentáculo
+        self.hist_slots = {t: [] for t in ("north","south","east","west")}
+        for borde, iid in self.hist_items:
+            self.hist_slots[borde].append(iid)
+
+        # Índices por borde: uno para el frame y otro para el “slot” (posición)
+        self.hist_frame_idx = {t: 0 for t in self.hist_slots}
+        self.hist_slot_idx  = {t: 0 for t in self.hist_slots}
+
+
+        
 
 
         # ─── BUQUES INDEPENDIENTES ───
@@ -640,6 +568,9 @@ class AnimationMixin:
         self.animar(500, self._update_abyss)
         self.searing_index = 0
         self.animar(250, self._update_searing_magic)
+        self.animar(800, self._animate_historial_tentacles)
+
+    
 
     def _update_searing_magic(self):
         # ⛔️ Si el bot NO está corriendo, ocultar siempre y salir
@@ -716,43 +647,12 @@ class AnimationMixin:
         self.animar(500, self._update_abyss)
     
 
-    def _animate_historial_edges(self):
-        """
-        Anima tentáculos en el panel del HISTORIAL:
-        - Eldritch si falta USDT para comprar
-        - Kraken si falta BTC para vender
-        - Ninguno si todo está bien
-        """
-        if not hasattr(self, "bot") or self.bot is None:
-            return self.root.after(1500, self._animate_historial_edges)
+    
 
-        bot = self.bot
-        # Eldritch si no hay suficiente USDT
-        show_eldritch = bot.usdt < bot.fixed_buyer
-        # Kraken si no hay suficiente BTC para cubrir transacciones activas
-        activos = [tx for tx in bot.transacciones if bot.es_activa(tx)]
-        total_btc_necesario = sum(tx.get("btc", 0) for tx in activos)
-        show_kraken = bot.btc < total_btc_necesario and len(activos) > 0
 
-        # Elegir mapa
-        seq_map = None
-        if show_eldritch:
-            seq_map = self.eldritch_seq
-        elif show_kraken:
-            seq_map = self.kraken_seq
+        
 
-        # Animar bordes
-        for border, iid in self.hist_items:
-            if seq_map is None or not seq_map.get(border):
-                img = ""
-            else:
-                frames = seq_map[border]
-                idx = (self.hist_indices[border] + 1) % len(frames)
-                self.hist_indices[border] = idx
-                img = frames[idx]
-            self.canvas_right.itemconfig(iid, image=img)
 
-        self.root.after(1500, self._animate_historial_edges)
 
 
     def _update_lamp_genie(self):
@@ -1076,5 +976,67 @@ class AnimationMixin:
                 self.canvas_right_b.itemconfig(iid, image=img)
 
         self.animar(12000, self._animate_vines)
+
+    def _animate_historial_tentacles(self):
+        """Anima los tentáculos/cabeza en el borde del historial:
+        - cambia de imagen (avanza frame)
+        - cambia de lugar (rota el slot donde se dibuja)
+        """
+        # Si el bot no corre: limpiar todo y reintentar
+        if not getattr(self, 'bot', None) or not self.bot.running:
+            for _, iid in getattr(self, "hist_items", []):
+                try:
+                    self.canvas_right.itemconfig(iid, image="")
+                except Exception:
+                    pass
+            return self.animar(800, self._animate_historial_tentacles)
+
+        bot  = getattr(self, "bot", None)
+        slots = getattr(self, "hist_slots", {})
+        if not bot or not slots:
+            return self.animar(800, self._animate_historial_tentacles)
+
+        usdt         = getattr(bot, "usdt", 0) or 0
+        btc          = getattr(bot, "btc", 0) or 0
+        min_vendible = getattr(bot, "btc_vendible", 0) or 0
+        fixed_buyer  = getattr(bot, "fixed_buyer", 0) or 0
+
+        # Selección de familia (como antes)
+        if usdt <= 0 or usdt < fixed_buyer:
+            seq_map = getattr(self, "eldritch_seq", {})
+        elif btc <= 0 or btc < min_vendible:
+            seq_map = getattr(self, "kraken_seq", {})
+        else:
+            seq_map = None
+
+        # Para cada borde, limpiamos todos los slots y encendemos SOLO uno con el frame actual
+        for borde, iids in slots.items():
+            # limpiar
+            for iid in iids:
+                try:
+                    self.canvas_right.itemconfig(iid, image="")
+                except Exception:
+                    pass
+
+            if not seq_map:
+                continue  # nada que mostrar
+
+            frames = seq_map.get(borde, [])
+            if not frames or not iids:
+                continue
+
+            # avanzar frame y slot (cambian imagen y lugar)
+            self.hist_frame_idx[borde] = (self.hist_frame_idx[borde] + 1) % len(frames)
+            self.hist_slot_idx[borde]  = (self.hist_slot_idx[borde]  + 1) % len(iids)
+
+            frame = frames[self.hist_frame_idx[borde]]
+            iid   = iids[self.hist_slot_idx[borde]]
+
+            try:
+                self.canvas_right.itemconfig(iid, image=frame)
+            except Exception:
+                pass
+
+        self.animar(800, self._animate_historial_tentacles)
 
 

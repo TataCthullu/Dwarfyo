@@ -34,10 +34,10 @@ class TradingBot:
         self.parametro_venta_fantasma = False
         self.param_a_enabled = True 
         self.precio_ult_venta = Decimal('0')
-        self.porc_desde_compra = Decimal("0.5")
-        self.porc_desde_venta = Decimal("0.5")
+        self.porc_desde_compra = Decimal("0.005")
+        self.porc_desde_venta = Decimal("0.005")
         self.porc_inv_por_compra = Decimal("10")
-        self.porc_profit_x_venta = Decimal("0.5")
+        self.porc_profit_x_venta = Decimal("0.005")
         self.rebalance_threshold = int(6)
         self.rebalance_pct = int(50)  # porcentaje del BTC a vender
         self.fixed_buyer = self.cant_inv()
@@ -90,7 +90,10 @@ class TradingBot:
         self.ultimo_evento = None
         self.rebalance_concretado = False
         self.comisiones_enabled = True
-        self.comision_pct = Decimal("0.04")  # ejemplo 0.1%
+        self.comision_pct = Decimal("0.0004")  # ejemplo 0.1%
+        self.btc_vendible = Decimal('0')
+
+        
 
     def format_fn(self, valor, simbolo=""):
         # Nada → vacío
@@ -193,6 +196,17 @@ class TradingBot:
             # En caso de cualquier error de conversión, reiniciamos a cero
             self.btc_usdt = Decimal('0')
             self.usdt_mas_btc = Decimal('0')
+
+        # Actualizamos el BTC vendible (sumando btc de compras activas)
+        try:
+            self.btc_vendible = sum(
+                (tx.get("btc", Decimal("0")) or Decimal("0"))
+                for tx in self.transacciones
+                if self.es_activa(tx)
+            ) or Decimal("0")
+        except Exception:
+            self.btc_vendible = Decimal("0")
+    
 
     def cant_inv(self) -> Decimal:
         """
@@ -477,7 +491,7 @@ class TradingBot:
             self.reportado_trabajando = False
 
     # Umbral minúsculo para considerar "cero" (residuos por fees/redondeos)
-    EPS = Decimal("0.00000001")
+    EPS = Decimal("0.00001")
 
     def _btc_vendible(self) -> Decimal:
         """
@@ -686,10 +700,10 @@ class TradingBot:
         self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
 
         # BTC realmente vendible según transacciones activas
-        btc_vendible = self._btc_vendible()
+        self.btc_vendible = self._btc_vendible()
 
         # Condición de "sin BTC para vender" robusta: vendible ~ 0 (considerando fees/residuos)
-        sin_btc_vendible = btc_vendible <= self.EPS
+        sin_btc_vendible = self.btc_vendible <= self.EPS
 
         # Disparo de venta fantasma:
         if sin_btc_vendible and self.varVenta >= self.porc_profit_x_venta:
@@ -884,8 +898,9 @@ class TradingBot:
                     self.vender()                
                     self.parametro_compra_desde_compra = self.parametro_compra_A()                
                     self.parametro_compra_desde_venta = self.parametro_compra_B()
-                    self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
                     self.parametro_venta_fantasma = self.venta_fantasma() 
+                    self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
+                    
 
                     if (self.rebalance_enabled 
                         and self.contador_compras_fantasma >= self.rebalance_threshold 
@@ -923,7 +938,7 @@ class TradingBot:
                     
             finally:                                            
                 if after_fn:
-                    after_fn(3000, lambda: self.loop(after_fn))
+                    after_fn(2000, lambda: self.loop(after_fn))
 
     def parametro_compra_C(self):
         if not self.compra_en_venta_fantasma:

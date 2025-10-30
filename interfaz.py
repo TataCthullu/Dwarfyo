@@ -640,8 +640,7 @@ class BotInterfaz(AnimationMixin):
         
 
         self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_historial)
-
-        self.historial.place(x=70, y=70, width=500, height=310)
+        self.historial_window = self.canvas_right.create_window(70, 70, anchor="nw", window=self.historial, width=500, height=310)
 
 
    
@@ -1760,7 +1759,7 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, f"Número de venta: {v['venta_numero']}\n")
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
             self.historial.insert(tk.END, "-"*40 + "\n")
-
+       
     def _consola_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):
         """
         Corrige IN-PLACE la última línea '📜 Estado: ...' del bloque que
