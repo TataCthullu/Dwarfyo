@@ -2,6 +2,7 @@
 # Todos los derechos reservados.
 from tkinter import PhotoImage
 import os
+import random
 
 class AnimationMixin:
     MAX_CABEZAS = 9
@@ -460,6 +461,10 @@ class AnimationMixin:
         base_dir_hist = os.path.join("imagenes", "deco", "lianas")
 
         tokens_hist = ("north","south","east","west")
+        # Inicializar mapas vacíos para evitar AttributeError si las carpetas están vacías
+        self.eldritch_seq = {t: [] for t in tokens_hist}
+        self.kraken_seq   = {t: [] for t in tokens_hist}
+
 
         def _load_sorted(folder, prefix=None):
             """Carga y ordena por sufijo numérico si existe (…_1, …_2, …)."""
@@ -487,25 +492,30 @@ class AnimationMixin:
         # --- ELDRITCH: solo ENDS (se aplican a los 4 bordes)
         eld_ends_dir = os.path.join(base_dir_hist, "eldritch", "eldritch_ends")
         eld_ends = _load_sorted(eld_ends_dir, prefix="eldritch_tentacle_")
+        # Mapear Eldritch ENDS a los cuatro bordes
+        self.eldritch_seq = {t: list(eld_ends) for t in tokens_hist}
 
-        # --- KRAKEN: HEAD + ENDS (se aplican a los 4 bordes)
+        # --- KRAKEN: cabeza (2 frames) y tentáculos separados ---
         kra_head_dir = os.path.join(base_dir_hist, "kraken", "kraken_head")
         kra_ends_dir = os.path.join(base_dir_hist, "kraken", "kraken_ends")
-        kra_head = _load_sorted(kra_head_dir, prefix="kraken_head_")      # new/old
-        kra_ends = _load_sorted(kra_ends_dir, prefix="kraken_tentacle_")  # 1..6
-        kra_all  = kra_head + kra_ends                                    # primero head, luego tentáculos
 
-        # mapas por borde (mismo set de frames en cada lado)
-        self.eldritch_seq = {t: list(eld_ends) for t in tokens_hist}
-        self.kraken_seq   = {t: list(kra_all)  for t in tokens_hist}
+        # cabeza (2 frames)
+        self.kraken_head_frames = _load_sorted(kra_head_dir, prefix="kraken_head_")[:2]  # solo new / old
+        # tentáculos
+        kra_tentacles = _load_sorted(kra_ends_dir, prefix="kraken_tentacle_")
+
+        # mapas: tentáculos en los cuatro bordes
+        self.kraken_seq = {t: list(kra_tentacles) for t in tokens_hist}
 
         # ─── ITEMS DEL BORDE DEL HISTORIAL (canvas_right) ───
         self.hist_items = []
 
         def _dim(seq, k, kind):
             arr = seq.get(k, [])
-            if not arr: return 0
+            if not arr: 
+                return 0
             return arr[0].width() if kind=="w" else arr[0].height()
+
 
         try:
             WH = int(self.canvas_right["width"])
@@ -553,7 +563,14 @@ class AnimationMixin:
         self.hist_slot_idx  = {t: 0 for t in self.hist_slots}
 
 
-        
+        # ─── Cabeza Kraken independiente ───
+        self.kraken_head_frames = self.kraken_head_frames  # ya cargadas antes (2 frames)
+        self.kraken_head_item   = None
+        self._kh_frame_idx      = 0         # índice de frame (0..1)
+        self._kh_move_ctr       = 0         # contador para mover
+        self._kh_move_every     = 3         # mover cada N ticks
+
+
 
 
         # ─── BUQUES INDEPENDIENTES ───
@@ -635,6 +652,37 @@ class AnimationMixin:
             return None, index
         index = (index + 1) % len(frames)
         return frames[index], index    
+    
+    def _rand_kraken_head_coords(self, frame_img):
+        """Devuelve (x,y) en un borde aleatorio del canvas_right, sin salirse."""
+        try:
+            WH = int(self.canvas_right["width"])
+            HH = int(self.canvas_right["height"])
+        except Exception:
+            WH, HH = 640, 360
+
+        if not frame_img:
+            return 0, 0
+
+        w = frame_img.width()
+        h = frame_img.height()
+
+        side = random.choice(("north", "south", "east", "west"))
+        if side == "north":
+            x = random.randint(0, max(0, WH - w))
+            y = 0
+        elif side == "south":
+            x = random.randint(0, max(0, WH - w))
+            y = max(0, HH - h)
+        elif side == "east":
+            x = max(0, WH - w)
+            y = random.randint(0, max(0, HH - h))
+        else:  # west
+            x = 0
+            y = random.randint(0, max(0, HH - h))
+
+        return x, y
+
 
     def _update_abyss(self):
         usar_animacion = getattr(self.bot, 'compra_en_venta_fantasma', False)
@@ -978,20 +1026,26 @@ class AnimationMixin:
         self.animar(12000, self._animate_vines)
 
     def _animate_historial_tentacles(self):
-        """Anima los tentáculos/cabeza en el borde del historial:
-        - cambia de imagen (avanza frame)
-        - cambia de lugar (rota el slot donde se dibuja)
+        """Anima el borde del historial:
+        - Eldritch: tentáculos múltiples.
+        - Kraken: tentáculos + UNA cabeza (2 frames) que se desplaza.
         """
-        # Si el bot no corre: limpiar todo y reintentar
+        # Bot parado → limpiar y reintentar
         if not getattr(self, 'bot', None) or not self.bot.running:
             for _, iid in getattr(self, "hist_items", []):
                 try:
                     self.canvas_right.itemconfig(iid, image="")
                 except Exception:
                     pass
+            if getattr(self, "kraken_head_item", None):
+                try:
+                    self.canvas_right.delete(self.kraken_head_item)
+                    self.kraken_head_item = None
+                except Exception:
+                    pass
             return self.animar(800, self._animate_historial_tentacles)
 
-        bot  = getattr(self, "bot", None)
+        bot   = getattr(self, "bot", None)
         slots = getattr(self, "hist_slots", {})
         if not bot or not slots:
             return self.animar(800, self._animate_historial_tentacles)
@@ -1001,42 +1055,121 @@ class AnimationMixin:
         min_vendible = getattr(bot, "btc_vendible", 0) or 0
         fixed_buyer  = getattr(bot, "fixed_buyer", 0) or 0
 
-        # Selección de familia (como antes)
+        # --- Selección de familia (SIN usar la palabra "modo") ---
         if usdt <= 0 or usdt < fixed_buyer:
-            seq_map = getattr(self, "eldritch_seq", {})
+            familia_activa = "eldritch"
+            seq_map = self.eldritch_seq
         elif btc <= 0 or btc < min_vendible:
-            seq_map = getattr(self, "kraken_seq", {})
+            familia_activa = "kraken"
+            seq_map = self.kraken_seq
         else:
+            familia_activa = None
             seq_map = None
 
-        # Para cada borde, limpiamos todos los slots y encendemos SOLO uno con el frame actual
-        for borde, iids in slots.items():
-            # limpiar
-            for iid in iids:
+        # Si NO es kraken, asegurate de quitar la cabeza (si existía)
+        if familia_activa != "kraken" and getattr(self, "kraken_head_item", None):
+            try:
+                self.canvas_right.delete(self.kraken_head_item)
+            except Exception:
+                pass
+            self.kraken_head_item = None
+
+        # -------- NADA PARA MOSTRAR --------
+        if not familia_activa:
+            # Limpia sólo lo necesario, sin tocar índices ni lógicas
+            for _, iids in slots.items():
+                for iid in iids:
+                    try:
+                        self.canvas_right.itemconfig(iid, image="")
+                    except Exception:
+                        pass
+            return self.animar(800, self._animate_historial_tentacles)
+
+        # -------- ELDRITCH (restaurado) --------
+        if familia_activa == "eldritch":
+            # Limpia únicamente lo que va a redibujar por borde
+            for borde, iids in slots.items():
+                frames = seq_map.get(borde, [])
+                if not frames or not iids:
+                    # limpia si no hay frames para ese borde
+                    for iid in iids:
+                        try:
+                            self.canvas_right.itemconfig(iid, image="")
+                        except Exception:
+                            pass
+                    continue
+
+                # avanza frame y slot exactamente como antes
+                self.hist_frame_idx[borde] = (self.hist_frame_idx[borde] + 1) % len(frames)
+                self.hist_slot_idx[borde]  = (self.hist_slot_idx[borde]  + 1) % len(iids)
+
+                frame = frames[self.hist_frame_idx[borde]]
+                target_iid = iids[self.hist_slot_idx[borde]]
+
+                # limpia todas las posiciones de ese borde...
+                for iid in iids:
+                    try:
+                        self.canvas_right.itemconfig(iid, image="")
+                    except Exception:
+                        pass
+                # ...y enciende sólo la elegida (idéntico comportamiento previo)
                 try:
-                    self.canvas_right.itemconfig(iid, image="")
+                    self.canvas_right.itemconfig(target_iid, image=frame)
                 except Exception:
                     pass
 
-            if not seq_map:
-                continue  # nada que mostrar
+        # -------- KRAKEN (tentáculos + UNA cabeza en 2 frames) --------
+        elif familia_activa == "kraken":
+            # Tentáculos (mismo esquema que Eldritch)
+            for borde, iids in slots.items():
+                frames = seq_map.get(borde, [])
+                if not frames or not iids:
+                    for iid in iids:
+                        try:
+                            self.canvas_right.itemconfig(iid, image="")
+                        except Exception:
+                            pass
+                    continue
 
-            frames = seq_map.get(borde, [])
-            if not frames or not iids:
-                continue
+                self.hist_frame_idx[borde] = (self.hist_frame_idx[borde] + 1) % len(frames)
+                self.hist_slot_idx[borde]  = (self.hist_slot_idx[borde]  + 1) % len(iids)
 
-            # avanzar frame y slot (cambian imagen y lugar)
-            self.hist_frame_idx[borde] = (self.hist_frame_idx[borde] + 1) % len(frames)
-            self.hist_slot_idx[borde]  = (self.hist_slot_idx[borde]  + 1) % len(iids)
+                frame = frames[self.hist_frame_idx[borde]]
+                target_iid = iids[self.hist_slot_idx[borde]]
 
-            frame = frames[self.hist_frame_idx[borde]]
-            iid   = iids[self.hist_slot_idx[borde]]
+                for iid in iids:
+                    try:
+                        self.canvas_right.itemconfig(iid, image="")
+                    except Exception:
+                        pass
+                try:
+                    self.canvas_right.itemconfig(target_iid, image=frame)
+                except Exception:
+                    pass
 
-            try:
-                self.canvas_right.itemconfig(iid, image=frame)
-            except Exception:
-                pass
+            # Cabeza ÚNICA (2 frames, se mueve por bordes al azar cada N ticks)
+            if getattr(self, "kraken_head_frames", None):
+                if len(self.kraken_head_frames) >= 2:
+                    self._kh_frame_idx = (self._kh_frame_idx + 1) % 2
+                head_frame = self.kraken_head_frames[self._kh_frame_idx]
+
+                if not getattr(self, "kraken_head_item", None):
+                    x, y = self._rand_kraken_head_coords(head_frame)
+                    self.kraken_head_item = self.canvas_right.create_image(x, y, image=head_frame, anchor="nw")
+                else:
+                    self.canvas_right.itemconfig(self.kraken_head_item, image=head_frame)
+
+                    self._kh_move_ctr += 1
+                    if self._kh_move_ctr >= self._kh_move_every:
+                        self._kh_move_ctr = 0
+                        x, y = self._rand_kraken_head_coords(head_frame)
+                        try:
+                            self.canvas_right.coords(self.kraken_head_item, x, y)
+                        except Exception:
+                            pass
 
         self.animar(800, self._animate_historial_tentacles)
+
+
 
 
