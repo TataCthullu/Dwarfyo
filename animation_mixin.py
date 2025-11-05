@@ -938,27 +938,27 @@ class AnimationMixin:
         sell = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
 
         def _resolve_image(count, frames):
-                """
-                Regla de reset:
-                - count <= 0            → limpiar
-                - count == n (todas)    → limpiar (reset visual)
-                - count  < n            → frame count-1
-                - count  > n            → cicla 1..n y cuando cae en n → limpiar
-                """
-                if not frames:
-                    return None, False  # sin cambios (conserva lo último mostrado)
-                n = len(frames)
-                if count <= 0:
-                    return "", True
-                if count == n:
-                    return "", True
-                if count < n:
-                    return frames[count - 1], False
-                # count > n → ciclo
-                r = ((count - 1) % n) + 1  # r en [1..n]
-                if r == n:
-                    return "", True
-                return frames[r - 1], False
+            """
+            - count <= 0     → limpiar
+            - 1..n           → frame count-1 (muestra TODAS, incluida la n-ésima)
+            - n+1, 2(n+1)…   → limpiar (reset visual para que no quede pegado)
+            - demás > n+1    → cicla 1..n
+            """
+            if not frames:
+                return None, False
+            n = len(frames)
+            if count <= 0:
+                return "", True
+
+            if 1 <= count <= n:
+                return frames[count - 1], False
+
+            # ciclo con “slot” de limpieza cada n+1
+            r = count % (n + 1)    # r ∈ {0,1..n}
+            if r == 0:
+                return "", True    # limpiar en n+1
+            return frames[r - 1], False
+
 
         img_b, clear_b = _resolve_image(buy, self.skel_buy)
         img_s, clear_s = _resolve_image(sell, self.skel_sell)
