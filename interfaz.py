@@ -124,7 +124,7 @@ class BotInterfaz(AnimationMixin):
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         # 🎵 Música de fondo — definir estado ANTES de armar los menús
         self._music_path = "Musica/epicbfinal.wav"
-        self.music_enabled = True  # estado inicial
+        self.music_enabled = False  # estado inicial
         if self.music_enabled:
             reproducir_musica_fondo(self._music_path, loop=-1, volumen=0.25)
 

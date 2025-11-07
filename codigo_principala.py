@@ -91,7 +91,10 @@ class TradingBot:
         self.rebalance_concretado = False
         self.comisiones_enabled = True
         self.comision_pct = Decimal("0.0004")  # ejemplo 0.1%
-        self.btc_vendible = Decimal('0')
+        # al inicio de la clase TradingBot (atributo nuevo)
+        self.btc_fixed_seller = None  # Decimal | None
+        self.update_btc_fixed_seller()
+        self.hist_tentacles   = None
 
         
 
@@ -197,15 +200,7 @@ class TradingBot:
             self.btc_usdt = Decimal('0')
             self.usdt_mas_btc = Decimal('0')
 
-        # Actualizamos el BTC vendible (sumando btc de compras activas)
-        try:
-            self.btc_vendible = sum(
-                (tx.get("btc", Decimal("0")) or Decimal("0"))
-                for tx in self.transacciones
-                if self.es_activa(tx)
-            ) or Decimal("0")
-        except Exception:
-            self.btc_vendible = Decimal("0")
+      
     
 
     def cant_inv(self) -> Decimal:
@@ -377,6 +372,7 @@ class TradingBot:
 
         # reset del trigger para no rebotar
         self.fixed_buyer = (self.usdt * self.porc_inv_por_compra) / Decimal('100')
+        self.update_btc_fixed_seller()
         self.contador_compras_fantasma = 0
         # ✅ actualizar balances y dejar constancia
         self.actualizar_balance()
@@ -405,7 +401,8 @@ class TradingBot:
                 return
             
             self.precio_actual = nuevo_precio
-            
+            self.update_btc_fixed_seller()
+
             if not self.condiciones_para_comprar():
                 self.log("Condiciones inválidas. No se realiza compra")
                 self.log("- - - - - - - - - -")
@@ -490,22 +487,9 @@ class TradingBot:
             self.ultimo_evento = datetime.datetime.now()         
             self.reportado_trabajando = False
 
-    # Umbral minúsculo para considerar "cero" (residuos por fees/redondeos)
-    EPS = Decimal("0.00001")
+   
 
-    def _btc_vendible(self) -> Decimal:
-        """
-        Suma el BTC de las transacciones activas (estado 'activa').
-        Es lo realmente vendible por tu lógica de 'vender()'.
-        """
-        try:
-            return sum(
-                (tx.get("btc", Decimal("0")) or Decimal("0"))
-                for tx in self.transacciones
-                if self.es_activa(tx)
-            ) or Decimal("0")
-        except Exception:
-            return Decimal("0")
+   
 
     def parametro_compra_A(self):
         if not self.param_a_enabled:
@@ -569,6 +553,7 @@ class TradingBot:
             return
        
         self.precio_actual = nuevo_precio
+        self.update_btc_fixed_seller()
         self.actualizar_balance()
         ejecutadas = []
        
@@ -688,8 +673,33 @@ class TradingBot:
             self.param_b_enabled = True
             self.param_a_enabled = False
 
+        self.actualizar_balance()    
 
-        self.actualizar_balance()             
+    def update_btc_fixed_seller(self):
+        """
+        btc_fixed_seller = fixed_buyer / precio_actual (Decimal o None)
+        Si no hay precio válido (>0) o fixed_buyer <= 0 → None
+        """
+        try:
+            fb = self.fixed_buyer if isinstance(self.fixed_buyer, Decimal) else Decimal(str(self.fixed_buyer or 0))
+        except (InvalidOperation, TypeError, ValueError):
+            self.btc_fixed_seller = None
+            return
+
+        p = self.precio_actual
+        try:
+            pdec = p if isinstance(p, Decimal) else (None if p is None else Decimal(str(p)))
+        except (InvalidOperation, TypeError, ValueError):
+            self.btc_fixed_seller = None
+            return
+
+        if fb is not None and pdec is not None and fb > 0 and pdec > 0:
+            self.btc_fixed_seller = fb / pdec
+        else:
+            self.btc_fixed_seller = None
+
+        self.update_hist_tentacles()
+    
 
     def venta_fantasma(self) -> bool:
         # Si todavía no hubo ninguna venta real, no hay baseline de venta
@@ -699,14 +709,15 @@ class TradingBot:
         # Variación desde la última venta (tu función ya protege Nones/0)
         self.varVenta = self.varpor_venta(self.precio_ult_venta, self.precio_actual)
 
-        # BTC realmente vendible según transacciones activas
-        self.btc_vendible = self._btc_vendible()
-
         # Condición de "sin BTC para vender" robusta: vendible ~ 0 (considerando fees/residuos)
-        sin_btc_vendible = self.btc_vendible <= self.EPS
 
-        # Disparo de venta fantasma:
-        if sin_btc_vendible and self.varVenta >= self.porc_profit_x_venta:
+
+        # BTC necesario ya cocinado (Decimal o None)
+        btc_need = self.btc_fixed_seller or Decimal("0")
+
+
+        # Disparo de venta fantasma si no hay BTC suficiente para ese fixed_buyer
+        if self.btc < btc_need and self.varVenta >= self.porc_profit_x_venta:
             id_f = token_hex(2)
             self.contador_ventas_fantasma += 1
             self.venta_fantasma_ocurrida = True
@@ -736,6 +747,57 @@ class TradingBot:
         self.venta_fantasma_ocurrida = False
         return False
 
+    def update_hist_tentacles(self):
+        """
+        Decide la familia a mostrar en historial:
+        - "eldritch": si no hay USDT suficiente para cubrir fixed_buyer.
+        - "kraken"  : si se cumplen las MISMAS precondiciones de venta_fantasma
+                        (baseline de ventas reales, varVenta >= porc_profit_x_venta)
+                        y además BTC < btc_fixed_seller.
+        - None      : en cualquier otro caso.
+        Todo en Decimal, sin floats.
+        """
+        from decimal import Decimal, InvalidOperation
+
+        def _dec(x, default=None):
+            try:
+                return x if isinstance(x, Decimal) else Decimal(str(x))
+            except (InvalidOperation, TypeError, ValueError):
+                return default
+
+        # Guard rails básicos
+        usdt  = _dec(getattr(self, "usdt", 0), Decimal("0"))
+        btc   = _dec(getattr(self, "btc", 0),  Decimal("0"))
+        fixed = _dec(getattr(self, "fixed_buyer", 0), None)
+
+        # 1) Eldritch: no alcanza USDT para cubrir fixed_buyer
+        if fixed is None or usdt is None:
+            self.hist_tentacles = None
+            return
+        if usdt <= 0 or usdt < fixed:
+            self.hist_tentacles = "eldritch"
+            return
+
+        # 2) Kraken: mismas precondiciones que venta_fantasma + BTC insuficiente
+        # baseline de venta si hubo una venta real O si ya tenemos precio_ult_venta seteado (incluye venta fantasma)
+        pult = getattr(self, "precio_ult_venta", None)
+        try:
+            ventas_base = (pult is not None) and (Decimal(pult) > 0)
+        except (InvalidOperation, TypeError, ValueError):
+            ventas_base = False
+
+
+        var_venta   = _dec(getattr(self, "varVenta", 0), Decimal("0"))
+        umbral_vta  = _dec(getattr(self, "porc_profit_x_venta", 0), Decimal("0"))
+        var_ok      = (var_venta is not None) and (umbral_vta is not None) and (var_venta >= umbral_vta)
+
+        btc_need = getattr(self, "btc_fixed_seller", None)  # Decimal | None
+        if ventas_base and var_ok and (btc_need is not None) and (btc is not None) and (btc < btc_need):
+            self.hist_tentacles = "kraken"
+            return
+
+        # 3) Nada
+        self.hist_tentacles = None
 
 
     def variacion_total(self) -> Decimal:
@@ -824,6 +886,7 @@ class TradingBot:
         self.precio_actual = self._fetch_precio()
         if self.precio_actual is None:
             return
+        self.update_btc_fixed_seller()
         if self.condiciones_para_comprar():
             #self.log(f"🧪 Init check: precio_actual={self.precio_actual}, fixed_buyer={self.fixed_buyer}, usdt={self.usdt}")
 
@@ -876,6 +939,9 @@ class TradingBot:
                     return  
                            
                 else:      
+                    self.update_btc_fixed_seller()
+                    
+
                     if self.precio_ult_comp is None:
                         self.varCompra = Decimal("0")
                     else:
@@ -900,7 +966,7 @@ class TradingBot:
                     self.parametro_compra_desde_venta = self.parametro_compra_B()
                     self.parametro_venta_fantasma = self.venta_fantasma() 
                     self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()  
-                    
+                    self.update_hist_tentacles()
 
                     if (self.rebalance_enabled 
                         and self.contador_compras_fantasma >= self.rebalance_threshold 

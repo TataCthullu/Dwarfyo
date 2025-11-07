@@ -3,7 +3,7 @@
 from tkinter import PhotoImage
 import os
 import random
-
+from decimal import Decimal, InvalidOperation
 class AnimationMixin:
     MAX_CABEZAS = 9
 
@@ -1050,43 +1050,39 @@ class AnimationMixin:
         if not bot or not slots:
             return self.animar(800, self._animate_historial_tentacles)
 
-        usdt         = getattr(bot, "usdt", 0) or 0
-        btc          = getattr(bot, "btc", 0) or 0
-        min_vendible = getattr(bot, "btc_vendible", 0) or 0
-        fixed_buyer  = getattr(bot, "fixed_buyer", 0) or 0
-
-        # --- Selección de familia (SIN usar la palabra "modo") ---
-        if usdt <= 0 or usdt < fixed_buyer:
-            familia_activa = "eldritch"
+        # 🔸 Leer la decisión ya cocinada por el bot
+        familia_activa = getattr(bot, "hist_tentacles", None)
+        if familia_activa == "eldritch":
             seq_map = self.eldritch_seq
-        elif btc <= 0 or btc < min_vendible:
-            familia_activa = "kraken"
+        elif familia_activa == "kraken":
             seq_map = self.kraken_seq
         else:
-            familia_activa = None
             seq_map = None
-
-        # Si NO es kraken, asegurate de quitar la cabeza (si existía)
-        if familia_activa != "kraken" and getattr(self, "kraken_head_item", None):
-            try:
-                self.canvas_right.delete(self.kraken_head_item)
-            except Exception:
-                pass
-            self.kraken_head_item = None
-
-        # -------- NADA PARA MOSTRAR --------
-        if not familia_activa:
-            # Limpia sólo lo necesario, sin tocar índices ni lógicas
-            for _, iids in slots.items():
-                for iid in iids:
-                    try:
-                        self.canvas_right.itemconfig(iid, image="")
-                    except Exception:
-                        pass
+            # 🔹 LIMPIEZA completa si no hay familia activa
+            for _, iid in getattr(self, "hist_items", []):
+                try:
+                    self.canvas_right.itemconfig(iid, image="")
+                except Exception:
+                    pass
+            # 🔹 Borrar cabeza de Kraken si existía
+            if getattr(self, "kraken_head_item", None):
+                try:
+                    self.canvas_right.delete(self.kraken_head_item)
+                except Exception:
+                    pass
+                self.kraken_head_item = None
             return self.animar(800, self._animate_historial_tentacles)
+
 
         # -------- ELDRITCH (restaurado) --------
         if familia_activa == "eldritch":
+             # 🔹 Borrar cabeza de Kraken si quedaba en pantalla
+            if getattr(self, "kraken_head_item", None):
+                try:
+                    self.canvas_right.delete(self.kraken_head_item)
+                except Exception:
+                    pass
+                self.kraken_head_item = None
             # Limpia únicamente lo que va a redibujar por borde
             for borde, iids in slots.items():
                 frames = seq_map.get(borde, [])
