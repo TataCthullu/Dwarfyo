@@ -834,18 +834,38 @@ class TradingBot:
             self.log(f"❌ Error en condiciones_para_comprar: {e}")
             return False
 
-    def hold_usdt(self):
+    def hold_usdt(self) -> Decimal:
+        """
+        Valor 'guía HODL' expresado en USDT.
+        Aplica la comisión solo en la compra (como si hubieras comprado pagando fee).
+        """
         try:
             if not self.running or self.contador_compras_reales == 0:
                 return Decimal("0")
+
             if not self.precio_ingreso or not self.precio_actual or not self.inv_inic:
                 return Decimal("0")
 
-            btc_hold = self.inv_inic / self.precio_ingreso
-            return btc_hold * self.precio_actual
+            inv = self.inv_inic if isinstance(self.inv_inic, Decimal) else Decimal(str(self.inv_inic or "0"))
+            px_in = self.precio_ingreso if isinstance(self.precio_ingreso, Decimal) else Decimal(str(self.precio_ingreso))
+            px_now = self.precio_actual if isinstance(self.precio_actual, Decimal) else Decimal(str(self.precio_actual))
 
-        except (InvalidOperation, ZeroDivisionError, TypeError):
+            if inv <= 0 or px_in <= 0 or px_now <= 0:
+                return Decimal("0")
+
+            # ✅ Solo comisión de compra (BTC recibido menor)
+            if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
+                buy_factor = (Decimal("100") - self.comision_pct) / Decimal("100")
+            else:
+                buy_factor = Decimal("1")
+
+            btc_hold = (inv / px_in) * buy_factor
+            return btc_hold * px_now
+
+        except (InvalidOperation, ZeroDivisionError, TypeError, ValueError):
             return Decimal("0")
+
+
 
     def hold_btc(self) -> Decimal:
         """

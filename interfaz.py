@@ -1729,6 +1729,7 @@ class BotInterfaz(AnimationMixin):
             self.historial.insert(tk.END, f"Número de compra: {t['numcompra']}\n")
             self.historial.insert(tk.END, f"Estado: {estado}\n")
             self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
+            self.historial.insert(tk.END, f"Btc/usdt comprado: {self.format_var(t['valor_en_usdt'], '$')}\n")
             
             if "fee_usdt" in t:
                 self.historial.insert(
