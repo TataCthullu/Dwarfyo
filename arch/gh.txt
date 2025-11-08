@@ -1,0 +1,96 @@
+🧹 Bot limpiado.
+- - - - - - - - - -
+2025-11-07 14:42:11 · Configuración actualizada:
+ · TP: OFF (% 3)
+ · SL: OFF (% 1)
+- - - - - - - - - -
+ · Rebalance: OFF (Umbral = 6, Pct = % 50)
+- - - - - - - - - -
+🟡 Khazâd iniciado.
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-11-07 14:42:13
+📉 Precio de compra: $ 102118.96
+🪙 Btc comprado: ₿ 0.04896230827262635655513922194
+🧾 Comisión: $ 0.02
+🪙 Compra id: e202
+🪙 Compra Num: 1
+📜 Estado: activa
+🎯 Objetivo de venta: $ 102124.065948
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-11-07 14:42:22
+🕒 Compra original: $ 102118.96
+🆔 Id: e202
+🪙 Compra Num: 1
+📈 Precio de venta: $ 102146.07
+📈 Venta numero: 1
+📤 Btc vendido: ₿ 0.04896230827262635655513922194
+🧾 Comisión: $ 0.0200052294727090836021048393
+💹 Ganancia de esta operacion: $ 1.287362947798191442607719
+📊 Excedente sobre objetivo: % 0.02154639241567616790360815374
+- - - - - - - - - -
+📝 Estado de compra #1 (id e202): activa → vendida
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-11-07 14:42:26
+📉 Precio de compra: $ 102135.19
+🪙 Btc comprado: ₿ 0.04895452781749365718123205136
+🧾 Comisión: $ 0.02
+🪙 Compra id: abaf
+🪙 Compra Num: 2
+📜 Estado: activa
+🎯 Objetivo de venta: $ 102140.2967595
+📊 Excedente de bajada: % 0.00565141321638708175458928572
+🔵 [Parametro B].
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-11-07 14:42:34
+🕒 Compra original: $ 102135.19
+🆔 Id: abaf
+🪙 Compra Num: 2
+📈 Precio de venta: $ 102143.32
+📈 Venta numero: 2
+📤 Btc vendido: ₿ 0.04895452781749365718123205136
+🧾 Comisión: $ 0.02000151200124462489373153366
+💹 Ganancia de esta operacion: $ 0.357998799154978807989684
+📊 Excedente sobre objetivo: % 0.002959890068773283100400369755
+- - - - - - - - - -
+📝 Estado de compra #2 (id abaf): activa → vendida
+- - - - - - - - - -
+📌 2025-11-07 14:42:39 · Venta fantasma #1 a $ 102160.68
+- - - - - - - - - -
+📌 2025-11-07 14:42:43 · Venta fantasma #2 a $ 102179.9
+- - - - - - - - - -
+✅ Compra realizada.
+ . Fecha y Hora: 2025-11-07 14:42:51
+📉 Precio de compra: $ 102185.64
+🪙 Btc comprado: ₿ 0.04893035851221365350356468874
+🧾 Comisión: $ 0.02
+🪙 Compra id: 1f85
+🪙 Compra Num: 3
+📜 Estado: activa
+🎯 Objetivo de venta: $ 102190.749282
+📊 Excedente de bajada: % 0.000372876661652634226496600603
+🔵 [Parametro B].
+- - - - - - - - - -
+📌 2025-11-07 14:42:51 · Venta fantasma #3 a $ 102185.64
+- - - - - - - - - -
+📌(A) 2025-11-07 14:42:59 · Sin Usdt para comprar, nueva compra fantasma registrada a $ 102168.01, Num: 1.
+- - - - - - - - - -
+✅ Venta realizada.
+Fecha y hora: 2025-11-07 14:43:07
+🕒 Compra original: $ 102185.64
+🆔 Id: 1f85
+🪙 Compra Num: 3
+📈 Precio de venta: $ 102198.98
+📈 Venta numero: 3
+📤 Btc vendido: ₿ 0.04893035851221365350356468874
+🧾 Comisión: $ 0.02000253092393021172055095021
+💹 Ganancia de esta operacion: $ 0.612728451628999926017002
+📊 Excedente sobre objetivo: % 0.008054269156288267325711729681
+- - - - - - - - - -
+📝 Estado de compra #3 (id 1f85): activa → vendida
+- - - - - - - - - -
+🔴 Khazâd detenido.
+- - - - - - - - - -

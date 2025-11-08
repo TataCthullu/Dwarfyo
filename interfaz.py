@@ -560,7 +560,7 @@ class BotInterfaz(AnimationMixin):
 
         add("Usdt + Btc:", self.balance_str, "balance")
         add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
-        add("Variacion desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
+        add("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")    
         add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt") 
@@ -579,9 +579,9 @@ class BotInterfaz(AnimationMixin):
         add("Excedente total:",  self.excedente_total_str, "excedente_total")
         add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
         add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
-        add("Comisiones de compra:", self.total_fees_buy_str, "total_fees_buy")
-        add("Comisiones de venta:", self.total_fees_sell_str, "total_fees_sell")
-        add("Comisiones totales:", self.total_fees_total_str, "total_fees_total")
+        add("Comisiónes de compras:", self.total_fees_buy_str, "total_fees_buy")
+        add("Comisiónes de ventas:", self.total_fees_sell_str, "total_fees_sell")
+        add("Comisiónes totales:", self.total_fees_total_str, "total_fees_total")
 
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')

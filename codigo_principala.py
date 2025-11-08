@@ -437,7 +437,8 @@ class TradingBot:
             self.btc = (self.btc or Decimal("0")) + self.btc_comprado
             self.contador_compras_reales += 1 
             self.rebalance_concretado = False
-            
+            valor_compra_usdt = self.btc_comprado * self.precio_actual
+
             self.transacciones.append({
                     "compra": self.precio_ult_comp,
                     "id": id_op,     
@@ -447,6 +448,7 @@ class TradingBot:
                     "fee_usdt": fee_buy_usdt,
                     "ejecutado": False,
                     "numcompra": self.contador_compras_reales,
+                    "valor_en_usdt": valor_compra_usdt,
                     "timestamp": self.timestamp,
                     "estado": self.estado_compra_func()
                 })
@@ -459,15 +461,16 @@ class TradingBot:
             self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
             self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
             self.log(f"🧾 Comisión: {self.format_fn(fee_buy_usdt, '$')}")
+            self.log(f"🧾 Btc/Usdt comprado: {self.format_fn(valor_compra_usdt, '$')}")
 
-
- 
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
             self.log(f"📜 Estado: {self.transacciones[-1].get('estado', 'activa')}")
             self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")
             
-            
+            # ... al final de comprar(), justo después de self.btc += self.btc_comprado
+            self.update_btc_fixed_seller()
+
 
             # Excedente de bajada 
             if trigger == 'A':
@@ -694,7 +697,12 @@ class TradingBot:
             return
 
         if fb is not None and pdec is not None and fb > 0 and pdec > 0:
-            self.btc_fixed_seller = fb / pdec
+            # ✅ considerar comisión de compra en BTC
+            if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
+                net_factor = (Decimal("100") - self.comision_pct) / Decimal("100")
+            else:
+                net_factor = Decimal("1")
+            self.btc_fixed_seller = (fb / pdec) * net_factor
         else:
             self.btc_fixed_seller = None
 
@@ -749,12 +757,10 @@ class TradingBot:
 
     def update_hist_tentacles(self):
         """
-        Decide la familia a mostrar en historial:
-        - "eldritch": si no hay USDT suficiente para cubrir fixed_buyer.
-        - "kraken"  : si se cumplen las MISMAS precondiciones de venta_fantasma
-                        (baseline de ventas reales, varVenta >= porc_profit_x_venta)
-                        y además BTC < btc_fixed_seller.
-        - None      : en cualquier otro caso.
+        Decide la familia a mostrar en historial por disponibilidad de recursos:
+        - 'eldritch' si USDT < fixed_buyer
+        - 'kraken'  si BTC  < btc_fixed_seller
+        - None      en otro caso
         Todo en Decimal, sin floats.
         """
         from decimal import Decimal, InvalidOperation
@@ -765,39 +771,30 @@ class TradingBot:
             except (InvalidOperation, TypeError, ValueError):
                 return default
 
-        # Guard rails básicos
-        usdt  = _dec(getattr(self, "usdt", 0), Decimal("0"))
-        btc   = _dec(getattr(self, "btc", 0),  Decimal("0"))
-        fixed = _dec(getattr(self, "fixed_buyer", 0), None)
+        # Valores “cocinados” por el bot
+        usdt   = _dec(getattr(self, "usdt", 0), Decimal("0"))
+        btc    = _dec(getattr(self, "btc", 0),  Decimal("0"))
+        fixed  = _dec(getattr(self, "fixed_buyer", 0), None)  # USDT necesarios para una compra
+        btc_need = getattr(self, "btc_fixed_seller", None)     # BTC necesarios p/ vender un fixed_buyer
 
-        # 1) Eldritch: no alcanza USDT para cubrir fixed_buyer
-        if fixed is None or usdt is None:
+        # Guard-rails: si no hay fixed_buyer válido, apagamos todo
+        if fixed is None:
             self.hist_tentacles = None
             return
-        if usdt <= 0 or usdt < fixed:
+
+        # 1) Eldritch: sin USDT suficientes
+        if usdt is None or usdt <= 0 or usdt < fixed:
             self.hist_tentacles = "eldritch"
             return
 
-        # 2) Kraken: mismas precondiciones que venta_fantasma + BTC insuficiente
-        # baseline de venta si hubo una venta real O si ya tenemos precio_ult_venta seteado (incluye venta fantasma)
-        pult = getattr(self, "precio_ult_venta", None)
-        try:
-            ventas_base = (pult is not None) and (Decimal(pult) > 0)
-        except (InvalidOperation, TypeError, ValueError):
-            ventas_base = False
-
-
-        var_venta   = _dec(getattr(self, "varVenta", 0), Decimal("0"))
-        umbral_vta  = _dec(getattr(self, "porc_profit_x_venta", 0), Decimal("0"))
-        var_ok      = (var_venta is not None) and (umbral_vta is not None) and (var_venta >= umbral_vta)
-
-        btc_need = getattr(self, "btc_fixed_seller", None)  # Decimal | None
-        if ventas_base and var_ok and (btc_need is not None) and (btc is not None) and (btc < btc_need):
+        # 2) Kraken: sin BTC suficientes (para cubrir una venta de tamaño fixed_buyer)
+        if (btc_need is not None) and (btc is not None) and (btc < btc_need):
             self.hist_tentacles = "kraken"
             return
 
         # 3) Nada
         self.hist_tentacles = None
+
 
 
     def variacion_total(self) -> Decimal:
