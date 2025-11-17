@@ -30,8 +30,6 @@ class BotInterfaz(AnimationMixin):
         self.was_offline = False
         self.bot.log_fn = self.logf
         self.operativa_configurada = False
-
-
         self.executor = ThreadPoolExecutor(max_workers=1)
         self.config_ventana = None
         # Fuentes específicas para consolas
@@ -53,7 +51,6 @@ class BotInterfaz(AnimationMixin):
             "ventas_realizadas": "Cyan",
             "compras_fantasma": "Magenta",
             "ventas_fantasma": "MediumSpringGreen",
-
             "ghost_ratio": "Plum",
             "balance": "Orange",
             "variacion_total_inv": "Lightgreen",
@@ -81,11 +78,9 @@ class BotInterfaz(AnimationMixin):
         self._create_stringvars()         
         self.valores_iniciales = {}
         self.colores_actuales = {}  # key -> "Gold", "Green" o "Crimson"
-
         self.limpiar_visible = False
         #self.runa_image = ImageTk.PhotoImage(Image.open("imagenes/decoa/runes/rune_dis_old.png").resize((35, 35), Image.ANTIALIAS))
-      
-      # Estado de modo de vista (Avanzado por defecto)
+        # Estado de modo de vista (Avanzado por defecto)
         self.modus = tk.StringVar(value='avanzado')
         self.info_labels = {}
 
@@ -119,7 +114,6 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-        
         self.historial.tag_configure('venta_tag', foreground='Green')
         self.historial.tag_configure('compra_tag', foreground='SteelBlue')
         # 🎵 Música de fondo — definir estado ANTES de armar los menús
@@ -170,7 +164,6 @@ class BotInterfaz(AnimationMixin):
         self.sound_enabled = True
         self.bot.sound_enabled = True
 
-        
         # —— Menú Modus ——
         self.modus_menu = tk.Menu(self.menubar, tearoff=0)
         self.modus_menu.add_radiobutton(
@@ -234,7 +227,6 @@ class BotInterfaz(AnimationMixin):
             self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
 
-
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
 
@@ -256,9 +248,7 @@ class BotInterfaz(AnimationMixin):
 
         self.menubar.add_cascade(label="Vista", menu=view_menu)
 
-
     def _aplicar_modus(self):
-        
         modus = self.modus.get()
 
         # Mostrar todo por defecto (labels + valores)
@@ -286,7 +276,6 @@ class BotInterfaz(AnimationMixin):
             self.float_precision = prec
 
         self.ajustar_fuente_por_vista()  
-        
 
         # 🧼 Destruir y recrear paneles para que los textos fijos usen nueva fuente
         try:
@@ -295,17 +284,16 @@ class BotInterfaz(AnimationMixin):
             self.animation_frame.destroy()
         except Exception:
             pass
+
         self.left_panel()
         self.center_panel()
         self.animation_panel()
         self.init_animation()  
-
         self._aplicar_modus()
-
         self.actualizar_ui()
         # 6) ♻️ Re-render retroactivo de la CONSOLA con la vista nueva
         #    - Limpiamos el widget, reseteamos el puntero incremental
-        #      y volvemos a volcar TODO el buffer usando el nuevo modo.
+        #      y volvemos a volcar todo el buffer usando el nuevo modo.
         try:
             self.consola.configure(state='normal')
             self.consola.delete("1.0", "end")
@@ -319,7 +307,6 @@ class BotInterfaz(AnimationMixin):
             self._consola_last_n = 0
         # Vuelca el buffer completo re-formateando con _reformat_line
         self.actualizar_consola()
-
         # 7) Rehacer HISTORIAL (ya se formatea con format_var según vista)
         self.actualizar_historial()
 
@@ -350,7 +337,6 @@ class BotInterfaz(AnimationMixin):
         # aplicar inmediatamente a los widgets existentes
         self._aplicar_fuente_consolas()
 
-
     def music_enable(self):
         if not self.music_enabled:
             reproducir_musica_fondo("Musica/epicbfinal.wav", loop=-1, volumen=0.25)
@@ -367,7 +353,6 @@ class BotInterfaz(AnimationMixin):
             self.log_en_consola("- - - - - - - - - -")
             self.music_menu.entryconfig("Desabilitar", state="disabled")
             self.music_menu.entryconfig("Habilitar", state="normal")
-
 
     def toggle_sound(self):
         self.sound_enabled = not self.sound_enabled
@@ -393,7 +378,6 @@ class BotInterfaz(AnimationMixin):
             img.save(ruta)
             self.log_en_consola(f"📸 Captura guardada en: {ruta}")
             self.log_en_consola("- - - - - - - - - -")
-# ——— dentro de BotInterfaz ———
 
     def _exportar_texto(self, widget_text, sugerencia="export"):
         """
@@ -438,13 +422,11 @@ class BotInterfaz(AnimationMixin):
         except Exception as e:
             messagebox.showerror("Error", f"No pude guardar el archivo:\n{e}")
 
-
     def descargar_historial(self):
         self._exportar_texto(self.historial, "historial")
 
     def descargar_consola(self):
         self._exportar_texto(self.consola, "consola")
-
 
     def _create_stringvars(self):
         # Display and config variables
@@ -486,10 +468,7 @@ class BotInterfaz(AnimationMixin):
         self.total_fees_sell_str = tk.StringVar()
         self.total_fees_total_str = tk.StringVar()
 
-
-
     def rellenar_mosaico(self, canvas, image_path, escala=1):
-
         # Cargar imagen original
         imagen_original = Image.open(image_path)
         ancho, alto = imagen_original.size
@@ -510,21 +489,18 @@ class BotInterfaz(AnimationMixin):
             for y in range(0, height, imagen.height()):
                 canvas.create_image(x, y, image=imagen, anchor='nw')    
     
-        
     #Frames
     def left_panel(self):
         self.left_frame = tk.Frame(self.root, bd=0,                 # sin borde
     highlightthickness=0, # sin “resaltado” al enfoque
     relief='flat')
         self.left_frame.place(x=0, y=0, width=600, height=900)
-
         self.canvas_uno = tk.Canvas(self.left_frame, width=600, height=900, highlightthickness=0)
         self.canvas_uno.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_uno, "imagenes/decoa/wall/catacombs_5.png", escala=2)
         
         y_offset = 10
         row_height = self.espaciado_vertical 
-
 
         if not hasattr(self, 'info_canvas'):
             self.info_canvas = {}
@@ -535,7 +511,6 @@ class BotInterfaz(AnimationMixin):
             nonlocal y_offset
             # 1) etiqueta fija
             color_etiqueta = self.colores_fijos.get(key, "White") if key else "White"
-
             lbl_id = self.canvas_uno.create_text(10, y_offset,
                                                  text=label_text,
                                                  fill=color_etiqueta,
@@ -586,15 +561,11 @@ class BotInterfaz(AnimationMixin):
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
         self.center_frame.place(x=600, y=0, width=700, height=450)
-
         self.canvas_center = tk.Canvas(self.center_frame, width=700, height=450, highlightthickness=0, bd=0, relief='flat')
         self.canvas_center.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_center, "imagenes/decoa/wall/wall_vines_1.png", escala=2)
-        
-
         y_offset = 10
         row_height = self.espaciado_vertical
-
 
         def add(label_text, var, key=None):
             nonlocal y_offset
@@ -630,30 +601,20 @@ class BotInterfaz(AnimationMixin):
         add("Stop Loss:", self.stop_loss_str, "stop_loss")
    
     def right_panel(self):
-        self.right_frame = tk.Frame(self.root, bd=0, # sin “resaltado” al enfoque
-    relief='flat')
+        self.right_frame = tk.Frame(self.root, bd=0, relief='flat')
         self.right_frame.place(x=1300, y=0, width=650, height=450)
-
         self.canvas_right = tk.Canvas(self.right_frame, width=650, height=450, highlightthickness=0)
         self.canvas_right.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right, "imagenes/decoa/wall/relief_0.png", escala=2)
-        
-
         self.historial = ScrolledText(self.canvas_right, bg="Gray", relief="flat", bd=0, font=self._font_historial)
         self.historial_window = self.canvas_right.create_window(70, 70, anchor="nw", window=self.historial, width=500, height=310)
-
-
-   
 
     def right_panel_b(self):
         self.right_frame_b = tk.Frame(self.root)
         self.right_frame_b.place(x=1300, y=450, width=620, height=450)
-
         self.canvas_right_b = tk.Canvas(self.right_frame_b, width=640, height=450, highlightthickness=0)
         self.canvas_right_b.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_right_b, "imagenes/decoa/wall/relief_brown_0.png", escala=2)
-        
-
         # Creamos la consola, pero la añadimos al canvas con create_window
         self.consola = ScrolledText(
             self.canvas_right_b,
@@ -669,8 +630,7 @@ class BotInterfaz(AnimationMixin):
             width=500,   # ojo: que quepa dentro de los 650px
             height=310
         )
-
-      
+ 
     def logf(self, tpl, **vals):
         # Guarda en buffer
         if not hasattr(self, "_consola_buffer"):
@@ -705,8 +665,6 @@ class BotInterfaz(AnimationMixin):
         # NO escribir directo: render lo hace actualizar_consola() (incremental)
         self.actualizar_consola()
 
-        
-
     def _reformat_line(self, s: str) -> str:
         # Reaplica el formateo para $, ₿ y % usando la vista actual
         def sub_money(m):
@@ -739,24 +697,19 @@ class BotInterfaz(AnimationMixin):
         s = re.sub(r'%\s*(-?\d+(?:\.\d+)?)', sub_pct_prefijo, s)
         return s
 
-
     def animation_panel(self):
         self.animation_frame = tk.Frame(self.root)
         self.animation_frame.place(x=600, y=450, width=700, height=450)
-
         self.canvas_animation = tk.Canvas(self.animation_frame, width=700, height=450, highlightthickness=0)
         self.canvas_animation.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_animation, "imagenes/decoa/wall/grass_flowers_yellow_1_old.png", escala=3)
-
         y_offset = 10
         row_height = 30
 
         def add(label_text, var, key=None, simbolo=""):
             nonlocal y_offset
-
             label_var = tk.StringVar(value=label_text)
             val_var = var
-
             # Texto fijo (etiqueta)
             lbl_id = self.canvas_animation.create_text(
                 10, y_offset,
@@ -767,10 +720,8 @@ class BotInterfaz(AnimationMixin):
             )
 
             self.nd_canvas.append((label_var, self.canvas_animation, lbl_id, 10, y_offset, ""))
-
             bbox = self.canvas_animation.bbox(lbl_id)
             x_val = bbox[2] + self.espaciado_horizontal
-
             # Texto dinámico (valor)
             txt_id = self.canvas_animation.create_text(
                 x_val, y_offset,
@@ -779,17 +730,13 @@ class BotInterfaz(AnimationMixin):
                 font=self._font_normal,
                 anchor="nw"
             )
-
             self.nd_canvas.append((val_var, self.canvas_animation, txt_id, x_val, y_offset, simbolo))
             if key:
                 self.info_canvas[key] = (self.canvas_animation, txt_id)
-
             y_offset += row_height
-
             if key:
                 self.info_labels[key] = (self.canvas_animation, lbl_id)
                 self.info_canvas[key] = (self.canvas_animation, txt_id)
-
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio", "$")
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
@@ -803,9 +750,7 @@ class BotInterfaz(AnimationMixin):
             zoom_factor = 2
             w0, h0 = img_ped.size
             img_ped = img_ped.resize((w0 * zoom_factor, h0 * zoom_factor), Image.NEAREST)  # o Image.LANCZOS
-
             self._pedestal_img = ImageTk.PhotoImage(img_ped)  # mantener referencia
-
             w = int(self.canvas_animation["width"])
             h = int(self.canvas_animation["height"])
             self.pedestal_it = self.canvas_animation.create_image(
@@ -814,27 +759,21 @@ class BotInterfaz(AnimationMixin):
         except Exception as _e:
             pass
 
-
     def various_panel(self):
         self.various_frame = tk.Frame(self.root)
         self.various_frame.place(x=0, y=900, width=2000, height=100)
-
         self.canvas_various = tk.Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
         self.canvas_various.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=3)
-        
         # Crear botones pero solo mostrar "Iniciar" al principio
         self.btn_inicio = tk.Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
         self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
-
         self.btn_limpiar = tk.Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_limpiar_id = self.canvas_various.create_window(250, 50, window=self.btn_limpiar)
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
-
         self.btn_calc = tk.Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.canvas_various.create_window(400, 50, window=self.btn_calc)
-
         self.btn_confi = tk.Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_confi_id = self.canvas_various.create_window(600, 50, window=self.btn_confi)
 
@@ -843,7 +782,6 @@ class BotInterfaz(AnimationMixin):
             self.bot.detener()
             if self.sound_enabled:
                 reproducir_sonido("Sounds/detener.wav")
-
             self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
             self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
             self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
@@ -877,32 +815,24 @@ class BotInterfaz(AnimationMixin):
     def clear_bot(self):
         if self.bot.running:
             return
-        
         # La limpieza invalida la configuración
         self.operativa_configurada = False
-
 # 🔒 bloquear cualquier ciclo residual
         try:
             self.bot._stop_flag = True
             self.bot.running = False
         except Exception:
             pass
-
         # 1) Sonido y reinicio completo del bot
         if self.sound_enabled:
             reproducir_sonido("Sounds/limpiar.wav")
-
         # 2) Reiniciar bot y resetear estado lógico
         self.bot.reiniciar()
-        
-
         self.bot.log_fn = self.log_en_consola
-
         #self.bot.sound_enabled = self.sound_enabled
         modo_vista_actual = self.display_mode.get()
         precision_actual = self.float_precision
         self.ajustar_fuente_por_vista()
-       
 # 🟢 dejarlo “idle listo para iniciar”
         try:
             self.bot._stop_flag = False
@@ -913,7 +843,6 @@ class BotInterfaz(AnimationMixin):
         for attr in vars(self).values():
             if isinstance(attr, tk.StringVar):
                 attr.set("")
-
         # 10) Restaurar la vista del usuario
         self.display_mode.set(modo_vista_actual)
         self.float_precision = precision_actual
@@ -933,9 +862,7 @@ class BotInterfaz(AnimationMixin):
             except Exception:
                 pass
         self.info_labels.clear()
-
         self.nd_canvas.clear()
-
         # 4) Reset variables visuales
         self.valores_iniciales.clear()
         self.colores_actuales.clear()
@@ -954,17 +881,13 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-       
         self._consola_buffer.clear()
         # resetear índices/contexto de la consola
         self._consola_last_n = 0
         self._ctx_ultimo_id = None
         self._ctx_ultimo_num = None
-
-
         # 7) Guardar la vista actual del usuario
         self.reset_animaciones()
-
 
         # 8) Destruir frames viejos
         try:
@@ -1030,8 +953,6 @@ class BotInterfaz(AnimationMixin):
             return  # No abrir otra
         
         # Mientras estoy configurando, el botón Iniciar NO debe verse
-        
-
         self.config_ventana = tk.Toplevel(self.root)
         self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
@@ -1039,7 +960,6 @@ class BotInterfaz(AnimationMixin):
         # —— Tamaño de ventana (ajustable en 1 lugar) ——
         win_w, win_h = 900, 620
         self.config_ventana.geometry(f"{win_w}x{win_h}")
-
         
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
@@ -1053,14 +973,9 @@ class BotInterfaz(AnimationMixin):
         self.cfg_canvas = tk.Canvas(self.config_ventana, width=cfg_w, height=cfg_h,
                                     highlightthickness=0, bd=0, relief='flat')
         self.cfg_canvas.pack(fill="both", expand=True)
-
-
-        # ===== Fondo escalado a todo el canvas =====
-        # (sin tocar rellenar_mosaico; acá lo hacemos con una sola imagen escalada)
-        
+       
                 # ===== Fondo tipo mosaico (como los paneles principales) =====
         self.rellenar_mosaico(self.cfg_canvas, "imagenes/decoa/wall/rect_gray_0_new.png", escala=2)
-
 
         # ===== Helpers de layout sobre canvas =====
         left_x = 20              # margen izquierdo de etiquetas
@@ -1176,12 +1091,8 @@ class BotInterfaz(AnimationMixin):
         self.cfg_canvas.create_window(x_check, y_center, anchor="w", window=self.chk_reb)
         y += row + 6
 
-
-
-
         # ===== Rebalance =====
         put_text(y, "* Rebalance *", color="PaleGoldenRod", size=18); y += row
-
         # Compras (umbral)
         lbl = put_text(y, "- - - - Compras Fantasma (umbral):", color="PaleGoldenRod")
         self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
@@ -1191,10 +1102,6 @@ class BotInterfaz(AnimationMixin):
         lbl = put_text(y, "- - - - Porcentaje a vender (%):", color="PaleGoldenRod")
         self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
         put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
-
-        
-        
-        
 
         # ===== Campos numéricos (MISMO ORDEN; entries intacto) =====
         campos = [
@@ -1215,7 +1122,7 @@ class BotInterfaz(AnimationMixin):
             entries.append(var)
             y += row
 
-        # ===== guardar_config (tu lógica idéntica) =====
+        # ===== guardar_config =====
         def guardar_config():
             try:
                 # 1) Leemos la cadena exacta
@@ -1237,10 +1144,15 @@ class BotInterfaz(AnimationMixin):
                 sl = Decimal(txt_sl)
                 
                 self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
+                 # porcentaje EXACTO como lo escribió el usuario
+                raw = (self.var_comision_pct.get() or "").replace(",", ".")
                 try:
-                    self.bot.comision_pct = Decimal(self.var_comision_pct.get())
-                except InvalidOperation:
-                    self.bot.comision_pct = Decimal("0.0")
+                    self.bot.comision_pct = Decimal(raw)   # 4, 0.03, 200, etc. tal cual
+                except (InvalidOperation, ValueError):
+                    self.bot.comision_pct = Decimal("0")   # fallback
+                
+                if self.bot.comision_pct < 0:
+                    self.bot.comision_pct = Decimal("0")
 
                 # Validaciones Rebalance
                 try:
@@ -1327,6 +1239,7 @@ class BotInterfaz(AnimationMixin):
                 self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
                 self.bot.rebalance_threshold = rb_thr
                 self.bot.rebalance_pct = rb_pct
+
                 try:
                     self._update_lamp_genie()
                 except Exception:
@@ -1356,9 +1269,7 @@ class BotInterfaz(AnimationMixin):
                     sl_state='ON' if self.bot.sl_enabled else 'OFF',
                     sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),
                 )
-                self.log_en_consola("- - - - - - - - - -")
-                
-                
+                self.log_en_consola("- - - - - - - - - -")                
                 self.logf(
                     " · Rebalance: {rb_state} (Umbral = {thr}, Pct = {pct})",
                     rb_state='ON' if self.bot.rebalance_enabled else 'OFF',
@@ -1366,11 +1277,8 @@ class BotInterfaz(AnimationMixin):
                     pct=(self.bot.rebalance_pct, '%'),
                 )
                 self.log_en_consola("- - - - - - - - - -")
-                
                 self.operativa_configurada = True
                 self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
-
-                
                 cerrar_config()
 
             except (InvalidOperation, IndexError):
@@ -1393,12 +1301,8 @@ class BotInterfaz(AnimationMixin):
         btn_id = self.cfg_canvas.create_window(cfg_w // 2, cfg_h - 16, anchor="s", window=btn_guardar)
         self.cfg_canvas.bind("<Configure>", _place_save_btn)
 
-
-
     def _on_close(self):
-
         detener_musica_fondo()
-
         # 1) Cancelar after programado si existe
         if hasattr(self, 'loop_id') and self.loop_id is not None:
             try:
@@ -1425,7 +1329,6 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-            
     def _loop(self):
         # Si el bot ya no corre o la ventana ya no existe, salimos
         if not self.bot.running:
@@ -1445,7 +1348,6 @@ class BotInterfaz(AnimationMixin):
                 print(f"[⚠️ Error after loop]: {e}")
 
         future.add_done_callback(replanear)
-
 
     def _run_trading_cycle(self):
         try:
@@ -1476,8 +1378,6 @@ class BotInterfaz(AnimationMixin):
                     self.root.after_idle(self.actualizar_ui)
             except:
                 pass  # la ventana ya no existe
-
-    
 
     def format_var(self, valor, simbolo=""):
         if valor is None:
@@ -1516,17 +1416,12 @@ class BotInterfaz(AnimationMixin):
 
         return f"{simbolo} {s}" if simbolo else s
 
-
-
-
     def format_fijo(self, clave, valor):
         if isinstance(valor, tuple):
             valor_real, simbolo = valor
         else:
             valor_real, simbolo = valor, ""
         return self.format_var(valor_real, simbolo)
-
-
 
     def actualizar_ui(self):
         try:
@@ -1681,6 +1576,7 @@ class BotInterfaz(AnimationMixin):
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")
+
         try:
             # Si el bot está corriendo, procedemos (no volvemos a fetchear en UI)
             if self.bot.running:
@@ -1701,8 +1597,7 @@ class BotInterfaz(AnimationMixin):
                 # Ya tenemos self.bot.precio_actual cargado desde el hilo de trading
                 if actual is None:
                     return
-                
-                
+                                
         except Exception as exc_ui:
                 self.log_en_consola(f"❌ Error UI: {exc_ui}")       
 
@@ -1713,12 +1608,8 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-
     def actualizar_historial(self):
-        
-
         self.historial.delete('1.0', tk.END)
-
         # ——— COMPRAS ———
         for t in self.bot.transacciones:
             ts = t.get("timestamp", "")
@@ -1901,7 +1792,6 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
             return
@@ -1952,7 +1842,6 @@ class BotInterfaz(AnimationMixin):
         )
         self.info_canvas[key] = (canvas, text_id)
 
-
     def _aplicar_fuente_consolas(self):
         try:
             self.consola.configure(font=self._font_consola)
@@ -1962,7 +1851,6 @@ class BotInterfaz(AnimationMixin):
             self.historial.configure(font=self._font_historial)
         except Exception:
             pass
-
         
     def log_en_consola(self, msg):
         if not hasattr(self, "_consola_buffer"):
@@ -1990,8 +1878,6 @@ class BotInterfaz(AnimationMixin):
         # Render incremental de lo nuevo
         self.actualizar_consola()
 
-
-
     def inicializar_valores_iniciales(self):
         self.bot.actualizar_balance()
 
@@ -2011,19 +1897,16 @@ class BotInterfaz(AnimationMixin):
         self.valores_iniciales = {
             # balance se compara contra la inversión inicial (no el balance post-compra)
             'balance':               safe(self.bot.inv_inic),
-
             # estas comparan contra 0 para pintar por signo (+ verde / - rojo)
             'variacion_total_inv':   Decimal('0'),
             'variacion_desde_inicio':Decimal('0'),
             'desde_ult_comp':        Decimal('0'),
             'ult_vent':              Decimal('0'),
-
             # Los que son info comparativa: se mantienen por si los usás en color
             'precio_actual':         safe(self.bot.precio_actual),
             'hold_usdt':             safe(self.bot.hold_usdt_var),
             'hold_btc':              safe(self.bot.hold_btc_var),
         }
-
 
     def run(self):
         try:

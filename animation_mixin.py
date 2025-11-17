@@ -3,7 +3,7 @@
 from tkinter import PhotoImage
 import os
 import random
-from decimal import Decimal, InvalidOperation
+
 class AnimationMixin:
     MAX_CABEZAS = 9
 
@@ -16,13 +16,12 @@ class AnimationMixin:
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
 
-
             # ─── PEDESTAL ───
         pedestal_path = "imagenes/deco/pedestal.png"
         if os.path.exists(pedestal_path):
             self.pedestal_img = PhotoImage(file=pedestal_path).zoom(2,2)
             self.pedestal_item = self.canvas_various.create_image(
-                1450, 25,   # coordenadas absolutas; después vos las acomodás
+                1450, 25,   # coordenadas absolutas
                 image=self.pedestal_img,
                 anchor="nw"
             )
@@ -33,12 +32,6 @@ class AnimationMixin:
             self.wand_img = PhotoImage(file=wand_path).zoom(2,2)
             # Abajo-derecha del left panel
             self.wand_item = self.canvas_various.create_image(1450, 20, image=(self.wand_img or ''), anchor='nw')
-    
-        
-
-
-
-
 
         # ─── CARGA SEARING RAY ───
         self.searing_frames = []
@@ -57,7 +50,6 @@ class AnimationMixin:
         # Item en el canvas_uno (left panel, abajo a la derecha)
         self.searing_item = self.canvas_various.create_image(1450, 20, image='', anchor='nw')
         
-
                 # ─── ALTARES TP / SL ───
         # rutas posibles (usa las que tengas en tu proyecto; si no existen, se omiten)
         def _img(path, zoom=2):
@@ -81,14 +73,14 @@ class AnimationMixin:
         self.altar_fedhas = PhotoImage(file=fedhas_path).zoom(2, 2) if os.path.exists(fedhas_path) else None
 
         # íconos
-        self.icon_sword     = _img("imagenes/deco/sltp/long_sword_1_new.png", 2) or _img("long_sword_1_new.png", 2)
-        self.icon_shield    = _img("imagenes/deco/sltp/buckler_1_new.png",    2) or _img("buckler_1_new.png", 2)
+        self.icon_sword = _img("imagenes/deco/sltp/long_sword_1_new.png", 2) or _img("long_sword_1_new.png", 2)
+        self.icon_shield = _img("imagenes/deco/sltp/buckler_1_new.png",    2) or _img("buckler_1_new.png", 2)
 
         # posiciones (pegado al lado derecho, antes del icono de sonido)
         Wv = int(self.canvas_various["width"])
         base_y = 30
-        tp_x   = Wv - 440   # altar TP (espada)
-        sl_x   = Wv - 360   # altar SL (escudo)
+        tp_x = Wv - 440   # altar TP (espada)
+        sl_x = Wv - 360   # altar SL (escudo)
 
         # crear ítems de base
         self.altar_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.altar_base or '', anchor='nw')
@@ -113,7 +105,6 @@ class AnimationMixin:
                 self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
                 self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
 
-
         # animación suave de bases (gozag / jiyva alternan 0/1 si existen)
         self.animar(600, self._animate_altars)
 
@@ -125,7 +116,6 @@ class AnimationMixin:
         self.destroy_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.ashenzari_img or '', anchor='nw')
         self.canvas_various.itemconfigure(self.destroy_tp_item, state='hidden')
         self.canvas_various.itemconfigure(self.destroy_sl_item, state='hidden')
-
 
         # ─── CARGA DE “ELEFANTES” ───
         # 1) Ruta base de los elefantes
@@ -159,7 +149,6 @@ class AnimationMixin:
         # 5) Programamos la actualización periódica de los elefantes:
         self.animar(500, self._update_elephant)
 
-
         # ─── CARGA DE FRAMES ───
         # Antorcha
         self.torch_frames = []
@@ -171,8 +160,6 @@ class AnimationMixin:
         off = "imagenes/deco/torch_0.png"
         self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
         self.torch_frame_index = 0
-
-        
 
         # ─── CARGA DE LÍANAS VERDES Y ROJAS ───
         base_dir = os.path.join("imagenes", "deco", "lianas")
@@ -230,7 +217,6 @@ class AnimationMixin:
                 for b in set(bordes):
                     seq_map[b].append(img)
 
-
 #items
         self.vine_items   = []                # (borde, item_id)
         self.vine_indices = {t: 0 for t in tokens}
@@ -246,7 +232,6 @@ class AnimationMixin:
         height_right = self.vine_sequence_green["east"][0].height()  if self.vine_sequence_green["east"] else 0
         width_right  = self.vine_sequence_green["east"][0].width()   if self.vine_sequence_green["east"] else 0
         height_bottom = self.vine_sequence_green["south"][0].height() if self.vine_sequence_green["south"] else 0
-
 
         if width_top > 0:
             for x in range(0, W, width_top):
@@ -279,16 +264,12 @@ class AnimationMixin:
             for y in range(0, H, height_right if height_right > 0 else 1):
                 iid = self.canvas_right_b.create_image(x_right, y, image="", anchor="nw")
                 self.vine_items.append(("east", iid))
-
-        
         
         # —————— (1) Carga de los iconos de sonido ——————
         on_path  = "imagenes/deco/i-noise_new.png"
         off_path = "imagenes/deco/i-noise_old.png"
         self.noise_on  = PhotoImage(file=on_path).zoom(2,2)  if os.path.exists(on_path)  else None
         self.noise_off = PhotoImage(file=off_path).zoom(2,2) if os.path.exists(off_path) else None
-
-
 
         self._hydra_gate = "imagenes/deco/gates/enter_snake.png"
         self.hydra_gate = PhotoImage(file=self._hydra_gate).zoom(4,4) if os.path.exists(self._hydra_gate) else None
@@ -304,7 +285,8 @@ class AnimationMixin:
             if os.path.exists(pc):
                 self.guard_closed_frames.append(PhotoImage(file=pc).zoom(2,2))
         self.guard_frame_index = 0
-#abyssal gate
+        
+        #abyssal gate
         self.abyss_frames = []
         for i in range(1, 4):
             path = "imagenes/deco/gates/abyss/enter_abyss_{}.png".format(i)
@@ -318,7 +300,7 @@ class AnimationMixin:
         # Índice para animación
         self.abyss_frame_index = 0
 
-# dithmenos
+        # dithmenos
         self.dithmenos_frames = []
         for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png"):
             path = os.path.join("imagenes", "deco", name)
@@ -360,8 +342,7 @@ class AnimationMixin:
             idx += 1
 
         # ─── CREACIÓN DE ITEMS ───
-                # ─── LÁMPARA + EFREET (abajo del animation panel) ───
-        # Intentamos primero en tu carpeta de proyecto y si no, fallback a /mnt/data
+            # ─── LÁMPARA + EFREET (abajo del animation panel) ───
         lamppaths = [
             (os.path.join("imagenes", "deco", "magic_lamp.png"),
              os.path.join("imagenes", "deco", "efreet.png")),
@@ -386,6 +367,7 @@ class AnimationMixin:
             image=(self.lamp_img or ""),
             anchor="sw"
         )
+
         # El efreet va encima, “saliendo” de la lámpara
         self.efreet_item = self.canvas_animation.create_image(
             320, 380,
@@ -404,14 +386,8 @@ class AnimationMixin:
         # Antorcha en canvas_center
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
         self.torch_item = self.canvas_center.create_image(350,250, image=first_torch, anchor='nw')
-
-        
-        
         self.hydra_gate_f = self.canvas_center.create_image(200,320, image=self.hydra_gate, anchor='nw')
         
-
-        
-
         # Guardián en canvas_various
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
         self.guard_item = self.canvas_various.create_image(1800,15, image=guard0, anchor='nw')
@@ -423,8 +399,6 @@ class AnimationMixin:
                 image=self.dithmenos_frames[0],
                 anchor='nw'
             )
-
-        
         
         # item sound
         initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
@@ -434,11 +408,6 @@ class AnimationMixin:
             anchor='nw'
         )
         
-
-
-
-
-
         # Oro e hidra en canvas_animation
         self.sales_item       = self.canvas_various.create_image(1350,15,  image='', anchor='nw')
 
@@ -464,7 +433,6 @@ class AnimationMixin:
         # Inicializar mapas vacíos para evitar AttributeError si las carpetas están vacías
         self.eldritch_seq = {t: [] for t in tokens_hist}
         self.kraken_seq   = {t: [] for t in tokens_hist}
-
 
         def _load_sorted(folder, prefix=None):
             """Carga y ordena por sufijo numérico si existe (…_1, …_2, …)."""
@@ -516,7 +484,6 @@ class AnimationMixin:
                 return 0
             return arr[0].width() if kind=="w" else arr[0].height()
 
-
         try:
             WH = int(self.canvas_right["width"])
             HH = int(self.canvas_right["height"])
@@ -562,16 +529,12 @@ class AnimationMixin:
         self.hist_frame_idx = {t: 0 for t in self.hist_slots}
         self.hist_slot_idx  = {t: 0 for t in self.hist_slots}
 
-
         # ─── Cabeza Kraken independiente ───
         self.kraken_head_frames = self.kraken_head_frames  # ya cargadas antes (2 frames)
         self.kraken_head_item   = None
         self._kh_frame_idx      = 0         # índice de frame (0..1)
         self._kh_move_ctr       = 0         # contador para mover
         self._kh_move_every     = 3         # mover cada N ticks
-
-
-
 
         # ─── BUQUES INDEPENDIENTES ───
         self.animar(100,  self._animate_torch)
@@ -586,8 +549,6 @@ class AnimationMixin:
         self.searing_index = 0
         self.animar(250, self._update_searing_magic)
         self.animar(800, self._animate_historial_tentacles)
-
-    
 
     def _update_searing_magic(self):
         # ⛔️ Si el bot NO está corriendo, ocultar siempre y salir
@@ -620,8 +581,6 @@ class AnimationMixin:
         self.canvas_various.itemconfig(self.searing_item, image=(img if frames else ''))
 
         self.animar(250, self._update_searing_magic)
-
-
 
     def _is_valid_image_item(self, canvas, item_id):
         try:
@@ -680,9 +639,7 @@ class AnimationMixin:
         else:  # west
             x = 0
             y = random.randint(0, max(0, HH - h))
-
         return x, y
-
 
     def _update_abyss(self):
         usar_animacion = getattr(self.bot, 'compra_en_venta_fantasma', False)
@@ -693,15 +650,6 @@ class AnimationMixin:
             self.canvas_center.itemconfig(self.abyss_item, image=self.abyss_static_img)
 
         self.animar(500, self._update_abyss)
-    
-
-    
-
-
-        
-
-
-
 
     def _update_lamp_genie(self):
         """
@@ -728,8 +676,6 @@ class AnimationMixin:
                 pass
 
         self.animar(400, self._update_lamp_genie)
-
-    
 
     def set_take_profit_state(self, state: str):
         """
@@ -762,7 +708,6 @@ class AnimationMixin:
             except Exception:
                 pass
 
-
     def set_stop_loss_state(self, state: str):
         """
         state: 'inactive' | 'armed' | 'hit'
@@ -793,8 +738,6 @@ class AnimationMixin:
                 self.canvas_various.itemconfigure(self.altar_tp_item,   state='normal')   # ⬅️ restaurar base
             except Exception:
                 pass
-
-    
 
     def _refresh_altar_image(self, kind: str):
         # decide imagen según estado actual y frame
@@ -843,9 +786,7 @@ class AnimationMixin:
         self._refresh_altar_image("tp")
         self._refresh_altar_image("sl")
         self.animar(600, self._animate_altars)
-
-
-   
+ 
     def _update_elephant(self):
         """
         Cada 500 ms revisamos self.bot.contador_compras_fantasma y reemplazamos la imagen:
@@ -873,7 +814,6 @@ class AnimationMixin:
 
         # Volver a programar dentro de 500 ms
         self.animar(500, self._update_elephant)
-
 
     def _animate_torch(self):
         if self.bot and self.bot.running and self.torch_frames:
@@ -932,7 +872,6 @@ class AnimationMixin:
 
         self.animar(500, self._update_hydra)
 
-
     def _update_skeleton(self):
         buy = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
         sell = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
@@ -959,7 +898,6 @@ class AnimationMixin:
                 return "", True    # limpiar en n+1
             return frames[r - 1], False
 
-
         img_b, clear_b = _resolve_image(buy, self.skel_buy)
         img_s, clear_s = _resolve_image(sell, self.skel_sell)
 
@@ -977,8 +915,6 @@ class AnimationMixin:
 
         self.animar(500, self._update_skeleton)
 
-
-
     def _animate_dithmenos(self):
         if self.dithmenos_frames:
             # Si no hay conexión (precio_actual = None) → dejar fijo en el primer frame
@@ -992,7 +928,6 @@ class AnimationMixin:
                 self.canvas_center.itemconfig(self.dithmenos_item, image=frame)
 
         self.animar(1000, self._animate_dithmenos)
-
 
     def _animate_vines(self):
         if not hasattr(self, 'vine_items') or not hasattr(self, 'vine_indices'):
@@ -1072,7 +1007,6 @@ class AnimationMixin:
                     pass
                 self.kraken_head_item = None
             return self.animar(800, self._animate_historial_tentacles)
-
 
         # -------- ELDRITCH (restaurado) --------
         if familia_activa == "eldritch":
