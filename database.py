@@ -20,12 +20,17 @@ def agregar_usuario(nombre, password):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO usuarios (nombre, password) VALUES (?, ?)", (nombre, password))
+        cur.execute(
+            "INSERT INTO usuarios (nombre, password) VALUES (?, ?)",
+            (nombre, password)
+        )
         conn.commit()
-        conn.close()
         return True
     except sqlite3.IntegrityError:
-        return False  # ya existe el usuario
+        # El usuario ya existe (PRIMARY KEY duplicada)
+        return False
+    finally:
+        conn.close()
 
 def validar_usuario(nombre, password):
     conn = sqlite3.connect(DB_NAME)

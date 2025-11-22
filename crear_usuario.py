@@ -16,7 +16,6 @@ exchange_win = False
 init_db()
 
 def crear_user():
-
     user_win = tk.Tk()
     user_win.geometry("400x200")
     user_win.title("Creacion De Usuario - Dungeon Market")
@@ -67,9 +66,6 @@ def main_menu(nombre):
     saludo_label = tk.Label(main_menu_var, text=f"Salve, {nombre}!", font=("Carolingia", 18),fg="Crimson", background="PaleGoldenRod")
     saludo_label.pack(side="left", anchor="nw", pady=50)
 
-    
-
-
     btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
     btn_exchange.pack(side="left")
 
@@ -113,6 +109,7 @@ def exchange_def():
         exchange_var.destroy()
         
     exchange_var.protocol("WM_DELETE_WINDOW", on_close)    
+
 def fantasy_spot():
     fantasy_spot_win = tk.Toplevel(ventana_loggin)
     fantasy_spot_win.geometry("200x200")
@@ -122,7 +119,6 @@ def fantasy_futures():
     fantasy_futures_win = tk.Toplevel(ventana_loggin)
     fantasy_futures_win.geometry("200x200")
     fantasy_futures_win.title("Fantasy Futures - Dungeon Market")    
-
 
 def login_win():
     """(Re)arma la vista de login completa y limpia."""
@@ -148,8 +144,6 @@ def login_win():
                           font=("Carolingia", 12), bg="PaleGoldenRod")
     pass_entry = tk.Entry(ventana_loggin, show="*")
 
-    
-
     def validar_nombre():
         nombre = nombre_entry.get().strip()
 
@@ -173,7 +167,6 @@ def login_win():
             boton_pass.pack(side="left", padx=10)
         else:
             print("No registrado")
-
 
     def validar_pass(nombre, passw):
         if validar_usuario(nombre, passw):
