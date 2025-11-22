@@ -1,5 +1,5 @@
 import tkinter as tk
-from database import init_db, agregar_usuario, validar_usuario
+from database import init_db, agregar_usuario, validar_usuario, usuario_existe
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -150,11 +150,11 @@ def login_win():
 
     
 
-    # 5) callbacks
     def validar_nombre():
-        nombre = nombre_entry.get()
-        if validar_usuario(nombre, pass_entry.get()):
+        nombre = nombre_entry.get().strip()
 
+        # 1) Solo verificamos si el usuario EXISTE
+        if usuario_existe(nombre):
             # ocultar etapa usuario
             nombre_label.pack_forget()
             nombre_entry.pack_forget()
@@ -164,11 +164,16 @@ def login_win():
             pass_label.pack(side="left", padx=5, pady=10)
             pass_entry.pack(side="left", padx=5, pady=10)
 
-            boton_pass = tk.Button(ventana_loggin, text="Ingresar",
-                                   command=lambda: validar_pass(nombre, pass_entry.get()))
+            # botón para validar contraseña
+            boton_pass = tk.Button(
+                ventana_loggin,
+                text="Ingresar",
+                command=lambda: validar_pass(nombre, pass_entry.get())
+            )
             boton_pass.pack(side="left", padx=10)
         else:
             print("No registrado")
+
 
     def validar_pass(nombre, passw):
         if validar_usuario(nombre, passw):

@@ -39,3 +39,11 @@ def validar_usuario(nombre, password):
     if row is None:
         return False
     return row[0] == password
+
+def usuario_existe(nombre):
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM usuarios WHERE nombre = ?", (nombre,))
+    row = cur.fetchone()
+    conn.close()
+    return row is not None
