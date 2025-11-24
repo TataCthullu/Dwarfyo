@@ -12,10 +12,16 @@ def cerrar_app():
 ventana_loggin.protocol("WM_DELETE_WINDOW", cerrar_app)
 
 exchange_win = False
+crear_user_win = False
 
 init_db()
 
 def crear_user():
+    global crear_user_win
+    if crear_user_win:
+        return
+    crear_user_win = True
+
     user_win = tk.Tk()
     user_win.geometry("400x200")
     user_win.title("Creacion De Usuario - Dungeon Market")
@@ -64,16 +70,19 @@ def main_menu(nombre):
     menu_title = tk.Label(main_menu_var, text = "Dungeon Market", font=("Carolingia", 20), background="PaleGoldenRod")
     menu_title.pack(side="top",anchor="center")
     saludo_label = tk.Label(main_menu_var, text=f"Salve, {nombre}!", font=("Carolingia", 18),fg="Crimson", background="PaleGoldenRod")
-    saludo_label.pack(side="left", anchor="nw", pady=50)
+    saludo_label.pack()
 
     btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
-    btn_exchange.pack(side="left")
+    btn_exchange.pack(side="left", anchor="n", padx=10)
 
     btn_khazad = tk.Button(main_menu_var, text="Khazad", font=("Carolingia", 16))
-    btn_khazad.pack(side="left",anchor="center", padx=100)
+    btn_khazad.pack(side="left", anchor="n", padx=10)
     
     btn_doom = tk.Button(main_menu_var, text="Doom", font=("Carolingia", 16))
-    btn_doom.pack(side="left",anchor="center", padx=10)
+    btn_doom.pack(side="left", anchor="n", padx=10)
+
+    btn_crear_avatar = tk.Button(main_menu_var, text="Crear Avatar", font=("Carolingia", 16), command=crear_avatar)
+    btn_crear_avatar.pack()
 
     def cerrar_todo():
             ventana_loggin.destroy()
@@ -119,6 +128,22 @@ def fantasy_futures():
     fantasy_futures_win = tk.Toplevel(ventana_loggin)
     fantasy_futures_win.geometry("200x200")
     fantasy_futures_win.title("Fantasy Futures - Dungeon Market")    
+
+def crear_avatar():
+    avatar_win = tk.Toplevel(ventana_loggin)
+    avatar_win.geometry("300x50")
+    avatar_win.title("Crear Avatar")
+    avatar_win.configure(background="PaleGoldenRod")
+
+    label_name = tk.Label(avatar_win, text="Nombre:")
+    label_name.pack(side="left", anchor="n")
+
+    entry_name = tk.Entry(avatar_win)
+    entry_name.pack(side="left", anchor="n")
+
+    btn_crear_avatar = tk.Button(avatar_win, text="Crear")
+    btn_crear_avatar.pack()
+
 
 def login_win():
     """(Re)arma la vista de login completa y limpia."""
