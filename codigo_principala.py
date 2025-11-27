@@ -796,9 +796,9 @@ class TradingBot:
         Aplica la comisión solo en la compra (como si hubieras comprado pagando fee).
         """
         try:
-            if not self.running or self.contador_compras_reales == 0:
+            if not self.running:
                 return Decimal("0")
-
+            
             if not self.precio_ingreso or not self.precio_actual or not self.inv_inic:
                 return Decimal("0")
 
@@ -871,16 +871,22 @@ class TradingBot:
             self.running = True
             self.log("🟡 Khazâd iniciado.")
             self.log("- - - - - - - - - -")
-            self.hold_usdt()
+            self.hold_usdt_var = self.hold_usdt()
             self.realizar_primera_compra()
+            comision_guia = self.inv_inic - self.hold_usdt_var
+
             # --- Log comisión guía (solo en compra inicial) ---
             if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
-               
-                self.log(f"💠 Comisión guía (HODL) teórica: ({self.format_fn(self.hold_usdt_var - (self.comision_pct * self.hold_usdt_var / 100), '$')}) "
-                        f"({self.format_fn(self.comision_pct, '%')})")
-                self.log(f"Comision_pct actual={self.comision_pct}")
+                # 💡 hold_usdt_var ya es el HODL con comisión aplicada
+                # La "comisión guía" (en USDT) es la diferencia frente a no tener fee
+                comision_guia = self.inv_inic - self.hold_usdt_var
+
+                self.log(
+                    f"💠 Comisión guía (HODL) teórica: "
+                    f"({self.format_fn(comision_guia, '$')}) "
+                    f"({self.format_fn(self.comision_pct, '%')})"
+                )
                 self.log(f" ---- Comprado: {self.hold_usdt_var}")
-            
             self.log("- - - - - - - - - -")
 
             
