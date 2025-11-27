@@ -467,6 +467,7 @@ class BotInterfaz(AnimationMixin):
         self.total_fees_buy_str = tk.StringVar()
         self.total_fees_sell_str = tk.StringVar()
         self.total_fees_total_str = tk.StringVar()
+        self.comision_pct_str = tk.StringVar()
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
         # Cargar imagen original
@@ -743,7 +744,8 @@ class BotInterfaz(AnimationMixin):
         add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")
         add("Rebalance — Umbral:", self.rebalance_thr_str, "rebalance_thr")
         add("Rebalance — Porcentaje:", self.rebalance_pct_str, "rebalance_pct")
-
+        add("Comisión configurada:", self.comision_pct_str, "comision_pct", "%")
+        
         try:
             img_ped = Image.open("imagenes/deco/pedestal.png")
             # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
@@ -1477,6 +1479,7 @@ class BotInterfaz(AnimationMixin):
                 "total_fees_buy": (self.bot.total_fees_buy, "$"),
                 "total_fees_sell": (self.bot.total_fees_sell, "$"),
                 "total_fees_total": (self.bot.total_fees_buy + self.bot.total_fees_sell, "$"),
+                "comision_pct": (self.bot.comision_pct, "%"),
             }
 
             for clave, valor in texto_fijo.items():

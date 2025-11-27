@@ -886,7 +886,7 @@ class TradingBot:
                     f"({self.format_fn(comision_guia, '$')}) "
                     f"({self.format_fn(self.comision_pct, '%')})"
                 )
-                self.log(f" ---- Comprado: {self.hold_usdt_var}")
+                self.log(f" ---- Comprado: {self.format_fn(self.hold_usdt_var, '%')}")
             self.log("- - - - - - - - - -")
 
             
