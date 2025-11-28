@@ -1144,6 +1144,31 @@ class BotInterfaz(AnimationMixin):
                 usdtinit = Decimal(txt_usdt_inic)
                 tp = Decimal(txt_tp)
                 sl = Decimal(txt_sl)
+
+                # 1) SNAPSHOT de configuración anterior (para detectar cambios)
+                old_cfg = {
+                    "porc_desde_compra":   getattr(self.bot, "porc_desde_compra", Decimal("0")),
+                    "porc_desde_venta":    getattr(self.bot, "porc_desde_venta", Decimal("0")),
+                    "porc_profit_x_venta": getattr(self.bot, "porc_profit_x_venta", Decimal("0")),
+                    "porc_inv_por_compra": getattr(self.bot, "porc_inv_por_compra", Decimal("0")),
+                    "inv_inic":            getattr(self.bot, "inv_inic", Decimal("0")),
+
+                    "tp_enabled":          getattr(self.bot, "tp_enabled", False),
+                    "take_profit_pct":     getattr(self.bot, "take_profit_pct", None) or Decimal("0"),
+                    "sl_enabled":          getattr(self.bot, "sl_enabled", False),
+                    "stop_loss_pct":       getattr(self.bot, "stop_loss_pct", None) or Decimal("0"),
+
+                    "comisiones_enabled":  getattr(self.bot, "comisiones_enabled", False),
+                    "comision_pct":        getattr(self.bot, "comision_pct", Decimal("0")),
+
+                    "rebalance_enabled":   getattr(self.bot, "rebalance_enabled", False),
+                    "rebalance_threshold": getattr(self.bot, "rebalance_threshold", 0),
+                    "rebalance_pct":       getattr(self.bot, "rebalance_pct", 0),
+
+                    "compra_en_venta_fantasma": getattr(self.bot, "compra_en_venta_fantasma", False),
+                }
+
+                
                 
                 self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
                  # porcentaje EXACTO como lo escribió el usuario
@@ -1155,6 +1180,16 @@ class BotInterfaz(AnimationMixin):
                 
                 if self.bot.comision_pct < 0:
                     self.bot.comision_pct = Decimal("0")
+
+                # ⬇️ A G R E G A R AQUÍ
+                old_tp_enabled = getattr(self.bot, "tp_enabled", False)
+                old_tp_pct     = getattr(self.bot, "take_profit_pct", None) or Decimal("0")
+                old_sl_enabled = getattr(self.bot, "sl_enabled", False)
+                old_sl_pct     = getattr(self.bot, "stop_loss_pct", None) or Decimal("0")
+
+                old_rb_enabled = getattr(self.bot, "rebalance_enabled", False)
+                old_rb_thr     = getattr(self.bot, "rebalance_threshold", 0)
+                old_rb_pct     = getattr(self.bot, "rebalance_pct", 0)    
 
                 # Validaciones Rebalance
                 try:
@@ -1261,24 +1296,59 @@ class BotInterfaz(AnimationMixin):
                 
                 self.bot.compra_en_venta_fantasma = self.var_ghost.get()
 
-                tp_txt     = self.format_var(self.bot.take_profit_pct or Decimal('0'), '%')
-                sl_txt     = self.format_var(self.bot.stop_loss_pct  or Decimal('0'), '%')
-                rb_pct_txt = self.format_var(self.bot.rebalance_pct, '%')
                 ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                self.logf(f"{ts} · Configuración actualizada:\n · TP: {{tp_state}} ({{tp}})\n · SL: {{sl_state}} ({{sl}})",
-                    tp_state='ON' if self.bot.tp_enabled else 'OFF',
-                    tp=(self.bot.take_profit_pct or Decimal('0'), '%'),
-                    sl_state='ON' if self.bot.sl_enabled else 'OFF',
-                    sl=(self.bot.stop_loss_pct or Decimal('0'), '%'),
-                )
-                self.log_en_consola("- - - - - - - - - -")                
-                self.logf(
-                    " · Rebalance: {rb_state} (Umbral = {thr}, Pct = {pct})",
-                    rb_state='ON' if self.bot.rebalance_enabled else 'OFF',
-                    thr=self.bot.rebalance_threshold,
-                    pct=(self.bot.rebalance_pct, '%'),
-                )
-                self.log_en_consola("- - - - - - - - - -")
+
+                cambios = []
+
+                def bool_str(v):
+                    return "ON" if v else "OFF"
+
+                def add_change(label, old_val, new_val, simbolo=""):
+                    if old_val == new_val:
+                        return
+                    # Para Decimals / números
+                    if isinstance(old_val, (Decimal, int, float)) and isinstance(new_val, (Decimal, int, float)):
+                        old_s = self.format_var(old_val, simbolo)
+                        new_s = self.format_var(new_val, simbolo)
+                    else:
+                        # strings / ON-OFF / enteros tipo umbral
+                        old_s = str(old_val)
+                        new_s = str(new_val)
+                    cambios.append(f" · {label}: {old_s} → {new_s}")
+
+                # === Comparar todos los campos importantes ===
+                add_change("% desde compra",   old_cfg["porc_desde_compra"],   self.bot.porc_desde_compra, "%")
+                add_change("% desde venta",    old_cfg["porc_desde_venta"],    self.bot.porc_desde_venta, "%")
+                add_change("% profit venta",   old_cfg["porc_profit_x_venta"], self.bot.porc_profit_x_venta, "%")
+                add_change("% por operación",  old_cfg["porc_inv_por_compra"], self.bot.porc_inv_por_compra, "%")
+                add_change("Capital inicial",  old_cfg["inv_inic"],            self.bot.inv_inic, "$")
+
+                add_change("TP habilitado",    bool_str(old_cfg["tp_enabled"]), bool_str(self.bot.tp_enabled))
+                add_change("TP %",             old_cfg["take_profit_pct"],      self.bot.take_profit_pct or Decimal("0"), "%")
+                add_change("SL habilitado",    bool_str(old_cfg["sl_enabled"]), bool_str(self.bot.sl_enabled))
+                add_change("SL %",             old_cfg["stop_loss_pct"],        self.bot.stop_loss_pct or Decimal("0"), "%")
+
+                add_change("Comisión aplicada", bool_str(old_cfg["comisiones_enabled"]), bool_str(self.bot.comisiones_enabled))
+                add_change("Comisión %",        old_cfg["comision_pct"],          self.bot.comision_pct, "%")
+
+                add_change("Rebalance habilitado", bool_str(old_cfg["rebalance_enabled"]), bool_str(self.bot.rebalance_enabled))
+                add_change("Rebalance umbral",     old_cfg["rebalance_threshold"],          self.bot.rebalance_threshold)
+                add_change("Rebalance %",          old_cfg["rebalance_pct"],               self.bot.rebalance_pct, "%")
+
+                add_change("Compra en venta fantasma",
+                           bool_str(old_cfg["compra_en_venta_fantasma"]),
+                           bool_str(self.bot.compra_en_venta_fantasma))
+
+                if cambios:
+                    self.log_en_consola(f"{ts} · Configuración actualizada:")
+                    for linea in cambios:
+                        self.log_en_consola(linea)
+                    self.log_en_consola("- - - - - - - - - -")
+                else:
+                    # No cambió nada respecto a la config anterior
+                    self.log_en_consola(f"{ts} · Configuración guardada (sin cambios).")
+                    self.log_en_consola("- - - - - - - - - -")
+
                 self.operativa_configurada = True
                 self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
                 cerrar_config()
