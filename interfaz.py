@@ -963,7 +963,7 @@ class BotInterfaz(AnimationMixin):
         self.config_ventana.configure(bg="DarkGoldenRod")
 
         # —— Tamaño de ventana (ajustable en 1 lugar) ——
-        win_w, win_h = 900, 620
+        win_w, win_h = 900, 700
         self.config_ventana.geometry(f"{win_w}x{win_h}")
         
         def cerrar_config():
@@ -1115,8 +1115,8 @@ class BotInterfaz(AnimationMixin):
             ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.inv_inic),
-            ("Take Profit Global (%):", self.bot.take_profit_pct or Decimal("0")),
-            ("Stop Loss Global (%):", self.bot.stop_loss_pct or Decimal("0")),
+            ("Take Profit Global: %", self.bot.take_profit_pct or Decimal("0")),
+            ("Stop Loss Global: %", self.bot.stop_loss_pct or Decimal("0")),
         ]
         entries = []  # <- tu guardar_config depende de este nombre
 
