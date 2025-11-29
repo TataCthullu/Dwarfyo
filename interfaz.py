@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from utils import reproducir_sonido, detener_sonido_y_cerrar, reproducir_musica_fondo, detener_musica_fondo
 from codigo_principala import TradingBot
-from calculador import CalculatorWindow
+#from calculador import CalculatorWindow
 from PIL import ImageGrab, Image, ImageTk
 from tkinter import filedialog, messagebox
 from concurrent.futures import ThreadPoolExecutor
@@ -63,7 +63,10 @@ class BotInterfaz(AnimationMixin):
             "excedente_total": "Pink",
             "hold_usdt": "MediumPurple",
             "rebalances": "IndianRed",
-            "rebalance_loss_total": "Tomato"
+            "rebalance_loss_total": "Tomato",
+            "total_fees_total": "IndianRed",
+            "total_fees_buy": "PaleGoldenRod",
+            "total_fees_sell": "MediumSeaGreen"
         }   
         
         self._consola_buffer = []  # guarda todo lo impreso en consola
@@ -535,30 +538,30 @@ class BotInterfaz(AnimationMixin):
                 self.info_canvas[key] = (self.canvas_uno, txt_id)
 
         add("Usdt + Btc:", self.balance_str, "balance")
+        add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
+        add("Usdt Disponible:", self.cant_usdt_str, "usdt") 
+        add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
         add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
         add("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")    
-        add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
-        add("Usdt Disponible:", self.cant_usdt_str, "usdt") 
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
-        add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
         add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
         add("Compras Realizadas:", self.compras_realizadas_str, "compras_realizadas")
         add("Ventas Realizadas:", self.ventas_realizadas_str, "ventas_realizadas")
         add("Compras fantasma:", self.cont_compras_fantasma_str, "compras_fantasma")
         add("Ventas fantasma:", self.cont_ventas_fantasma_str, "ventas_fantasma")
-        add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
-        add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
-        add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
-        add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
-        add("Excedente total:",  self.excedente_total_str, "excedente_total")
-        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
-        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         add("Comisiónes de compras:", self.total_fees_buy_str, "total_fees_buy")
         add("Comisiónes de ventas:", self.total_fees_sell_str, "total_fees_sell")
         add("Comisiónes totales:", self.total_fees_total_str, "total_fees_total")
-
+        add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
+        add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
+        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
+        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
+        add("Excedente total:",  self.excedente_total_str, "excedente_total")       
+        add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
+        add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
+        
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
         self.center_frame.place(x=600, y=0, width=700, height=450)
@@ -573,7 +576,7 @@ class BotInterfaz(AnimationMixin):
             # 1) etiqueta fija
             lbl_id = self.canvas_center.create_text(10, y_offset,
                                                     text=label_text,
-                                                    fill="MediumSpringGreen",
+                                                    fill="lime",
                                                     font=self._font_normal,
                                                     anchor="nw")
             # 2) medir y posicionar valor
@@ -741,11 +744,11 @@ class BotInterfaz(AnimationMixin):
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio", "$")
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
+        add("Comisión configurada:", self.comision_pct_str, "comision_pct", "%")
         add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")
         add("Rebalance — Umbral:", self.rebalance_thr_str, "rebalance_thr")
         add("Rebalance — Porcentaje:", self.rebalance_pct_str, "rebalance_pct")
-        add("Comisión configurada:", self.comision_pct_str, "comision_pct", "%")
-        
+                
         try:
             img_ped = Image.open("imagenes/deco/pedestal.png")
             # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
@@ -774,8 +777,8 @@ class BotInterfaz(AnimationMixin):
         self.btn_limpiar = tk.Button(self.canvas_various, text="Limpiar", command=self.clear_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_limpiar_id = self.canvas_various.create_window(250, 50, window=self.btn_limpiar)
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
-        self.btn_calc = tk.Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
-        self.canvas_various.create_window(400, 50, window=self.btn_calc)
+        #self.btn_calc = tk.Button(self.canvas_various, text="Calculadora", command=self.open_calculator, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
+        #self.canvas_various.create_window(400, 50, window=self.btn_calc)
         self.btn_confi = tk.Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_confi_id = self.canvas_various.create_window(600, 50, window=self.btn_confi)
 
@@ -941,11 +944,11 @@ class BotInterfaz(AnimationMixin):
                     self.log_en_consola(f"⚠️ Excepcion en hilo: {exc}")
                 )
     
-    def open_calculator(self):
+    """def open_calculator(self):
          # pasamos los balances actuales
         usdt_avail = self.bot.usdt
         btc_avail  = self.bot.btc
-        CalculatorWindow(self.root, usdt_avail, btc_avail)
+        CalculatorWindow(self.root, usdt_avail, btc_avail)"""
 
     def abrir_configuracion_subventana(self):
         # Si ya está abierta y no fue destruida, traerla al frente
@@ -1032,7 +1035,7 @@ class BotInterfaz(AnimationMixin):
         y += row
 
         lbl = self.cfg_canvas.create_text(left_x, y, text="Porcentaje de comisión:",
-                                        fill="PaleGoldenRod", font=("LondonBetween", 16), anchor="nw")
+                                        fill="lime", font=("LondonBetween", 16), anchor="nw")
         self.var_comision_pct = tk.StringVar(value=str(getattr(self.bot, "comision_pct", "0.1")))
         put_entry_next_to(lbl, self.var_comision_pct, width=8)
         y += row

@@ -302,7 +302,7 @@ class AnimationMixin:
 
         # dithmenos
         self.dithmenos_frames = []
-        for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png"):
+        for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png", "dithmenos_4.png"):
             path = os.path.join("imagenes", "deco", name)
             if os.path.exists(path):
                 self.dithmenos_frames.append(PhotoImage(file=path).zoom(2,2))
@@ -539,7 +539,7 @@ class AnimationMixin:
         # ─── BUQUES INDEPENDIENTES ───
         self.animar(100,  self._animate_torch)
         self.animar(100,  self._animate_guard)
-        self.animar(1000, self._animate_dithmenos)
+        self.animar(300, self._animate_dithmenos)
         self.animar(500,  self._update_sales)
         self.animar(500,  self._update_hydra)
         self.animar(500,  self._update_skeleton)
@@ -927,7 +927,7 @@ class AnimationMixin:
             if frame and self.canvas_center.type(self.dithmenos_item) == 'image':
                 self.canvas_center.itemconfig(self.dithmenos_item, image=frame)
 
-        self.animar(1000, self._animate_dithmenos)
+        self.animar(300, self._animate_dithmenos)
 
     def _animate_vines(self):
         if not hasattr(self, 'vine_items') or not hasattr(self, 'vine_indices'):
