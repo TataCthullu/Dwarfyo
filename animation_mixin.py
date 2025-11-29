@@ -126,9 +126,9 @@ class AnimationMixin:
         self.elephant_statue = PhotoImage(file=stat_path).zoom(3, 3) if os.path.exists(stat_path) else None
 
         # ✨ NUEVO: estatua de jade
-        jade_path = os.path.join(ruta_ele, "statue_elephant_jade.png")
+        """jade_path = os.path.join(ruta_ele, "statue_elephant_jade.png")
         self.elephant_jade = PhotoImage(file=jade_path).zoom(3, 3) if os.path.exists(jade_path) else None
-        
+        """
         self.elephants = []
         for i in range(8):
             p = os.path.join(ruta_ele, f"elephant_{i}.png")
@@ -798,7 +798,7 @@ class AnimationMixin:
 
         if cnt <= 0:
             # Si el bot marcó que el reequilibrio se concretó, mostrar la jade; si no, la estatua normal.
-            base_img = self.elephant_jade if getattr(self.bot, 'rebalance_concretado', False) else self.elephant_statue
+            base_img = self.elephant_statue
             img = base_img
 
         elif 1 <= cnt <= len(self.elephants):

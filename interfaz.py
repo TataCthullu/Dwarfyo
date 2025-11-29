@@ -962,9 +962,11 @@ class BotInterfaz(AnimationMixin):
         self.config_ventana.title("Configuracion de operativa")
         self.config_ventana.configure(bg="DarkGoldenRod")
 
+
         # —— Tamaño de ventana (ajustable en 1 lugar) ——
         win_w, win_h = 900, 700
         self.config_ventana.geometry(f"{win_w}x{win_h}")
+        self.config_ventana.resizable(False, False)
         
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
@@ -1115,8 +1117,8 @@ class BotInterfaz(AnimationMixin):
             ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.inv_inic),
-            ("Take Profit Global: %", self.bot.take_profit_pct or Decimal("0")),
-            ("Stop Loss Global: %", self.bot.stop_loss_pct or Decimal("0")),
+            ("Take Profit: %", self.bot.take_profit_pct or Decimal("0")),
+            ("Stop Loss: %", self.bot.stop_loss_pct or Decimal("0")),
         ]
         entries = []  # <- tu guardar_config depende de este nombre
 
@@ -1194,27 +1196,41 @@ class BotInterfaz(AnimationMixin):
                 old_rb_thr     = getattr(self.bot, "rebalance_threshold", 0)
                 old_rb_pct     = getattr(self.bot, "rebalance_pct", 0)    
 
-                # Validaciones Rebalance
+                                # Validaciones Rebalance
+                rebalance_activo = self.var_rebalance_enabled.get()
+
+                # Parseamos siempre, pero solo mostramos errores si está activado
                 try:
                     rb_thr = int(self.var_rebalance_threshold.get())
                 except (TypeError, ValueError):
-                    self.log_en_consola("⚠️ Umbral de rebalance inválido (debe ser entero).")
-                    self.log_en_consola("- - - - - - - - - -")
-                    return
+                    if rebalance_activo:
+                        self.log_en_consola("⚠️ Umbral de rebalance inválido (debe ser entero).")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+                    else:
+                        # si está desactivado, usamos el valor que ya tenía el bot (o 0)
+                        rb_thr = getattr(self.bot, "rebalance_threshold", 0)
+
                 try:
                     rb_pct = int(self.var_rebalance_pct.get())
                 except (TypeError, ValueError):
-                    self.log_en_consola("⚠️ % de rebalance inválido (debe ser entero).")
-                    self.log_en_consola("- - - - - - - - - -")
-                    return
-                if rb_thr < 0:
-                    self.log_en_consola("⚠️ El umbral de rebalance no puede ser negativo.")
-                    self.log_en_consola("- - - - - - - - - -")
-                    return
-                if not (1 <= rb_pct <= 100):
-                    self.log_en_consola("⚠️ El % de rebalance debe estar entre 1 y 100.")
-                    self.log_en_consola("- - - - - - - - - -")
-                    return
+                    if rebalance_activo:
+                        self.log_en_consola("⚠️ % de Rebalance inválido (debe ser entero).")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+                    else:
+                        rb_pct = getattr(self.bot, "rebalance_pct", 0)
+
+                if rebalance_activo:
+                    if rb_thr < 0:
+                        self.log_en_consola("⚠️ El umbral de rebalance no puede ser negativo.")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+                    if not (1 <= rb_pct <= 100):
+                        self.log_en_consola("⚠️ El % de rebalance debe estar entre 1 y 100.")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+
                 
                 # 3) Validaciones > 0
                 if porc_compra <= 0:
@@ -1226,7 +1242,7 @@ class BotInterfaz(AnimationMixin):
                     self.log_en_consola("- - - - - - - - - -")
                     return
                 if porc_profit <= 0:
-                    self.log_en_consola("⚠️ El porcentaje de profit por venta debe ser mayor que 0.")
+                    self.log_en_consola("⚠️ El porcentaje para venta debe ser mayor que 0.")
                     self.log_en_consola("- - - - - - - - - -")
                     return
                 if porc_inv <= 0:
@@ -1238,11 +1254,11 @@ class BotInterfaz(AnimationMixin):
                     self.log_en_consola("- - - - - - - - - -")
                     return
                 if tp < 0:
-                    self.log_en_consola("⚠️ El Take Profit debe ser 0 o mayor.")
+                    self.log_en_consola("⚠️ El Take Profit debe ser mayor a 0.")
                     self.log_en_consola("- - - - - - - - - -")
                     return
                 if sl < 0:
-                    self.log_en_consola("⚠️ El Stop Loss debe ser 0 o mayor.")
+                    self.log_en_consola("⚠️ El Stop Loss debe mayor a 0.")
                     self.log_en_consola("- - - - - - - - - -")
                     return
                 # Si se activan, deben ser > 0 (evitar detener instantáneamente)
