@@ -254,25 +254,49 @@ class BotInterfaz(AnimationMixin):
     def _aplicar_modus(self):
         modus = self.modus.get()
 
-        # Mostrar todo por defecto (labels + valores)
-        for _, (canvas, item_id) in getattr(self, "info_canvas", {}).items():
-            try: canvas.itemconfigure(item_id, state='normal')
-            except Exception: pass
-        for _, (canvas, lbl_id) in getattr(self, "info_labels", {}).items():
-            try: canvas.itemconfigure(lbl_id, state='normal')
-            except Exception: pass
+        # Campos cuyo estado (visible/oculto) está controlado por otras lógicas
+        # y NO deben ser forzados a 'normal' acá.
+        keys_reb = {
+            "rebalance_thr",
+            "rebalance_pct",
+            "rebalances",
+            "rebalance_loss_total",
+        }
 
-        # En Standard, ocultar los pedidos (label + valor)
+        # 1) Mostrar todo por defecto (labels + valores),
+        #    pero SIN tocar los campos de rebalance.
+        for key, (canvas, item_id) in getattr(self, "info_canvas", {}).items():
+            if key in keys_reb:
+                continue  # estos los controla actualizar_ui según rebalance_enabled
+            try:
+                canvas.itemconfigure(item_id, state='normal')
+            except Exception:
+                pass
+
+        for key, (canvas, lbl_id) in getattr(self, "info_labels", {}).items():
+            if key in keys_reb:
+                continue
+            try:
+                canvas.itemconfigure(lbl_id, state='normal')
+            except Exception:
+                pass
+
+        # 2) En Standard, ocultar los pedidos (label + valor) definidos en _keys_modus_standar
         if modus == "standard":
             for key in getattr(self, "_keys_modus_standar", set()):
                 if key in getattr(self, "info_canvas", {}):
                     canvas, item_id = self.info_canvas[key]
-                    try: canvas.itemconfigure(item_id, state='hidden')
-                    except Exception: pass
+                    try:
+                        canvas.itemconfigure(item_id, state='hidden')
+                    except Exception:
+                        pass
                 if key in getattr(self, "info_labels", {}):
                     canvas, lbl_id = self.info_labels[key]
-                    try: canvas.itemconfigure(lbl_id, state='hidden')
-                    except Exception: pass
+                    try:
+                        canvas.itemconfigure(lbl_id, state='hidden')
+                    except Exception:
+                        pass
+
 
     def _cambiar_precision(self, prec=None):
         if prec is not None:
@@ -1633,38 +1657,31 @@ class BotInterfaz(AnimationMixin):
                         canvas, lbl_id = self.info_labels["stop_loss"]
                         canvas.itemconfigure(lbl_id, state='normal')
                         # ─── Ocultar/mostrar Umbral y % de Rebalance según rebalance_enabled ───
-                    
-                    if not getattr(self.bot, "rebalance_enabled", False):
-                        if "rebalance_thr" in self.info_canvas:
-                            canvas, item_id = self.info_canvas["rebalance_thr"]
-                            canvas.itemconfigure(item_id, state='hidden')
-                        if "rebalance_thr" in self.info_labels:
-                            canvas, lbl_id = self.info_labels["rebalance_thr"]
-                            canvas.itemconfigure(lbl_id, state='hidden')
-
-                        if "rebalance_pct" in self.info_canvas:
-                            canvas, item_id = self.info_canvas["rebalance_pct"]
-                            canvas.itemconfigure(item_id, state='hidden')
-                        if "rebalance_pct" in self.info_labels:
-                            canvas, lbl_id = self.info_labels["rebalance_pct"]
-                            canvas.itemconfigure(lbl_id, state='hidden')
-                    else:
-                        if "rebalance_thr" in self.info_canvas:
-                            canvas, item_id = self.info_canvas["rebalance_thr"]
-                            canvas.itemconfigure(item_id, state='normal')
-                        if "rebalance_thr" in self.info_labels:
-                            canvas, lbl_id = self.info_labels["rebalance_thr"]
-                            canvas.itemconfigure(lbl_id, state='normal')
-
-                        if "rebalance_pct" in self.info_canvas:
-                            canvas, item_id = self.info_canvas["rebalance_pct"]
-                            canvas.itemconfigure(item_id, state='normal')
-                        if "rebalance_pct" in self.info_labels:
-                            canvas, lbl_id = self.info_labels["rebalance_pct"]
-                            canvas.itemconfigure(lbl_id, state='normal')
-
             except Exception:
                 pass
+                                # ─── Ocultar/mostrar TODO lo relacionado a Rebalance según rebalance_enabled ───
+            try:
+                reb_on = getattr(self.bot, "rebalance_enabled", False)
+
+                keys_reb = (
+                    "rebalance_thr",         # umbral
+                    "rebalance_pct",         # porcentaje
+                    "rebalances",            # contador de rebalances realizados
+                    "rebalance_loss_total",  # pérdidas por rebalance
+                )
+
+                for key in keys_reb:
+                    if key in self.info_canvas:
+                        canvas, item_id = self.info_canvas[key]
+                        canvas.itemconfigure(item_id, state='normal' if reb_on else 'hidden')
+                    if key in self.info_labels:
+                        canvas, lbl_id = self.info_labels[key]
+                        canvas.itemconfigure(lbl_id, state='normal' if reb_on else 'hidden')
+            except Exception:
+                pass
+
+
+            
 
         except Exception as e:
             self.log_en_consola(f"❌ Error UI: {e}")
