@@ -19,10 +19,24 @@ class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot):
          # Main window setup
         self.root = tk.Tk()
-        self.root.title("Dungeon Market")
-        self.root.config(cursor="@imagenes/deco/cursor/stone_arrow.cur")
+        self.root.title("Khazad - Dungeon Market")
+        self.root.config(cursor="@imagenes/deco/cursor/stone_arrow_x4.cur")
         self.root.configure(bg="pink")
-        self.root.iconbitmap("imagenes/deco/urand_eternal_torment.png")
+        #self.root.iconbitmap("imagenes/deco/urand_eternal_torment.png")
+        # ---- Icono del bot ----
+        try:
+            self.root.iconbitmap("imagenes/cigotuvis_monster.ico")
+        except Exception as e:
+            print("Error cargando icono ICO:", e)
+
+        # Y también mantené el PNG para Tk (opcional pero recomendado)
+        try:
+            self.img_icon = tk.PhotoImage(file="imagenes/cigotuvis_monster.png")
+            self.root.iconphoto(True, self.img_icon)
+        except Exception as e:
+            print("Error cargando icono PNG:", e)
+
+            
         self.root.attributes("-alpha", 0.93)
         # initialize bot and clear only ingreso price until started
         self.bot = bot
@@ -93,12 +107,8 @@ class BotInterfaz(AnimationMixin):
             "excedente_ventas",
             "excedente_total",
             "ghost_ratio",
-            "rebalances",
-            "rebalance_loss_total",
             "hold_btc",
             "hold_usdt",
-            "rebalance_thr",
-            "rebalance_pct",
         }
 
         # Frames
@@ -296,6 +306,7 @@ class BotInterfaz(AnimationMixin):
                         canvas.itemconfigure(lbl_id, state='hidden')
                     except Exception:
                         pass
+
 
 
     def _cambiar_precision(self, prec=None):
@@ -580,11 +591,11 @@ class BotInterfaz(AnimationMixin):
         add("Comisiónes totales:", self.total_fees_total_str, "total_fees_total")
         add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
-        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
-        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         add("Excedente total:",  self.excedente_total_str, "excedente_total")       
         add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
         add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
+        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
+        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
