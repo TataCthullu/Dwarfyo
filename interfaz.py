@@ -20,7 +20,7 @@ class BotInterfaz(AnimationMixin):
          # Main window setup
         self.root = tk.Tk()
         self.root.title("Khazad - Dungeon Market")
-        self.root.config(cursor="@imagenes/deco/cursor/stone_arrow_x4.cur")
+        #self.root.config(cursor="@imagenes/deco/cursor/stone_arrow_x4.cur")
         self.root.configure(bg="pink")
         #self.root.iconbitmap("imagenes/deco/urand_eternal_torment.png")
         # ---- Icono del bot ----
@@ -38,6 +38,16 @@ class BotInterfaz(AnimationMixin):
 
             
         self.root.attributes("-alpha", 0.93)
+
+                # Abrir la ventana ya maximizada
+        try:
+            # Windows
+            self.root.state("zoomed")
+        except Exception:
+            # Linux / otros
+            self.root.attributes("-zoomed", True)
+
+
         # initialize bot and clear only ingreso price until started
         self.bot = bot
         self.bot.ui_callback_on_stop = self._on_bot_stop
@@ -589,13 +599,13 @@ class BotInterfaz(AnimationMixin):
         add("Comisiónes de compras:", self.total_fees_buy_str, "total_fees_buy")
         add("Comisiónes de ventas:", self.total_fees_sell_str, "total_fees_sell")
         add("Comisiónes totales:", self.total_fees_total_str, "total_fees_total")
+        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
+        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
         add("Excedente total:",  self.excedente_total_str, "excedente_total")       
         add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
         add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
-        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
-        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
@@ -780,10 +790,10 @@ class BotInterfaz(AnimationMixin):
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
         add("Comisión configurada:", self.comision_pct_str, "comision_pct", "%")
-        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")
         add("Rebalance — Umbral:", self.rebalance_thr_str, "rebalance_thr")
         add("Rebalance — Porcentaje:", self.rebalance_pct_str, "rebalance_pct")
-                
+        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")  
+          
         try:
             img_ped = Image.open("imagenes/deco/pedestal.png")
             # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
