@@ -913,8 +913,8 @@ class TradingBot:
                 self.log(f" ---- Satoshys: {self.format_fn(self.hold_btc_var, '₿')}")
                 self.log(
                     f"💠 Comisión guía: \n"
-                    f" ---- ({self.format_fn(comision_guia, '$')})\n"
-                    f" ---- ({self.format_fn(self.comision_pct, '%')})"
+                    f" ---- (-{self.format_fn(comision_guia, '$')})\n"
+                    f" ---- (-{self.format_fn(self.comision_pct, '%')})"
                 )
                 
 

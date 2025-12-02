@@ -141,8 +141,8 @@ class AnimationMixin:
 
         # 4) Crear el ítem en el canvas_animation (inicialmente con la estatua)
         #    Elegimos una posición fija dentro de canvas_animation; por ejemplo, esquina superior izquierda
-        x_ele = 500
-        y_ele = 200
+        x_ele = 550
+        y_ele = 330
         initial_img = self.elephant_statue or (self.elephants[0] if self.elephants[0] else "")
         self.elephant_item = self.canvas_animation.create_image(x_ele, y_ele, image=initial_img, anchor='nw')
 
