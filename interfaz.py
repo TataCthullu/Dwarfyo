@@ -117,8 +117,6 @@ class BotInterfaz(AnimationMixin):
             "excedente_ventas",
             "excedente_total",
             "ghost_ratio",
-            "hold_btc",
-            "hold_usdt",
         }
 
         # Frames
@@ -179,7 +177,8 @@ class BotInterfaz(AnimationMixin):
         # ¡Solo aquí configuramos el menú completo!
         self.root.config(menu=self.menubar) 
         self.actualizar_ui()
-        self.inicializar_valores_iniciales()
+        if self.bot.running:
+            self.inicializar_valores_iniciales()
         self._aplicar_modus()
 
         self._prev_price_ui = self.bot.precio_actual
@@ -599,8 +598,7 @@ class BotInterfaz(AnimationMixin):
         add("Comisiónes de compras:", self.total_fees_buy_str, "total_fees_buy")
         add("Comisiónes de ventas:", self.total_fees_sell_str, "total_fees_sell")
         add("Comisiónes totales:", self.total_fees_total_str, "total_fees_total")
-        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
-        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
+        
         add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
         add("Excedente total:",  self.excedente_total_str, "excedente_total")       
@@ -648,7 +646,8 @@ class BotInterfaz(AnimationMixin):
         add("% Fijo para inversion:", self.fixed_buyer_str, "fixed_buyer")
         add("Take Profit:", self.take_profit_str, "take_profit")
         add("Stop Loss:", self.stop_loss_str, "stop_loss")
-   
+        add("Comisión:", self.comision_pct_str, "comision_pct")
+    
     def right_panel(self):
         self.right_frame = tk.Frame(self.root, bd=0, relief='flat')
         self.right_frame.place(x=1300, y=0, width=650, height=450)
@@ -789,11 +788,12 @@ class BotInterfaz(AnimationMixin):
         add("Precio de ingreso:", self.precio_de_ingreso_str, "desde_inicio", "$")
         add("Fecha de inicio:", self.start_time_str, "start_time")
         add("Tiempo activo:", self.runtime_str, "runtime")
-        add("Comisión configurada:", self.comision_pct_str, "comision_pct", "%")
+       
         add("Rebalance — Umbral:", self.rebalance_thr_str, "rebalance_thr")
         add("Rebalance — Porcentaje:", self.rebalance_pct_str, "rebalance_pct")
-        add("Hold Btc Comparativo:", self.hold_btc_str, "hold_btc", "₿")  
-          
+        add("Rebalances realizados:", self.cont_rebalances_str, "rebalances")
+        add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
+        
         try:
             img_ped = Image.open("imagenes/deco/pedestal.png")
             # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
@@ -878,7 +878,7 @@ class BotInterfaz(AnimationMixin):
             reproducir_sonido("Sounds/limpiar.wav")
         # 2) Reiniciar bot y resetear estado lógico
         self.bot.reiniciar()
-        self.bot.log_fn = self.log_en_consola
+        self.bot.log_fn = self.logf
         #self.bot.sound_enabled = self.sound_enabled
         modo_vista_actual = self.display_mode.get()
         precision_actual = self.float_precision
@@ -1151,19 +1151,19 @@ class BotInterfaz(AnimationMixin):
         put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row
 
         # Porcentaje a vender
-        lbl = put_text(y, "- - - - Porcentaje a vender (%):", color="PaleGoldenRod")
+        lbl = put_text(y, "- - - - Porcentaje a vender: -%", color="PaleGoldenRod")
         self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
         put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
 
         # ===== Campos numéricos (MISMO ORDEN; entries intacto) =====
         campos = [
-            ("% Desde compra, para compra: %", self.bot.porc_desde_compra),
-            ("% Desde venta, para compra: %", self.bot.porc_desde_venta),
+            ("% Desde compra, para compra: -%", self.bot.porc_desde_compra),
+            ("% Desde venta, para compra: -%", self.bot.porc_desde_venta),
             ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
             ("Total Usdt: $", self.bot.inv_inic),
             ("Take Profit: %", self.bot.take_profit_pct or Decimal("0")),
-            ("Stop Loss: %", self.bot.stop_loss_pct or Decimal("0")),
+            ("Stop Loss: -%", self.bot.stop_loss_pct or Decimal("0")),
         ]
         entries = []  # <- tu guardar_config depende de este nombre
 
@@ -1346,14 +1346,28 @@ class BotInterfaz(AnimationMixin):
                 except Exception:
                     pass
 
-                if not self.bot.running:
+                old_inv_inic = old_cfg["inv_inic"]  # Decimal
+
+                # Ajuste de capital según si el bot está corriendo o no
+                if self.bot.running:
+                    # Interpretamos el cambio como depósito / extracción en vivo
+                    delta = usdtinit - old_inv_inic
+                    if delta != 0:
+                        self.bot.usdt += delta
+                        self.log_en_consola(
+                            f"💰 Capital ajustado en vivo: {self.format_var(delta, '$')} → nuevo USDT: {self.format_var(self.bot.usdt, '$')}"
+                        )
+                else:
+                    # Si está detenido, simplemente fijamos el capital
                     self.bot.usdt = usdtinit
 
+                # Recalcular fixed_buyer con el nuevo inv_inic
                 self.bot.fixed_buyer = (
-                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100'))
+                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
+                )
 
                 # 5) Calculamos fixed_buyer y validamos
-                self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
+                #self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
                 if self.bot.fixed_buyer <= 0:
                     self.log_en_consola("⚠️ El monto de compra fijo debe ser mayor que 0.")
                     return
@@ -1412,6 +1426,15 @@ class BotInterfaz(AnimationMixin):
                     # No cambió nada respecto a la config anterior
                     self.log_en_consola(f"{ts} · Configuración guardada (sin cambios).")
                     self.log_en_consola("- - - - - - - - - -")
+                
+                # 🔄 Si el bot ya está corriendo, recalibrar baselines para los colores
+                if self.bot.running:
+                    try:
+                        self.inicializar_valores_iniciales()
+                        self.actualizar_ui()
+                    except Exception as e:
+                        self.log_en_consola(f"⚠️ No se pudieron recalibrar los colores: {e}")
+                        self.log_en_consola("- - - - - - - - - -")
 
                 self.operativa_configurada = True
                 self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
@@ -1599,7 +1622,7 @@ class BotInterfaz(AnimationMixin):
                 "fixed_buyer": (self.bot.fixed_buyer, "$"),
                 "inv_inicial": (self.bot.inv_inic, "$"),
                 "ganancia_neta": (self.bot.total_ganancia, "$"),
-                "hold_btc": (self.bot.hold_btc_var, "₿"),
+                #"hold_btc": (self.bot.hold_btc_var, "₿"),
                 "btcnusdt": (self.bot.btc_usdt, "$"),
                 "excedente_compras": (self.bot.excedente_total_compras, "%"),
                 "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
@@ -2035,7 +2058,7 @@ class BotInterfaz(AnimationMixin):
             # Los que son info comparativa: se mantienen por si los usás en color
             'precio_actual':         safe(self.bot.precio_actual),
             'hold_usdt':             safe(self.bot.hold_usdt_var),
-            'hold_btc':              safe(self.bot.hold_btc_var),
+            #'hold_btc':              safe(self.bot.hold_btc_var),
         }
 
     def run(self):

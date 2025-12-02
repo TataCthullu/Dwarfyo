@@ -24,7 +24,7 @@ def crear_user():
 
     user_win = tk.Tk()
     user_win.geometry("400x200")
-    user_win.title("Creacion De Usuario - Dungeon Market")
+    user_win.title("Creación De Usuario - Dungeon Market")
     user_win.config(background="PaleGoldenRod")
 
     user_win_laba = tk.Label(user_win, text="Saludos!", font=("Carolingia", 18), background="PaleGoldenRod")

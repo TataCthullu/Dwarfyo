@@ -828,20 +828,43 @@ class TradingBot:
 
     def hold_btc(self) -> Decimal:
         """
-        Devuelve cuánto BTC habrías comprado con la inversión inicial y el precio de ingreso.
+        Devuelve cuánto BTC habrías comprado con **toda** la inversión inicial
+        al precio de ingreso, aplicando solo la comisión de compra.
+        (Independiente del precio actual).
         """
         try:
-            if not self.precio_ingreso or self.inv_inic == Decimal("0"):
+            # Necesito inversión inicial y precio de ingreso válidos
+            if not self.precio_ingreso or not self.inv_inic:
                 return Decimal("0")
 
-            ingreso = self.precio_ingreso if isinstance(self.precio_ingreso, Decimal) else Decimal(str(self.precio_ingreso))
-            inv     = self.inv_inic       if isinstance(self.inv_inic, Decimal)       else Decimal(str(self.inv_inic))
-            btc_resultado = inv / ingreso
-            return btc_resultado if btc_resultado != 0 else Decimal("0")
+            inv = (
+                self.inv_inic
+                if isinstance(self.inv_inic, Decimal)
+                else Decimal(str(self.inv_inic))
+            )
+            precio = (
+                self.precio_ingreso
+                if isinstance(self.precio_ingreso, Decimal)
+                else Decimal(str(self.precio_ingreso))
+            )
+
+            if inv <= 0 or precio <= 0:
+                return Decimal("0")
+
+            # Solo comisión de compra (igual criterio que en hold_usdt)
+            if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
+                buy_factor = (Decimal("100") - self.comision_pct) / Decimal("100")
+            else:
+                buy_factor = Decimal("1")
+
+            btc_resultado = (inv / precio) * buy_factor
+            return btc_resultado
 
         except (InvalidOperation, ZeroDivisionError, TypeError, ValueError) as e:
             self.log(f"❌ Error en hold_btc: {e}")
-            return Decimal("0")    
+            return Decimal("0")
+
+    
                    
     def calcular_ghost_ratio(self) -> Decimal:
         total = (self.contador_compras_reales + self.contador_ventas_reales +
@@ -875,6 +898,8 @@ class TradingBot:
             self.log("🟡 Khazâd iniciado.")
             self.log("- - - - - - - - - -")
             self.hold_usdt_var = self.hold_usdt()
+            self.hold_btc_var = self.hold_btc()
+
             self.realizar_primera_compra()
             comision_guia = self.inv_inic - self.hold_usdt_var
 
@@ -883,13 +908,16 @@ class TradingBot:
                 # 💡 hold_usdt_var ya es el HODL con comisión aplicada
                 # La "comisión guía" (en USDT) es la diferencia frente a no tener fee
                 comision_guia = self.inv_inic - self.hold_usdt_var
-
+                self.log("Compra (HODL) teórica:")
+                self.log(f" ---- En Usdt: {self.format_fn(self.hold_usdt_var, '$')}")
+                self.log(f" ---- Satoshys: {self.format_fn(self.hold_btc_var, '₿')}")
                 self.log(
-                    f"💠 Comisión guía (HODL) teórica: "
-                    f"({self.format_fn(comision_guia, '$')}) "
-                    f"({self.format_fn(self.comision_pct, '%')})"
+                    f"💠 Comisión guía: \n"
+                    f" ---- ({self.format_fn(comision_guia, '$')})\n"
+                    f" ---- ({self.format_fn(self.comision_pct, '%')})"
                 )
-                self.log(f" ---- Comprado: {self.format_fn(self.hold_usdt_var, '%')}")
+                
+
             self.log("- - - - - - - - - -")
 
             
