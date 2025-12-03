@@ -90,7 +90,8 @@ class BotInterfaz(AnimationMixin):
             "rebalance_loss_total": "Tomato",
             "total_fees_total": "IndianRed",
             "total_fees_buy": "PaleGoldenRod",
-            "total_fees_sell": "MediumSeaGreen"
+            "total_fees_sell": "MediumSeaGreen",
+            "diff_hodl": "MediumTurquoise"
         }   
         
         self._consola_buffer = []  # guarda todo lo impreso en consola
@@ -117,6 +118,7 @@ class BotInterfaz(AnimationMixin):
             "excedente_ventas",
             "excedente_total",
             "ghost_ratio",
+            "diff_hodl",
         }
 
         # Frames
@@ -515,6 +517,7 @@ class BotInterfaz(AnimationMixin):
         self.total_fees_sell_str = tk.StringVar()
         self.total_fees_total_str = tk.StringVar()
         self.comision_pct_str = tk.StringVar()
+        self.diff_hodl_str = tk.StringVar()
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
         # Cargar imagen original
@@ -598,8 +601,8 @@ class BotInterfaz(AnimationMixin):
         add("Comisiónes de compras:", self.total_fees_buy_str, "total_fees_buy")
         add("Comisiónes de ventas:", self.total_fees_sell_str, "total_fees_sell")
         add("Comisiónes totales:", self.total_fees_total_str, "total_fees_total")
-        
         add("Hold Btc/Usdt Guía:", self.hold_usdt_str, "hold_usdt")
+        add("Dif. Hodl:", self.diff_hodl_str, "diff_hodl")
         add("Ghost Ratio:", self.ghost_ratio_var, "ghost_ratio")
         add("Excedente total:",  self.excedente_total_str, "excedente_total")       
         add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
@@ -1598,6 +1601,7 @@ class BotInterfaz(AnimationMixin):
                 "variacion_desde_inicio": (self.bot.var_inicio, "%"),
                 "variacion_total_inv": (self.bot.var_total, "%"),
                 "hold_usdt": (self.bot.hold_usdt_var, "$"),
+                "diff_hodl": (self.bot.diff_vs_hold_usdt(), "$"),
             }
             for clave, valor in pintar.items():
                 self.actualizar_color(clave, valor)
@@ -1627,6 +1631,7 @@ class BotInterfaz(AnimationMixin):
                 "excedente_compras": (self.bot.excedente_total_compras, "%"),
                 "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
                 "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),
+                "diff_hodl": (self.bot.diff_vs_hold_usdt(), "$"),
                 "take_profit": ((self.bot.take_profit_pct, "%") if (getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or Decimal("0")) > 0) else ("", "")),
                 "stop_loss":  ((self.bot.stop_loss_pct, "%")  if (getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct  or Decimal("0")) > 0) else ("", "")),
                 "rebalances": self.bot.rebalance_count,
@@ -2058,6 +2063,7 @@ class BotInterfaz(AnimationMixin):
             # Los que son info comparativa: se mantienen por si los usás en color
             'precio_actual':         safe(self.bot.precio_actual),
             'hold_usdt':             safe(self.bot.hold_usdt_var),
+            'diff_hodl': Decimal("0"),
             #'hold_btc':              safe(self.bot.hold_btc_var),
         }
 

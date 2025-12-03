@@ -864,7 +864,31 @@ class TradingBot:
             self.log(f"❌ Error en hold_btc: {e}")
             return Decimal("0")
 
-    
+    def diff_vs_hold_usdt(self) -> Decimal:
+        """
+        Diferencia en USDT entre:
+        - tu balance actual (USDT + BTC valorado en USDT)
+        - y el HODL teórico (hold_usdt_var).
+
+        > 0 => Khazâd rinde mejor que el HODL.
+        < 0 => rinde peor que el HODL.
+        """
+        try:
+            # Nos aseguramos de que los balances estén actualizados
+            self.actualizar_balance()
+
+            # Aseguramos que la guía esté calculada
+            if getattr(self, "hold_usdt_var", None) is None:
+                self.hold_usdt_var = self.hold_usdt()
+
+            hodl = self.hold_usdt_var or Decimal("0")
+            total = self.usdt_mas_btc or Decimal("0")
+
+            return total - hodl
+
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal("0")
+
                    
     def calcular_ghost_ratio(self) -> Decimal:
         total = (self.contador_compras_reales + self.contador_ventas_reales +
@@ -907,7 +931,7 @@ class TradingBot:
                 # 💡 hold_usdt_var ya es el HODL con comisión aplicada
                 # La "comisión guía" (en USDT) es la diferencia frente a no tener fee
                 comision_guia = self.inv_inic - self.hold_usdt_var
-                self.log("Compra (HODL) teórica:")
+                self.log("Compra Hodl hipotética:")
                 self.log(f" ---- En Usdt: {self.format_fn(self.hold_usdt_var, '$')}")
                 self.log(f" ---- Satoshys: {self.format_fn(self.hold_btc_var, '₿')}")
                 self.log(
