@@ -876,7 +876,6 @@ class TradingBot:
     def realizar_primera_compra(self):
         if self.condiciones_para_comprar():
             self.comprar()
-            self.log("- - - - - - - - - -")
         else:
             self.log("No cumple las condiciones para comprar")
 
@@ -916,13 +915,8 @@ class TradingBot:
                     f" ---- (-{self.format_fn(comision_guia, '$')})\n"
                     f" ---- (-{self.format_fn(self.comision_pct, '%')})"
                 )
-                
-
+    
             self.log("- - - - - - - - - -")
-
-            
-            
-            
 
         else:
             self.log("No se puede iniciar por montos invalidos")    

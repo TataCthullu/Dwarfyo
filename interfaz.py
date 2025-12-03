@@ -136,7 +136,7 @@ class BotInterfaz(AnimationMixin):
             pass
 
         self.historial.tag_configure('venta_tag', foreground='Green')
-        self.historial.tag_configure('compra_tag', foreground='SteelBlue')
+        self.historial.tag_configure('compra_tag', foreground='Blue')
         # 🎵 Música de fondo — definir estado ANTES de armar los menús
         self._music_path = "Musica/epicbfinal.wav"
         self.music_enabled = False  # estado inicial
@@ -1117,7 +1117,7 @@ class BotInterfaz(AnimationMixin):
 
         # --- Stop Loss ---
         text_id = self.cfg_canvas.create_text(left_x, y, text="Activar Stop Loss",
-                                            fill="lime", font=("LondonBetween", 18), anchor="nw")
+                                            fill="lime", font=("LondonBetween", 16), anchor="nw")
         bbox = self.cfg_canvas.bbox(text_id)
         x_check = bbox[2] + 10 if bbox else (left_x + 350)
         y_center = (bbox[1] + bbox[3]) / 2 if bbox else y
