@@ -91,7 +91,8 @@ class BotInterfaz(AnimationMixin):
             "total_fees_total": "IndianRed",
             "total_fees_buy": "PaleGoldenRod",
             "total_fees_sell": "MediumSeaGreen",
-            "diff_hodl": "MediumTurquoise"
+            "diff_hodl": "MediumTurquoise",
+            "total_fees_btc": "IndianRed",
         }   
         
         self._consola_buffer = []  # guarda todo lo impreso en consola
@@ -119,6 +120,7 @@ class BotInterfaz(AnimationMixin):
             "excedente_total",
             "ghost_ratio",
             "diff_hodl",
+            "total_fees_btc",
         }
 
         # Frames
@@ -518,6 +520,7 @@ class BotInterfaz(AnimationMixin):
         self.total_fees_total_str = tk.StringVar()
         self.comision_pct_str = tk.StringVar()
         self.diff_hodl_str = tk.StringVar()
+        self.total_fees_btc_srt = tk.StringVar()
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
         # Cargar imagen original
@@ -607,6 +610,7 @@ class BotInterfaz(AnimationMixin):
         add("Excedente total:",  self.excedente_total_str, "excedente_total")       
         add("Excedente en compras:", self.excedente_compras_str, "excedente_compras")
         add("Excedente en ventas:",  self.excedente_ventas_str, "excedente_ventas")
+        add("Total comisiónes en Btc:",  self.total_fees_btc_srt, "total_fees_btc")
         
     def center_panel(self):
         self.center_frame = tk.Frame(self.root, bd=0, relief='flat')
@@ -1642,6 +1646,7 @@ class BotInterfaz(AnimationMixin):
                 "total_fees_sell": (self.bot.total_fees_sell, "$"),
                 "total_fees_total": (self.bot.total_fees_buy + self.bot.total_fees_sell, "$"),
                 "comision_pct": (self.bot.comision_pct, "%"),
+                "total_fees_btc": (getattr(self.bot, "total_fees_btc", Decimal("0")), "₿"),
             }
 
             for clave, valor in texto_fijo.items():
@@ -1785,6 +1790,13 @@ class BotInterfaz(AnimationMixin):
                     tk.END,
                     f"Comisión: {self.format_fijo('fee_usdt', (t['fee_usdt'], '$'))}\n"
                 )
+
+            if "fee_btc" in t:
+                self.historial.insert(
+                    tk.END,
+                    f"Comisión BTC: {self.format_fijo('fee_btc', (t['fee_btc'], '₿'))}\n"
+                )
+    
 
             if "venta_obj" in t:
                 self.historial.insert(tk.END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")

@@ -93,6 +93,7 @@ class TradingBot:
         self.btc_fixed_seller = Decimal('0')  # Decimal | None
         self.update_btc_fixed_seller()
         self.hist_tentacles = None
+        self.total_fees_btc = Decimal("0")
 
     def format_fn(self, valor, simbolo=""):
         # Nada → vacío
@@ -415,12 +416,16 @@ class TradingBot:
                 comision_btc = (self.btc_comprado * self.comision_pct) / Decimal("100")
                 self.btc_comprado -= comision_btc            # afecta realmente al monto en BTC
                 fee_buy_usdt = comision_btc * self.precio_actual  # para mostrar en USDT
+                # 🔹 ACUMULADOR GLOBAL DE COMISIÓN EN BTC
+                self.total_fees_btc += comision_btc
 
             self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
             self.btc = (self.btc or Decimal("0")) + self.btc_comprado
             self.contador_compras_reales += 1 
             self.rebalance_concretado = False
             valor_compra_usdt = self.btc_comprado * self.precio_actual
+            
+            
 
             self.transacciones.append({
                     "compra": self.precio_ult_comp,
@@ -429,6 +434,7 @@ class TradingBot:
                     "btc": self.btc_comprado,
                     "invertido_usdt": self.fixed_buyer,
                     "fee_usdt": fee_buy_usdt,
+                    "fee_btc": comision_btc,
                     "ejecutado": False,
                     "numcompra": self.contador_compras_reales,
                     "valor_en_usdt": valor_compra_usdt,
@@ -442,7 +448,9 @@ class TradingBot:
             self.log(f" . Fecha y Hora: {self.timestamp}")
             self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
             self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
-            self.log(f"🧾 Comisión: {self.format_fn(fee_buy_usdt, '$')}")
+            self.log(f"🧾 Comisión: -{self.format_fn(fee_buy_usdt, '$')}")
+            if comision_btc != 0:
+                self.log(f"🧾 Comisión Satoshys: -{self.format_fn(comision_btc, '₿')}")
             self.log(f"🧾 Btc/Usdt comprado: {self.format_fn(valor_compra_usdt, '$')}")
             self.log(f"🪙 Compra id: {id_op}")
             self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
@@ -930,12 +938,13 @@ class TradingBot:
             if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
                 # 💡 hold_usdt_var ya es el HODL con comisión aplicada
                 # La "comisión guía" (en USDT) es la diferencia frente a no tener fee
+                self.log("- - - - - - - - - -")
                 comision_guia = self.inv_inic - self.hold_usdt_var
                 self.log("Compra Hodl hipotética:")
                 self.log(f" ---- En Usdt: {self.format_fn(self.hold_usdt_var, '$')}")
                 self.log(f" ---- Satoshys: {self.format_fn(self.hold_btc_var, '₿')}")
                 self.log(
-                    f"💠 Comisión guía: \n"
+                    f"💠 Comisión guía Hodl: \n"
                     f" ---- (-{self.format_fn(comision_guia, '$')})\n"
                     f" ---- (-{self.format_fn(self.comision_pct, '%')})"
                 )
