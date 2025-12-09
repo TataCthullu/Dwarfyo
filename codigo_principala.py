@@ -581,14 +581,10 @@ class TradingBot:
                 self.btc  = (self.btc or Decimal("0")) - btc_vender
                 self.precio_ult_venta = self.precio_actual
                 invertido_usdt = transaccion.get("invertido_usdt", self.fixed_buyer)
-                self.ganancia = usdt_obtenido - invertido_usdt
-                if self.ganancia <= Decimal("0"): 
-                    self.ganancia_neta = Decimal("0")
-                else:
-                    self.ganancia_neta = self.ganancia
-                if self.total_ganancia is None:
-                    self.total_ganancia = Decimal("0")
+                # Ganancia de esta operación (solo esta venta)
+                self.ganancia_neta = usdt_obtenido - invertido_usdt
 
+                # Acumulado histórico
                 self.total_ganancia += self.ganancia_neta
                 excedente_pct = Decimal("0")
 

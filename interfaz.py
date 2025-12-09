@@ -590,7 +590,7 @@ class BotInterfaz(AnimationMixin):
         add("Usdt + Btc:", self.balance_str, "balance")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt") 
-        add("Ganancia neta en Usdt:", self.ganancia_total_str, "ganancia_neta")
+        add("Ganancia Operativa:", self.ganancia_total_str, "ganancia_neta")
         add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
         add("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")    
