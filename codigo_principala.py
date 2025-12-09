@@ -779,6 +779,30 @@ class TradingBot:
         # si por redondeo diera 0, devolvemos explícitamente Decimal('0')
         return delta if delta != 0 else Decimal('0')
     
+    def variacion_total_usdt(self) -> Decimal:
+        """
+        Diferencia absoluta en USDT entre:
+        - el valor actual de la cartera (USDT + BTC valuado en USDT)
+        - la inversión inicial (inv_inic).
+
+        Puede ser positiva (ganancia) o negativa (pérdida).
+        """
+        try:
+            # si no hay inversión inicial definida, no tiene sentido hablar de variación
+            if not self.inv_inic or self.inv_inic == Decimal("0"):
+                return Decimal("0")
+
+            # aseguramos que el balance esté al día
+            self.actualizar_balance()
+
+            actual = self.usdt_mas_btc or Decimal("0")
+            inv = self.inv_inic if isinstance(self.inv_inic, Decimal) else Decimal(str(self.inv_inic))
+
+            return actual - inv
+
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal("0")
+
     def condiciones_para_comprar(self) -> bool:
         try:
             if any(x is None for x in [self.fixed_buyer, self.usdt, self.precio_actual]):

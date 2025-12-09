@@ -93,6 +93,7 @@ class BotInterfaz(AnimationMixin):
             "total_fees_sell": "MediumSeaGreen",
             "diff_hodl": "MediumTurquoise",
             "total_fees_btc": "IndianRed",
+            "variacion_total_inv_usdt": "Orange",
         }   
         
         self._consola_buffer = []  # guarda todo lo impreso en consola
@@ -521,6 +522,7 @@ class BotInterfaz(AnimationMixin):
         self.comision_pct_str = tk.StringVar()
         self.diff_hodl_str = tk.StringVar()
         self.total_fees_btc_srt = tk.StringVar()
+        self.var_total_usdt_str = tk.StringVar()
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
         # Cargar imagen original
@@ -590,10 +592,11 @@ class BotInterfaz(AnimationMixin):
         add("Usdt + Btc:", self.balance_str, "balance")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
         add("Usdt Disponible:", self.cant_usdt_str, "usdt") 
-        add("Ganancia Operativa:", self.ganancia_total_str, "ganancia_neta")
-        add("Variación Total invertido:", self.var_total_str, "variacion_total_inv")
+        add("Variación Total invertido ($):", self.var_total_usdt_str, "variacion_total_inv_usdt")
+        add("Variación Total invertido (%):", self.var_total_str, "variacion_total_inv")
         add("Variación desde inicio:", self.var_inicio_str, "variacion_desde_inicio")
         add("Precio actual Btc/Usdt:", self.precio_act_str, "precio_actual")    
+        add("Ganancia Operativa:", self.ganancia_total_str, "ganancia_neta")
         add("Btc Disponible:", self.cant_btc_str, "btc_dispo")
         add("% Desde ultima compra:", self.varpor_set_compra_str, "desde_ult_comp")
         add("% Desde ultima venta:", self.varpor_set_venta_str, "ult_vent")
@@ -1606,6 +1609,7 @@ class BotInterfaz(AnimationMixin):
                 "variacion_total_inv": (self.bot.var_total, "%"),
                 "hold_usdt": (self.bot.hold_usdt_var, "$"),
                 "diff_hodl": (self.bot.diff_vs_hold_usdt(), "$"),
+                "variacion_total_inv_usdt": (self.bot.variacion_total_usdt(), "$"),
             }
             for clave, valor in pintar.items():
                 self.actualizar_color(clave, valor)
@@ -1636,6 +1640,7 @@ class BotInterfaz(AnimationMixin):
                 "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
                 "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),
                 "diff_hodl": (self.bot.diff_vs_hold_usdt(), "$"),
+                "variacion_total_inv_usdt": (self.bot.variacion_total_usdt(), "$"),
                 "take_profit": ((self.bot.take_profit_pct, "%") if (getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or Decimal("0")) > 0) else ("", "")),
                 "stop_loss":  ((self.bot.stop_loss_pct, "%")  if (getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct  or Decimal("0")) > 0) else ("", "")),
                 "rebalances": self.bot.rebalance_count,
@@ -2076,6 +2081,7 @@ class BotInterfaz(AnimationMixin):
             'precio_actual':         safe(self.bot.precio_actual),
             'hold_usdt':             safe(self.bot.hold_usdt_var),
             'diff_hodl': Decimal("0"),
+            'variacion_total_inv_usdt': Decimal("0"),
             #'hold_btc':              safe(self.bot.hold_btc_var),
         }
 
