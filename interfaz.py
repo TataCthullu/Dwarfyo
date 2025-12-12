@@ -63,6 +63,8 @@ class BotInterfaz(AnimationMixin):
         self._consola_last_n = 0   # cuántas entradas del buffer ya fueron pintadas (console incremental)
         self._ctx_ultimo_id = None # contexto incremental para corrección de estado
         self._ctx_ultimo_num = None
+        self._hist_last_tx_n = 0
+        self._hist_last_sell_n = 0
 
         self.colores_fijos = {
             "usdt": "SpringGreen",
@@ -932,6 +934,8 @@ class BotInterfaz(AnimationMixin):
             self.historial.delete("1.0", tk.END)
         except Exception:
             pass
+        self._hist_last_tx_n = 0
+        self._hist_last_sell_n = 0
 
         try:
             # habilitar, borrar y volver a deshabilitar la consola
@@ -1508,15 +1512,17 @@ class BotInterfaz(AnimationMixin):
         # Ejecutamos el ciclo de trading en segundo plano
         future = self.executor.submit(self._run_trading_cycle)
 
-        # Cuando termine, planificamos el próximo _loop (solo si root sigue viva)
-        def replanear(_):
+        def _replanear_en_main():
             try:
                 if self.root.winfo_exists() and self.bot.running:
                     self.root.after(3000, self._loop)
             except Exception as e:
                 print(f"[⚠️ Error after loop]: {e}")
 
-        future.add_done_callback(replanear)
+        try:
+            self.root.after(0, _replanear_en_main)
+        except Exception:
+            pass
 
     def _run_trading_cycle(self):
         try:
@@ -1777,56 +1783,80 @@ class BotInterfaz(AnimationMixin):
             pass
 
     def actualizar_historial(self):
-        self.historial.delete('1.0', tk.END)
-        # ——— COMPRAS ———
-        for t in self.bot.transacciones:
-            ts = t.get("timestamp", "")
-            estado = t.get("estado", "activa")
-            self.historial.insert(tk.END, "🟦 Compra realizada:\n", 'compra_tag')
-            self.historial.insert(tk.END, f"Precio de compra: {self.format_var(t['compra'], '$')}\n")
-            self.historial.insert(tk.END, f"Id: {t['id']}\n")
-            self.historial.insert(tk.END, f"Número de compra: {t['numcompra']}\n")
-            self.historial.insert(tk.END, f"Estado: {estado}\n")
-            self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(tk.END, f"Btc/usdt comprado: {self.format_var(t['valor_en_usdt'], '$')}\n")
-            
-            if "fee_usdt" in t:
-                self.historial.insert(
-                    tk.END,
-                    f"Comisión: {self.format_fijo('fee_usdt', (t['fee_usdt'], '$'))}\n"
-                )
+        try:
+            # Si el widget no existe aún
+            if not hasattr(self, "historial"):
+                return
 
-            if "fee_btc" in t:
-                self.historial.insert(
-                    tk.END,
-                    f"Comisión BTC: {self.format_fijo('fee_btc', (t['fee_btc'], '₿'))}\n"
-                )
-    
+            # habilitar escritura (si lo usás disabled)
+            try:
+                self.historial.configure(state="normal")
+            except Exception:
+                pass
 
-            if "venta_obj" in t:
-                self.historial.insert(tk.END, f"Objetivo de venta: {self.format_fijo('venta_obj', t['venta_obj'])}\n")
-            self.historial.insert(tk.END, "-"*40 + "\n")
+            # === COMPRAS NUEVAS (solo append) ===
+            txs = self.bot.transacciones
+            start_tx = getattr(self, "_hist_last_tx_n", 0)
+            if start_tx < 0:
+                start_tx = 0
 
-        # ——— VENTAS ———
-        for v in self.bot.precios_ventas:
-            ts = v.get("timestamp", "")
-            self.historial.insert(tk.END, "🟩 Venta realizada:\n", 'venta_tag')
-            self.historial.insert(tk.END, f"Precio de compra: {self.format_fijo('compra', v['compra'])}\n")
-            self.historial.insert(tk.END, f"Precio de venta: {self.format_fijo('venta', v['venta'])}\n")
-            
-            if "fee_usdt" in v:
-                self.historial.insert(
-                    tk.END,
-                    f"Comisión: {self.format_fijo('fee_usdt', (v['fee_usdt'], '$'))}\n"
-                )
+            for t in txs[start_tx:]:
+                ts = t.get("timestamp", "")
+                estado = t.get("estado", "activa")
+                self.historial.insert(tk.END, "🟦 Compra realizada:\n", "compra_tag")
+                self.historial.insert(tk.END, f"Precio de compra: {self.format_var(t.get('compra', ''), '$')}\n")
+                self.historial.insert(tk.END, f"Id: {t.get('id','')}\n")
+                self.historial.insert(tk.END, f"Número de compra: {t.get('numcompra','')}\n")
+                self.historial.insert(tk.END, f"Estado: {estado}\n")
+                self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
+                self.historial.insert(tk.END, f"Btc/usdt comprado: {self.format_var(t.get('valor_en_usdt',''), '$')}\n")
 
-            self.historial.insert(tk.END, f"Id compra: {v['id_compra']}\n")
-            if 'ganancia' in v:
-                self.historial.insert(tk.END, f"Ganancia: {self.format_fijo('ganancia', v['ganancia'])}\n")
-            self.historial.insert(tk.END, f"Número de venta: {v['venta_numero']}\n")
-            self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
-            self.historial.insert(tk.END, "-"*40 + "\n")
-       
+                if "fee_usdt" in t:
+                    self.historial.insert(tk.END, f"Comisión: {self.format_var(t['fee_usdt'], '$')}\n")
+                if "fee_btc" in t:
+                    self.historial.insert(tk.END, f"Comisión BTC: {self.format_var(t['fee_btc'], '₿')}\n")
+
+                if "venta_obj" in t:
+                    self.historial.insert(tk.END, f"Objetivo de venta: {self.format_var(t['venta_obj'], '$')}\n")
+
+                self.historial.insert(tk.END, "-" * 40 + "\n")
+
+            self._hist_last_tx_n = len(txs)
+
+            # === VENTAS NUEVAS (solo append) ===
+            vs = self.bot.precios_ventas
+            start_v = getattr(self, "_hist_last_sell_n", 0)
+            if start_v < 0:
+                start_v = 0
+
+            for v in vs[start_v:]:
+                ts = v.get("timestamp", "")
+                self.historial.insert(tk.END, "🟩 Venta realizada:\n", "venta_tag")
+                self.historial.insert(tk.END, f"Precio de compra: {self.format_var(v.get('compra',''), '$')}\n")
+                self.historial.insert(tk.END, f"Precio de venta: {self.format_var(v.get('venta',''), '$')}\n")
+
+                if "fee_usdt" in v:
+                    self.historial.insert(tk.END, f"Comisión: {self.format_var(v['fee_usdt'], '$')}\n")
+
+                self.historial.insert(tk.END, f"Id compra: {v.get('id_compra','')}\n")
+                if "ganancia" in v:
+                    self.historial.insert(tk.END, f"Ganancia: {self.format_var(v['ganancia'], '$')}\n")
+                self.historial.insert(tk.END, f"Número de venta: {v.get('venta_numero','')}\n")
+                self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
+                self.historial.insert(tk.END, "-" * 40 + "\n")
+
+            self._hist_last_sell_n = len(vs)
+
+            # volver a bloquear si querés
+            try:
+                self.historial.configure(state="disabled")
+            except Exception:
+                pass
+
+        except Exception:
+            pass
+
+
     def _consola_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):
         """
         Corrige IN-PLACE la última línea '📜 Estado: ...' del bloque que
