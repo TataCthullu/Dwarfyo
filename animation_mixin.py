@@ -17,7 +17,7 @@ class AnimationMixin:
             self._after_ids = []
 
             # ─── PEDESTAL ───
-        pedestal_path = "imagenes/deco/pedestal.png"
+        pedestal_path = "imagenes/deco/rebalance/pedestal.png"
         if os.path.exists(pedestal_path):
             self.pedestal_img = PhotoImage(file=pedestal_path).zoom(2,2)
             self.pedestal_item = self.canvas_various.create_image(
@@ -27,7 +27,7 @@ class AnimationMixin:
             )
 
         # ─── VARITA ───
-        wand_path = "imagenes/deco/gem_wood_new.png"
+        wand_path = "imagenes/deco/woods/gem_wood_new.png"
         if os.path.exists(wand_path):
             self.wand_img = PhotoImage(file=wand_path).zoom(2,2)
             # Abajo-derecha del left panel
@@ -36,14 +36,14 @@ class AnimationMixin:
         # ─── CARGA SEARING RAY ───
         self.searing_frames = []
         for i in range(6):  # 0..5
-            p = f"imagenes/deco/searing_ray_{i}.png"
+            p = f"imagenes/deco/lights/searing_ray/searing_ray_{i}.png"
             if os.path.exists(p):
                 self.searing_frames.append(PhotoImage(file=p))
 
         # ─── CARGA MAGIC DART ───
         self.magic_frames = []
         for i in range(6):  # 0..5
-            p = f"imagenes/deco/magic_dart_{i}.png"
+            p = f"imagenes/deco/lights/magic_dart/magic_dart_{i}.png"
             if os.path.exists(p):
                 self.magic_frames.append(PhotoImage(file=p))
 
@@ -69,7 +69,7 @@ class AnimationMixin:
                               ) if p]
         
         # Imagen alternativa cuando el bot no está iniciado
-        fedhas_path = "imagenes/deco/altar_fedhas.png"
+        fedhas_path = "imagenes/deco/sltp/altar_fedhas.png"
         self.altar_fedhas = PhotoImage(file=fedhas_path).zoom(2, 2) if os.path.exists(fedhas_path) else None
 
         # íconos
@@ -153,11 +153,11 @@ class AnimationMixin:
         # Antorcha
         self.torch_frames = []
         for i in range(1, 5):
-            p = f"imagenes/deco/torch_{i}.png"
+            p = f"imagenes/deco/torch/torch_{i}.png"
             if os.path.exists(p):
                 self.torch_frames.append(PhotoImage(file=p).zoom(3,3))
         # Imagen “apagada” si el bot no corre
-        off = "imagenes/deco/torch_0.png"
+        off = "imagenes/deco/torch/torch_0.png"
         self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
         self.torch_frame_index = 0
 
@@ -266,8 +266,8 @@ class AnimationMixin:
                 self.vine_items.append(("east", iid))
         
         # —————— (1) Carga de los iconos de sonido ——————
-        on_path  = "imagenes/deco/i-noise_new.png"
-        off_path = "imagenes/deco/i-noise_old.png"
+        on_path  = "imagenes/deco/noise/i-noise_new.png"
+        off_path = "imagenes/deco/noise/i-noise_old.png"
         self.noise_on  = PhotoImage(file=on_path).zoom(2,2)  if os.path.exists(on_path)  else None
         self.noise_off = PhotoImage(file=off_path).zoom(2,2) if os.path.exists(off_path) else None
 
@@ -278,8 +278,8 @@ class AnimationMixin:
         self.guard_open_frames = []
         self.guard_closed_frames = []
         for i in range(1, 5):
-            po = f"imagenes/deco/guardian-eyeopen-flame_{i}.png"
-            pc = f"imagenes/deco/guardian-eyeclosed-flame_{i}.png"
+            po = f"imagenes/deco/guards/guardian-eyeopen-flame_{i}.png"
+            pc = f"imagenes/deco/guards/guardian-eyeclosed-flame_{i}.png"
             if os.path.exists(po):
                 self.guard_open_frames.append(PhotoImage(file=po).zoom(2,2))
             if os.path.exists(pc):
@@ -303,7 +303,7 @@ class AnimationMixin:
         # dithmenos
         self.dithmenos_frames = []
         for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png", "dithmenos_4.png"):
-            path = os.path.join("imagenes", "deco", name)
+            path = os.path.join("imagenes", "deco", "dith", name)
             if os.path.exists(path):
                 self.dithmenos_frames.append(PhotoImage(file=path).zoom(2,2))
         self.dithmenos_index = 0
@@ -312,7 +312,7 @@ class AnimationMixin:
         piles = list(range(1,11)) + [16,19,23,25]
         self.sales_frames = []
         for n in piles:
-            p = f"imagenes/deco/gold_pile_{n}.png"
+            p = f"imagenes/deco/gold_pile/gold_pile_{n}.png"
             if os.path.exists(p):
                 self.sales_frames.append(PhotoImage(file=p).zoom(2,2))
 
@@ -320,12 +320,12 @@ class AnimationMixin:
         bottom_idxs = [1,5,7,8,9]
         self.hydra_bottom = {}
         for n in bottom_idxs:
-            p = f"imagenes/deco/lernaean_hydra_{n}_bottom.png"
+            p = f"imagenes/deco/hydra/lernaean_hydra_{n}_bottom.png"
             if os.path.exists(p):
                 self.hydra_bottom[n] = PhotoImage(file=p).zoom(2,2)
         self.hydra_top = []
         for i in range(1, self.MAX_CABEZAS+1):
-            p = f"imagenes/deco/lernaean_hydra_{i}_top.png"
+            p = f"imagenes/deco/hyda/lernaean_hydra_{i}_top.png"
             if not os.path.exists(p): break
             self.hydra_top.append(PhotoImage(file=p).zoom(2,2))
 
@@ -334,8 +334,8 @@ class AnimationMixin:
         self.skel_sell = []
         idx = 1
         while True:
-            nb = f"imagenes/deco/skeleton_hydra_{idx}_new.png"
-            ns = f"imagenes/deco/skeleton_hydra_{idx}_old.png"
+            nb = f"imagenes/deco/skl_hydra/skeleton_hydra_{idx}_new.png"
+            ns = f"imagenes/deco/skl_hydra/skeleton_hydra_{idx}_old.png"
             if not os.path.exists(nb) and not os.path.exists(ns): break
             if os.path.exists(nb): self.skel_buy.append(PhotoImage(file=nb).zoom(2,2))
             if os.path.exists(ns): self.skel_sell.append(PhotoImage(file=ns).zoom(2,2))
@@ -344,8 +344,8 @@ class AnimationMixin:
         # ─── CREACIÓN DE ITEMS ───
             # ─── LÁMPARA + EFREET (abajo del animation panel) ───
         lamppaths = [
-            (os.path.join("imagenes", "deco", "magic_lamp.png"),
-             os.path.join("imagenes", "deco", "efreet.png")),
+            (os.path.join("imagenes", "deco", "rebalance", "magic_lamp.png"),
+             os.path.join("imagenes", "deco", "rebalance", "efreet.png")),
             ("/mnt/data/magic_lamp.png", "/mnt/data/efreet.png"),
         ]
         lamp_path = efreet_path = None

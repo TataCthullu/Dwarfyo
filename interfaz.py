@@ -25,13 +25,13 @@ class BotInterfaz(AnimationMixin):
         #self.root.iconbitmap("imagenes/deco/urand_eternal_torment.png")
         # ---- Icono del bot ----
         try:
-            self.root.iconbitmap("imagenes/cigotuvis_monster.ico")
+            self.root.iconbitmap("imagenes/icon/cigotuvis_monster.ico")
         except Exception as e:
             print("Error cargando icono ICO:", e)
 
         # Y también mantené el PNG para Tk (opcional pero recomendado)
         try:
-            self.img_icon = tk.PhotoImage(file="imagenes/cigotuvis_monster.png")
+            self.img_icon = tk.PhotoImage(file="imagenes/icon/cigotuvis_monster.png")
             self.root.iconphoto(True, self.img_icon)
         except Exception as e:
             print("Error cargando icono PNG:", e)
@@ -807,7 +807,7 @@ class BotInterfaz(AnimationMixin):
         add("Pérdidas por rebalance:", self.rebalance_loss_total_str, "rebalance_loss_total")
         
         try:
-            img_ped = Image.open("imagenes/deco/pedestal.png")
+            img_ped = Image.open("imagenes/deco/rebalance/pedestal.png")
             # ⬇️ Escala 2x (cambiá zoom_factor si querés otro tamaño)
             zoom_factor = 2
             w0, h0 = img_ped.size
@@ -826,7 +826,7 @@ class BotInterfaz(AnimationMixin):
         self.various_frame.place(x=0, y=900, width=2000, height=100)
         self.canvas_various = tk.Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
         self.canvas_various.pack(fill="both", expand=True)
-        self.rellenar_mosaico(self.canvas_various, "imagenes/deco/snake-d_1.png", escala=3)
+        self.rellenar_mosaico(self.canvas_various, "imagenes/decoa/wall/snake-d_1.png", escala=3)
         # Crear botones pero solo mostrar "Iniciar" al principio
         self.btn_inicio = tk.Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
@@ -1416,16 +1416,16 @@ class BotInterfaz(AnimationMixin):
                 add_change("Capital inicial",  old_cfg["inv_inic"],            self.bot.inv_inic, "$")
 
                 add_change("TP habilitado",    bool_str(old_cfg["tp_enabled"]), bool_str(self.bot.tp_enabled))
-                add_change("TP %",             old_cfg["take_profit_pct"],      self.bot.take_profit_pct or Decimal("0"), "%")
+                add_change("TP",             old_cfg["take_profit_pct"],      self.bot.take_profit_pct or Decimal("0"), "%")
                 add_change("SL habilitado",    bool_str(old_cfg["sl_enabled"]), bool_str(self.bot.sl_enabled))
-                add_change("SL %",             old_cfg["stop_loss_pct"],        self.bot.stop_loss_pct or Decimal("0"), "%")
+                add_change("SL",             old_cfg["stop_loss_pct"],        self.bot.stop_loss_pct or Decimal("0"), "%")
 
                 add_change("Comisión aplicada", bool_str(old_cfg["comisiones_enabled"]), bool_str(self.bot.comisiones_enabled))
-                add_change("Comisión %",        old_cfg["comision_pct"],          self.bot.comision_pct, "%")
+                add_change("Comisión",        old_cfg["comision_pct"],          self.bot.comision_pct, "%")
 
                 add_change("Rebalance habilitado", bool_str(old_cfg["rebalance_enabled"]), bool_str(self.bot.rebalance_enabled))
                 add_change("Rebalance umbral",     old_cfg["rebalance_threshold"],          self.bot.rebalance_threshold)
-                add_change("Rebalance %",          old_cfg["rebalance_pct"],               self.bot.rebalance_pct, "%")
+                add_change("Rebalance",          old_cfg["rebalance_pct"],               self.bot.rebalance_pct, "%")
 
                 add_change("Compra en venta fantasma",
                            bool_str(old_cfg["compra_en_venta_fantasma"]),

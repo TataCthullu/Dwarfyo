@@ -78,8 +78,8 @@ def main_menu(nombre):
     btn_khazad = tk.Button(main_menu_var, text="Khazad", font=("Carolingia", 16))
     btn_khazad.pack(side="left", anchor="n", padx=10)
     
-    btn_doom = tk.Button(main_menu_var, text="Doom", font=("Carolingia", 16))
-    btn_doom.pack(side="left", anchor="n", padx=10)
+    btn_dum = tk.Button(main_menu_var, text="Dum", font=("Carolingia", 16))
+    btn_dum.pack(side="left", anchor="n", padx=10)
 
     btn_crear_avatar = tk.Button(main_menu_var, text="Crear Avatar", font=("Carolingia", 16), command=crear_avatar)
     btn_crear_avatar.pack()
