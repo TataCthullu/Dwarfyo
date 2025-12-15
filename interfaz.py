@@ -16,9 +16,16 @@ import csv
 from datetime import datetime
 
 class BotInterfaz(AnimationMixin):
-    def __init__(self, bot: TradingBot):
+    def __init__(self, bot: TradingBot, master=None, usuario=None):
          # Main window setup
-        self.root = tk.Tk()
+        self._owns_mainloop = (master is None)
+        self.usuario = usuario  # por ahora solo lo guardamos
+
+        if master is None:
+            self.root = tk.Tk()
+        else:
+            self.root = tk.Toplevel(master)
+
         self.root.title("Khazad - Dungeon Market")
         #self.root.config(cursor="@imagenes/deco/cursor/stone_arrow_x4.cur")
         self.root.configure(bg="pink")
@@ -2227,8 +2234,8 @@ class BotInterfaz(AnimationMixin):
         }
 
     def run(self):
-        try:
-            self.root.mainloop()
-        except KeyboardInterrupt:
-            # Puedes optar por destruir la ventana o simplemente ignorar
-            pass
+        if self._owns_mainloop:
+            try:
+                self.root.mainloop()
+            except KeyboardInterrupt:
+                pass

@@ -1,5 +1,7 @@
 import tkinter as tk
 from database import init_db, agregar_usuario, validar_usuario, usuario_existe
+from codigo_principala import TradingBot
+from interfaz import BotInterfaz
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -7,24 +9,42 @@ ventana_loggin.geometry("400x200")
 ventana_loggin.config(background="PaleGoldenRod")
 
 def cerrar_app():
-        ventana_loggin.destroy()
+    ventana_loggin.destroy()
 
 ventana_loggin.protocol("WM_DELETE_WINDOW", cerrar_app)
 
 exchange_win = False
 crear_user_win = False
+user_win_ref = None
 
 init_db()
 
 def crear_user():
+    global user_win_ref
+
+    if user_win_ref is not None and user_win_ref.winfo_exists():
+        user_win_ref.lift()
+        user_win_ref.focus_force()
+        return
+
     global crear_user_win
     if crear_user_win:
         return
     crear_user_win = True
 
-    user_win = tk.Tk()
+    user_win = tk.Toplevel(ventana_loggin)
+    user_win_ref = user_win
     user_win.geometry("400x200")
     user_win.title("Creación De Usuario - Dungeon Market")
+    def cerrar_user():
+        global user_win_ref
+        try:
+            user_win.destroy()
+        except Exception:
+            pass
+        user_win_ref = None
+
+    user_win.protocol("WM_DELETE_WINDOW", cerrar_user)
     user_win.config(background="PaleGoldenRod")
 
     user_win_laba = tk.Label(user_win, text="Saludos!", font=("Carolingia", 18), background="PaleGoldenRod")
@@ -67,6 +87,32 @@ def main_menu(nombre):
     main_menu_var.geometry("750x800")
     main_menu_var.config(background="PaleGoldenRod")
     main_menu_var.title("Dungeon Market")
+    
+    khazad_win = {"open": False, "app": None}  # mini-flag simple
+
+    def abrir_khazad():
+        if khazad_win["open"]:
+            try:
+                khazad_win["app"].root.lift()
+                khazad_win["app"].root.focus_force()
+            except Exception:
+                pass
+            return
+
+        bot = TradingBot()
+        app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
+        khazad_win["open"] = True
+        khazad_win["app"] = app
+
+        def _al_cerrar():
+            khazad_win["open"] = False
+            try:
+                app.root.destroy()
+            except Exception:
+                pass
+
+        app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
+
     menu_title = tk.Label(main_menu_var, text = "Dungeon Market", font=("Carolingia", 20), background="PaleGoldenRod")
     menu_title.pack(side="top",anchor="center")
     saludo_label = tk.Label(main_menu_var, text=f"Salve, {nombre}!", font=("Carolingia", 18),fg="Crimson", background="PaleGoldenRod")
@@ -75,7 +121,7 @@ def main_menu(nombre):
     btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
     btn_exchange.pack(side="left", anchor="n", padx=10)
 
-    btn_khazad = tk.Button(main_menu_var, text="Khazad", font=("Carolingia", 16))
+    btn_khazad = tk.Button(main_menu_var, text="Khazad", font=("Carolingia", 16), command=abrir_khazad)
     btn_khazad.pack(side="left", anchor="n", padx=10)
     
     btn_dum = tk.Button(main_menu_var, text="Dum", font=("Carolingia", 16))
