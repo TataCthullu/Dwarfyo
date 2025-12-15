@@ -325,7 +325,7 @@ class AnimationMixin:
                 self.hydra_bottom[n] = PhotoImage(file=p).zoom(2,2)
         self.hydra_top = []
         for i in range(1, self.MAX_CABEZAS+1):
-            p = f"imagenes/deco/hyda/lernaean_hydra_{i}_top.png"
+            p = f"imagenes/deco/hydra/lernaean_hydra_{i}_top.png"
             if not os.path.exists(p): break
             self.hydra_top.append(PhotoImage(file=p).zoom(2,2))
 

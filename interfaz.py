@@ -65,7 +65,13 @@ class BotInterfaz(AnimationMixin):
         self._ctx_ultimo_num = None
         self._hist_last_tx_n = 0
         self._hist_last_sell_n = 0
+        # indices de la línea "Estado:" por compra
+        self._hist_estado_pos_by_id = {}   # id -> "line.start"
+        self._hist_estado_pos_by_num = {}  # numcompra -> "line.start"
 
+        # cache para detectar cambios (evita reescribir al pedo)
+        self._hist_estado_cache_by_id = {}
+        self._hist_estado_cache_by_num = {}
         self.colores_fijos = {
             "usdt": "SpringGreen",
             "btc_dispo": "SkyBlue",
@@ -323,6 +329,38 @@ class BotInterfaz(AnimationMixin):
                     except Exception:
                         pass
 
+    def _hist_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):
+        txt = self.historial
+        if not hasattr(self, "historial"):
+            return
+
+        pos = None
+        if id_compra is not None:
+            pos = self._hist_estado_pos_by_id.get(str(id_compra))
+        if pos is None and numcompra is not None:
+            pos = self._hist_estado_pos_by_num.get(str(numcompra))
+
+        if not pos:
+            return
+
+        try:
+            txt.configure(state="normal")
+        except Exception:
+            pass
+
+        try:
+            # borra SOLO la línea donde está "Estado: ..."
+            line_start = pos
+            line_end = txt.index(f"{pos} lineend +1c")
+            txt.delete(line_start, line_end)
+            txt.insert(line_start, f"Estado: {nuevo_estado}\n")
+        except Exception:
+            pass
+
+        try:
+            txt.configure(state="disabled")
+        except Exception:
+            pass
 
 
     def _cambiar_precision(self, prec=None):
@@ -936,6 +974,10 @@ class BotInterfaz(AnimationMixin):
             pass
         self._hist_last_tx_n = 0
         self._hist_last_sell_n = 0
+        self._hist_estado_pos_by_id.clear()
+        self._hist_estado_pos_by_num.clear()
+        self._hist_estado_cache_by_id.clear()
+        self._hist_estado_cache_by_num.clear()
 
         try:
             # habilitar, borrar y volver a deshabilitar la consola
@@ -1784,17 +1826,34 @@ class BotInterfaz(AnimationMixin):
 
     def actualizar_historial(self):
         try:
-            # Si el widget no existe aún
             if not hasattr(self, "historial"):
                 return
 
-            # habilitar escritura (si lo usás disabled)
             try:
                 self.historial.configure(state="normal")
             except Exception:
                 pass
 
-            # === COMPRAS NUEVAS (solo append) ===
+            # === (A) PARCHEAR ESTADOS YA IMPRESOS (sin reconstruir) ===
+            # Recorremos todas las transacciones y actualizamos solo si cambió
+            for t in self.bot.transacciones:
+                tx_id = str(t.get("id", "")).strip()
+                numc  = str(t.get("numcompra", "")).strip()
+                estado = t.get("estado", "activa")
+
+                if tx_id:
+                    prev = self._hist_estado_cache_by_id.get(tx_id)
+                    if prev is not None and prev != estado:
+                        self._hist_patch_estado(id_compra=tx_id, nuevo_estado=estado)
+                    self._hist_estado_cache_by_id[tx_id] = estado
+
+                if numc:
+                    prevn = self._hist_estado_cache_by_num.get(numc)
+                    if prevn is not None and prevn != estado:
+                        self._hist_patch_estado(numcompra=numc, nuevo_estado=estado)
+                    self._hist_estado_cache_by_num[numc] = estado
+
+            # === (B) COMPRAS NUEVAS (solo append) ===
             txs = self.bot.transacciones
             start_tx = getattr(self, "_hist_last_tx_n", 0)
             if start_tx < 0:
@@ -1803,11 +1862,26 @@ class BotInterfaz(AnimationMixin):
             for t in txs[start_tx:]:
                 ts = t.get("timestamp", "")
                 estado = t.get("estado", "activa")
+                tx_id = str(t.get("id", "")).strip()
+                numc  = str(t.get("numcompra", "")).strip()
+
                 self.historial.insert(tk.END, "🟦 Compra realizada:\n", "compra_tag")
                 self.historial.insert(tk.END, f"Precio de compra: {self.format_var(t.get('compra', ''), '$')}\n")
                 self.historial.insert(tk.END, f"Id: {t.get('id','')}\n")
                 self.historial.insert(tk.END, f"Número de compra: {t.get('numcompra','')}\n")
+
+                # ✅ guardamos posición EXACTA donde arranca la línea "Estado:"
+                estado_pos = self.historial.index(tk.END)
                 self.historial.insert(tk.END, f"Estado: {estado}\n")
+
+                # ✅ registramos esa posición para parche futuro
+                if tx_id:
+                    self._hist_estado_pos_by_id[tx_id] = estado_pos
+                    self._hist_estado_cache_by_id[tx_id] = estado
+                if numc:
+                    self._hist_estado_pos_by_num[numc] = estado_pos
+                    self._hist_estado_cache_by_num[numc] = estado
+
                 self.historial.insert(tk.END, f"Fecha y hora: {ts}\n")
                 self.historial.insert(tk.END, f"Btc/usdt comprado: {self.format_var(t.get('valor_en_usdt',''), '$')}\n")
 
@@ -1815,7 +1889,6 @@ class BotInterfaz(AnimationMixin):
                     self.historial.insert(tk.END, f"Comisión: {self.format_var(t['fee_usdt'], '$')}\n")
                 if "fee_btc" in t:
                     self.historial.insert(tk.END, f"Comisión BTC: {self.format_var(t['fee_btc'], '₿')}\n")
-
                 if "venta_obj" in t:
                     self.historial.insert(tk.END, f"Objetivo de venta: {self.format_var(t['venta_obj'], '$')}\n")
 
@@ -1823,7 +1896,7 @@ class BotInterfaz(AnimationMixin):
 
             self._hist_last_tx_n = len(txs)
 
-            # === VENTAS NUEVAS (solo append) ===
+            # === (C) VENTAS NUEVAS (solo append) ===
             vs = self.bot.precios_ventas
             start_v = getattr(self, "_hist_last_sell_n", 0)
             if start_v < 0:
@@ -1834,10 +1907,8 @@ class BotInterfaz(AnimationMixin):
                 self.historial.insert(tk.END, "🟩 Venta realizada:\n", "venta_tag")
                 self.historial.insert(tk.END, f"Precio de compra: {self.format_var(v.get('compra',''), '$')}\n")
                 self.historial.insert(tk.END, f"Precio de venta: {self.format_var(v.get('venta',''), '$')}\n")
-
                 if "fee_usdt" in v:
                     self.historial.insert(tk.END, f"Comisión: {self.format_var(v['fee_usdt'], '$')}\n")
-
                 self.historial.insert(tk.END, f"Id compra: {v.get('id_compra','')}\n")
                 if "ganancia" in v:
                     self.historial.insert(tk.END, f"Ganancia: {self.format_var(v['ganancia'], '$')}\n")
@@ -1847,7 +1918,6 @@ class BotInterfaz(AnimationMixin):
 
             self._hist_last_sell_n = len(vs)
 
-            # volver a bloquear si querés
             try:
                 self.historial.configure(state="disabled")
             except Exception:
@@ -1855,7 +1925,6 @@ class BotInterfaz(AnimationMixin):
 
         except Exception:
             pass
-
 
     def _consola_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):
         """
