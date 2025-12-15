@@ -61,6 +61,16 @@ class BotInterfaz(AnimationMixin):
         self._font_consola   = ("LondonBetween", 16)  # o distinta si preferís
         self._consola_buffer = []  # buffer de líneas de consola
         self._consola_last_n = 0   # cuántas entradas del buffer ya fueron pintadas (console incremental)
+        # === Consola: posiciones de la línea "📜 Estado:" por compra ===
+        self._con_estado_pos_by_id = {}    # id_compra -> "line.start"
+        self._con_estado_pos_by_num = {}   # numcompra -> "line.start"
+
+        # cache para detectar cambios y no parchear al pedo
+        self._con_estado_cache_by_id = {}
+        self._con_estado_cache_by_num = {}
+        self._estado_line_by_id = {}
+        self._estado_line_by_num = {}
+
         self._ctx_ultimo_id = None # contexto incremental para corrección de estado
         self._ctx_ultimo_num = None
         self._hist_last_tx_n = 0
@@ -972,12 +982,20 @@ class BotInterfaz(AnimationMixin):
             self.historial.delete("1.0", tk.END)
         except Exception:
             pass
+
         self._hist_last_tx_n = 0
         self._hist_last_sell_n = 0
         self._hist_estado_pos_by_id.clear()
         self._hist_estado_pos_by_num.clear()
         self._hist_estado_cache_by_id.clear()
         self._hist_estado_cache_by_num.clear()
+
+        self._con_estado_pos_by_id.clear()
+        self._con_estado_pos_by_num.clear()
+        self._con_estado_cache_by_id.clear()
+        self._con_estado_cache_by_num.clear()
+        self._estado_line_by_id.clear()
+        self._estado_line_by_num.clear()
 
         try:
             # habilitar, borrar y volver a deshabilitar la consola
@@ -1927,43 +1945,35 @@ class BotInterfaz(AnimationMixin):
             pass
 
     def _consola_patch_estado(self, id_compra=None, numcompra=None, nuevo_estado="vendida"):
-        """
-        Corrige IN-PLACE la última línea '📜 Estado: ...' del bloque que
-        corresponde a id_compra o numcompra. No borra todo, no toca scroll.
-        """
         txt = self.consola
         if (not id_compra) and (numcompra in (None, "")):
             return
 
-        if id_compra:
-            patron_ancla = rf"\bId(?:\s+compra)?\s*:\s*{re.escape(str(id_compra))}\b"
-        else:
-            patron_ancla = rf"(?:Compra\s+Num|N[úu]mero\s+de\s+compra)\s*:\s*{re.escape(str(numcompra))}\b"
-
         try:
-            start_idx = txt.search(patron_ancla, "end-1c", stopindex="1.0", backwards=True, regexp=True)
-            if not start_idx:
-                return
+            if id_compra:
+                idx = self._estado_line_by_id.get(str(id_compra).strip())
+                if idx:
+                    line_start = idx
+                    line_end = f"{int(idx.split('.')[0]) + 1}.0"
+                    txt.configure(state="normal")
+                    txt.delete(line_start, line_end)
+                    txt.insert(line_start, f"📜 Estado: {nuevo_estado}\n")
+                    txt.configure(state="disabled")
+                    return
 
-            divisor = r"^\s*-\s-(?:\s-)+\s*$"
-            end_bloque = txt.search(divisor, start_idx, stopindex="end-1c", forwards=True, regexp=True)
-            if not end_bloque:
-                end_bloque = "end-1c"
-
-            estado_pat = r"^\s*📜\s*Estado\s*:\s*.*$"
-            estado_idx = txt.search(estado_pat, start_idx, stopindex=end_bloque, forwards=True, regexp=True)
-            if not estado_idx:
-                return
-
-            line_start = estado_idx.split(".")[0] + ".0"
-            line_end   = str(int(estado_idx.split(".")[0]) + 1) + ".0"
-
-            txt.configure(state="normal")
-            txt.delete(line_start, line_end)
-            txt.insert(line_start, f"📜 Estado: {nuevo_estado}\n")
-            txt.configure(state="disabled")
+            if numcompra not in (None, ""):
+                idx = self._estado_line_by_num.get(str(numcompra).strip())
+                if idx:
+                    line_start = idx
+                    line_end = f"{int(idx.split('.')[0]) + 1}.0"
+                    txt.configure(state="normal")
+                    txt.delete(line_start, line_end)
+                    txt.insert(line_start, f"📜 Estado: {nuevo_estado}\n")
+                    txt.configure(state="disabled")
+                    return
         except Exception:
             pass
+
 
     def actualizar_consola(self):
         """
@@ -2041,14 +2051,25 @@ class BotInterfaz(AnimationMixin):
                 if m_num:
                     ultimo_num = (m_num.group(1) or m_num.group(2) or "").strip() or ultimo_num
 
+                # índice donde empezará la próxima inserción (línea exacta, sin mover scroll)
+                line_start_idx = self.consola.index("end-1c linestart")
+
                 if re_estado.match(linea):
                     estado_actual = None
                     if ultimo_id and ultimo_id in estado_por_id:
                         estado_actual = estado_por_id[ultimo_id]
                     elif ultimo_num and ultimo_num in estado_por_num:
                         estado_actual = estado_por_num[ultimo_num]
+
                     if estado_actual:
                         linea = f"📜 Estado: {estado_actual}"
+
+                        # ✅ guardar dónde quedó esa línea "Estado" para parches futuros
+                        if ultimo_id:
+                            self._estado_line_by_id[str(ultimo_id)] = line_start_idx
+                        if ultimo_num:
+                            self._estado_line_by_num[str(ultimo_num)] = line_start_idx
+
 
                 if re_divisor.match(linea):
                     ultimo_id = None
@@ -2063,6 +2084,27 @@ class BotInterfaz(AnimationMixin):
             self._ctx_ultimo_id = ultimo_id
             self._ctx_ultimo_num = ultimo_num
 
+        except Exception:
+            pass
+
+    def _consola_patch_estado_pos(self, line_start_idx: str, nuevo_estado: str):
+        """
+        Parchea IN-PLACE la línea exacta donde está '📜 Estado: ...'
+        usando el índice guardado (ej: '120.0'). No mueve scroll.
+        """
+        try:
+            if not line_start_idx:
+                return
+
+            txt = self.consola
+            line_no = int(str(line_start_idx).split(".")[0])
+            line_start = f"{line_no}.0"
+            line_end   = f"{line_no + 1}.0"
+
+            txt.configure(state="normal")
+            txt.delete(line_start, line_end)
+            txt.insert(line_start, f"📜 Estado: {nuevo_estado}\n")
+            txt.configure(state="disabled")
         except Exception:
             pass
 
