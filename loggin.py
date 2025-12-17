@@ -1,5 +1,5 @@
 import tkinter as tk
-from database import init_db, agregar_usuario, validar_usuario, usuario_existe
+from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 
@@ -118,6 +118,19 @@ def main_menu(nombre):
     saludo_label = tk.Label(main_menu_var, text=f"Salve, {nombre}!", font=("Carolingia", 18),fg="Crimson", background="PaleGoldenRod")
     saludo_label.pack()
 
+    perfil = cargar_perfil(nombre)
+    avatar_var = tk.StringVar(value=(perfil.get("avatar", {}) or {}).get("name", "Sin avatar"))
+
+    avatar_label = tk.Label(
+        main_menu_var,
+        textvariable=avatar_var,
+        font=("Carolingia", 16),
+        fg="DarkBlue",
+        background="PaleGoldenRod"
+    )
+    avatar_label.pack(pady=10)
+
+
     btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
     btn_exchange.pack(side="left", anchor="n", padx=10)
 
@@ -127,8 +140,14 @@ def main_menu(nombre):
     btn_dum = tk.Button(main_menu_var, text="Dum", font=("Carolingia", 16))
     btn_dum.pack(side="left", anchor="n", padx=10)
 
-    btn_crear_avatar = tk.Button(main_menu_var, text="Crear Avatar", font=("Carolingia", 16), command=crear_avatar)
+    btn_crear_avatar = tk.Button(
+        main_menu_var,
+        text="Crear Avatar",
+        font=("Carolingia", 16),
+        command=lambda: crear_avatar(nombre, avatar_var)
+    )
     btn_crear_avatar.pack()
+
 
     def cerrar_todo():
             ventana_loggin.destroy()
@@ -175,20 +194,33 @@ def fantasy_futures():
     fantasy_futures_win.geometry("200x200")
     fantasy_futures_win.title("Fantasy Futures - Dungeon Market")    
 
-def crear_avatar():
+def crear_avatar(usuario, avatar_var):
     avatar_win = tk.Toplevel(ventana_loggin)
-    avatar_win.geometry("300x50")
+    avatar_win.geometry("320x120")
     avatar_win.title("Crear Avatar")
     avatar_win.configure(background="PaleGoldenRod")
 
-    label_name = tk.Label(avatar_win, text="Nombre:")
-    label_name.pack(side="left", anchor="n")
+    label_name = tk.Label(avatar_win, text="Nombre del Avatar:", bg="PaleGoldenRod")
+    label_name.pack(anchor="w", padx=10, pady=(10, 0))
 
     entry_name = tk.Entry(avatar_win)
-    entry_name.pack(side="left", anchor="n")
+    entry_name.pack(anchor="w", padx=10, pady=5)
 
-    btn_crear_avatar = tk.Button(avatar_win, text="Crear")
-    btn_crear_avatar.pack()
+    def _guardar_avatar():
+        nombre_avatar = entry_name.get().strip()
+        if not nombre_avatar:
+            return
+
+        perfil = cargar_perfil(usuario)
+        perfil["avatar"] = {"name": nombre_avatar}
+        guardar_perfil(usuario, perfil)
+
+        avatar_var.set(nombre_avatar)
+        avatar_win.destroy()
+
+    btn_crear = tk.Button(avatar_win, text="Crear", command=_guardar_avatar)
+    btn_crear.pack(pady=10)
+
 
 
 def login_win():
