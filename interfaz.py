@@ -882,6 +882,21 @@ class BotInterfaz(AnimationMixin):
         self.canvas_various = tk.Canvas(self.various_frame, width=2000, height=100, highlightthickness=0)
         self.canvas_various.pack(fill="both", expand=True)
         self.rellenar_mosaico(self.canvas_various, "imagenes/decoa/wall/snake-d_1.png", escala=3)
+        # 🧑 Usuario (posición absoluta)
+        user_txt = (getattr(self, "usuario", "") or "").strip()
+        if user_txt:
+            # coordenadas ABSOLUTAS (ajustá si querés)
+            x_user = 900
+            y_user = 50
+
+            self.usuario_text_id = self.canvas_various.create_text(
+                x_user, y_user,
+                text=f"👤 {user_txt}",
+                fill="PaleGoldenRod",
+                font=("LondonBetween", 16),
+                anchor="w"
+            )
+
         # Crear botones pero solo mostrar "Iniciar" al principio
         self.btn_inicio = tk.Button(self.canvas_various, text="Iniciar", command=self.toggle_bot, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_inicio_id = self.canvas_various.create_window(100, 50, window=self.btn_inicio)
@@ -893,6 +908,7 @@ class BotInterfaz(AnimationMixin):
         #self.canvas_various.create_window(400, 50, window=self.btn_calc)
         self.btn_confi = tk.Button(self.canvas_various, text="Configurar Operativa", command=self.abrir_configuracion_subventana, bg="Goldenrod", font=("LondonBetween", 16), fg="PaleGoldenRod")
         self.btn_confi_id = self.canvas_various.create_window(600, 50, window=self.btn_confi)
+        
 
     def toggle_bot(self):
         if self.bot.running:

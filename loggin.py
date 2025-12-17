@@ -86,7 +86,7 @@ def main_menu(nombre):
     main_menu_var = tk.Toplevel(ventana_loggin)
     main_menu_var.geometry("750x800")
     main_menu_var.config(background="PaleGoldenRod")
-    main_menu_var.title("Dungeon Market")
+    main_menu_var.title("Dungeon Market - Main Menu")
     
     khazad_win = {"open": False, "app": None}  # mini-flag simple
 
@@ -140,7 +140,7 @@ def main_menu(nombre):
         ventana_loggin.deiconify()
         login_win()  # ← recrea toda la vista de login (arranca por usuario)
 
-    tk.Button(main_menu_var, text="Cerrar sesión", font=("Carolingia", 12),
+    tk.Button(main_menu_var, text="Cerrar sesion", font=("Carolingia", 12),
             command=cerrar_sesion).pack(side="bottom", anchor="e", padx=20, pady=20)
     
 def exchange_def():
