@@ -2,6 +2,7 @@ import tkinter as tk
 from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
+from PIL import Image, ImageTk
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -37,12 +38,14 @@ def crear_user():
     user_win.geometry("400x200")
     user_win.title("Creación De Usuario - Dungeon Market")
     def cerrar_user():
-        global user_win_ref
+        global user_win_ref, crear_user_win
+        crear_user_win = False
         try:
             user_win.destroy()
         except Exception:
             pass
         user_win_ref = None
+
 
     user_win.protocol("WM_DELETE_WINDOW", cerrar_user)
     user_win.config(background="PaleGoldenRod")
@@ -72,6 +75,8 @@ def crear_user():
 
         if agregar_usuario(nombre, password):
             print("Usuario creado correctamente")
+            global crear_user_win
+            crear_user_win = False
             user_win.destroy()
         else:
             print("Ese usuario ya existe")
@@ -80,14 +85,42 @@ def crear_user():
     btn_crear_pj = tk.Button(user_win, text="Crear", font=("Carolingia", 18), command=guardar_usuario)
     btn_crear_pj.pack(pady=10)
 
-    user_win.mainloop()
+    
+
+def rellenar_mosaico(canvas, image_path, escala=1):
+    imagen_original = Image.open(image_path)
+    ancho, alto = imagen_original.size
+    imagen_redimensionada = imagen_original.resize(
+    (ancho * escala, alto * escala),
+    resample=Image.Resampling.NEAREST
+    )
+
+    imagen = ImageTk.PhotoImage(imagen_redimensionada)
+
+    if not hasattr(canvas, 'imagenes'):
+        canvas.imagenes = []
+    canvas.imagenes.append(imagen)
+
+    width = int(canvas['width'])
+    height = int(canvas['height'])
+
+    for x in range(0, width, imagen.width()):
+        for y in range(0, height, imagen.height()):
+            canvas.create_image(x, y, image=imagen, anchor='nw')
+
 # Main Menu
 def main_menu(nombre):
     main_menu_var = tk.Toplevel(ventana_loggin)
     main_menu_var.geometry("750x800")
-    main_menu_var.config(background="PaleGoldenRod")
-    main_menu_var.title("Dungeon Market - Main Menu")
     
+    main_menu_var.title("Dungeon Market - Main Menu")
+        # ===== Canvas full para fondo + layout =====
+    canvas_menu = tk.Canvas(main_menu_var, width=750, height=800, highlightthickness=0, bd=0)
+    canvas_menu.pack(fill="both", expand=True)
+
+    # Fondo mosaico (elegí la textura que quieras)
+    rellenar_mosaico(canvas_menu, "imagenes/decoa/wall/catacombs_5.png", escala=2)
+
     khazad_win = {"open": False, "app": None}  # mini-flag simple
 
     def abrir_khazad():
@@ -113,41 +146,53 @@ def main_menu(nombre):
 
         app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
-    menu_title = tk.Label(main_menu_var, text = "Dungeon Market", font=("Carolingia", 20), background="PaleGoldenRod")
-    menu_title.pack(side="top",anchor="center")
-    saludo_label = tk.Label(main_menu_var, text=f"Salve, {nombre}!", font=("Carolingia", 18),fg="Crimson", background="PaleGoldenRod")
-    saludo_label.pack()
+    # ---- textos flotantes (SIN fondo) ----
+    canvas_menu.create_text(
+        375, 30,
+        text="Dungeon Market",
+        fill="PaleGoldenRod",
+        font=("Carolingia", 20),
+        anchor="center"
+    )
+   
+    canvas_menu.create_text(
+        375, 70,
+        text=f"Salve, {nombre}!",
+        fill="Crimson",
+        font=("Carolingia", 18),
+        anchor="center"
+    )
+   
 
     perfil = cargar_perfil(nombre)
-    avatar_var = tk.StringVar(value=(perfil.get("avatar", {}) or {}).get("name", "Sin avatar"))
+    avatar_nombre = (perfil.get("avatar", {}) or {}).get("name", "Sin avatar")
 
-    avatar_label = tk.Label(
-        main_menu_var,
-        textvariable=avatar_var,
+    avatar_text_id = canvas_menu.create_text(
+        375, 105,
+        text=avatar_nombre,
+        fill="DarkBlue",
         font=("Carolingia", 16),
-        fg="DarkBlue",
-        background="PaleGoldenRod"
+        anchor="center"
     )
-    avatar_label.pack(pady=10)
 
+   
 
     btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
-    btn_exchange.pack(side="left", anchor="n", padx=10)
+    canvas_menu.create_window(120, 140, window=btn_exchange, anchor="nw")
 
     btn_khazad = tk.Button(main_menu_var, text="Khazad", font=("Carolingia", 16), command=abrir_khazad)
-    btn_khazad.pack(side="left", anchor="n", padx=10)
-    
+    canvas_menu.create_window(320, 140, window=btn_khazad, anchor="nw")
+
     btn_dum = tk.Button(main_menu_var, text="Dum", font=("Carolingia", 16))
-    btn_dum.pack(side="left", anchor="n", padx=10)
+    canvas_menu.create_window(500, 140, window=btn_dum, anchor="nw")
 
     btn_crear_avatar = tk.Button(
         main_menu_var,
         text="Crear Avatar",
         font=("Carolingia", 16),
-        command=lambda: crear_avatar(nombre, avatar_var)
+        command=lambda: crear_avatar(nombre, canvas_menu, avatar_text_id)
     )
-    btn_crear_avatar.pack()
-
+    canvas_menu.create_window(120, 220, window=btn_crear_avatar, anchor="nw")
 
     def cerrar_todo():
             ventana_loggin.destroy()
@@ -159,9 +204,14 @@ def main_menu(nombre):
         ventana_loggin.deiconify()
         login_win()  # ← recrea toda la vista de login (arranca por usuario)
 
-    tk.Button(main_menu_var, text="Cerrar sesion", font=("Carolingia", 12),
-            command=cerrar_sesion).pack(side="bottom", anchor="e", padx=20, pady=20)
-    
+    btn_cerrar_sesion = tk.Button(
+        main_menu_var,
+        text="Cerrar sesion",
+        font=("Carolingia", 12),
+        command=cerrar_sesion
+    )
+    canvas_menu.create_window(730, 770, window=btn_cerrar_sesion, anchor="se")
+
 def exchange_def():
     global exchange_win
     if exchange_win:
@@ -194,7 +244,8 @@ def fantasy_futures():
     fantasy_futures_win.geometry("200x200")
     fantasy_futures_win.title("Fantasy Futures - Dungeon Market")    
 
-def crear_avatar(usuario, avatar_var):
+def crear_avatar(usuario, canvas_menu, avatar_text_id):
+
     avatar_win = tk.Toplevel(ventana_loggin)
     avatar_win.geometry("320x120")
     avatar_win.title("Crear Avatar")
@@ -215,7 +266,8 @@ def crear_avatar(usuario, avatar_var):
         perfil["avatar"] = {"name": nombre_avatar}
         guardar_perfil(usuario, perfil)
 
-        avatar_var.set(nombre_avatar)
+        canvas_menu.itemconfig(avatar_text_id, text=nombre_avatar)
+
         avatar_win.destroy()
 
     btn_crear = tk.Button(avatar_win, text="Crear", command=_guardar_avatar)
