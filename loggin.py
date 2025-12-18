@@ -9,6 +9,10 @@ ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
 ventana_loggin.geometry("400x200")
 ventana_loggin.config(background="PaleGoldenRod")
+ventana_loggin.iconbitmap(
+    "imagenes/icon/urand_eternal_torment.ico"
+)
+
 
 def cerrar_app():
     ventana_loggin.destroy()
@@ -138,7 +142,10 @@ def _avatar_name_from_path(path):
 def main_menu(nombre):
     main_menu_var = tk.Toplevel(ventana_loggin)
     main_menu_var.geometry("750x800")
-    
+    main_menu_var.iconbitmap(
+    "imagenes/icon/urand_eternal_torment.ico"
+    )
+
     main_menu_var.title("Dungeon Market - Main Menu")
         # ===== Canvas full para fondo + layout =====
     canvas_menu = tk.Canvas(main_menu_var, width=750, height=800, highlightthickness=0, bd=0)
@@ -206,7 +213,7 @@ def main_menu(nombre):
     canvas_menu.avatar_photo = None
 
     if avatar_img_path and os.path.exists(avatar_img_path):
-        ph = _cargar_avatar_thumbnail(avatar_img_path, size=(96, 96))
+        ph = _cargar_avatar_thumbnail(avatar_img_path, size=(64, 64))
         if ph:
             canvas_menu.avatar_photo = ph
             canvas_menu.itemconfig(avatar_img_id, image=ph)
@@ -348,7 +355,7 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
         # actualizar UI (texto + imagen)
         canvas_menu.itemconfig(avatar_text_id, text=nombre_avatar)
 
-        ph = _cargar_avatar_thumbnail(path, size=(96, 96))
+        ph = _cargar_avatar_thumbnail(path, size=(64, 64))
         if ph:
             canvas_menu.avatar_photo = ph
             canvas_menu.itemconfig(avatar_img_id, image=ph)
