@@ -307,14 +307,39 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
         lab.pack(padx=10, pady=10)
         return
 
+    # --- nombre obligatorio ---
+    lab_nombre = tk.Label(avatar_win, text="Nombre del avatar:", bg="PaleGoldenRod", font=("Carolingia", 12))
+    lab_nombre.pack(padx=10, pady=(10, 0), anchor="w")
+
+    nombre_var = tk.StringVar()
+    entry_nombre = tk.Entry(avatar_win, textvariable=nombre_var)
+    entry_nombre.pack(padx=10, pady=(0, 10), anchor="w")
+    entry_nombre.focus_force()
+
+    # contenedor de botones
     frame = tk.Frame(avatar_win, bg="PaleGoldenRod")
     frame.pack(padx=10, pady=10)
 
     # refs de thumbnails para que no se borren
     avatar_win.thumbs = []
+    avatar_win.avatar_buttons = []  # para habilitar/deshabilitar
+
+    def _update_buttons_state(*_):
+        ok = bool(nombre_var.get().strip())
+        state = "normal" if ok else "disabled"
+        for b in avatar_win.avatar_buttons:
+            try:
+                b.configure(state=state)
+            except Exception:
+                pass
+
+    nombre_var.trace_add("write", _update_buttons_state)
+
 
     def _select(path):
-        nombre_avatar = _avatar_name_from_path(path)
+        nombre_avatar = nombre_var.get().strip()
+        if not nombre_avatar:
+            return  # por seguridad
 
         perfil = cargar_perfil(usuario)
         perfil["avatar"] = {"name": nombre_avatar, "img": path}
@@ -323,7 +348,7 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
         # actualizar UI (texto + imagen)
         canvas_menu.itemconfig(avatar_text_id, text=nombre_avatar)
 
-        ph = _cargar_avatar_thumbnail(path, size=(76, 76))
+        ph = _cargar_avatar_thumbnail(path, size=(96, 96))
         if ph:
             canvas_menu.avatar_photo = ph
             canvas_menu.itemconfig(avatar_img_id, image=ph)
@@ -335,6 +360,7 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
             pass
 
         avatar_win.destroy()
+
 
     # grilla simple
     cols = 4
@@ -352,15 +378,19 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
             image=thumb,
             text=name,
             compound="top",
-            command=lambda pp=p: _select(pp)
+            command=lambda pp=p: _select(pp),
+            state="disabled"  # arranca bloqueado hasta que pongan nombre
         )
         b.grid(row=r, column=c, padx=6, pady=6)
+
+        avatar_win.avatar_buttons.append(b)
 
         c += 1
         if c >= cols:
             c = 0
             r += 1
 
+    _update_buttons_state()
 
 
 def login_win():
