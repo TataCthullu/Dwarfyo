@@ -19,7 +19,7 @@ def cerrar_app():
 
 ventana_loggin.protocol("WM_DELETE_WINDOW", cerrar_app)
 
-exchange_win = False
+#exchange_win = False
 crear_user_win = False
 user_win_ref = None
 
@@ -145,7 +145,7 @@ def main_menu(nombre):
     main_menu_var.iconbitmap(
     "imagenes/icon/urand_eternal_torment.ico"
     )
-
+    DUM_ICON_PATH = "imagenes/icon/cigotuvis_monster.ico"
     main_menu_var.title("Dungeon Market - Main Menu")
         # ===== Canvas full para fondo + layout =====
     canvas_menu = tk.Canvas(main_menu_var, width=750, height=800, highlightthickness=0, bd=0)
@@ -222,22 +222,113 @@ def main_menu(nombre):
     avatar_text_id = canvas_menu.create_text(
         375, 605,
         text=avatar_nombre,
-        fill="Crimson",
+        fill="PaleGoldenRod",
         font=("Carolingia", 16),
         anchor="center"
     )
 
 
-   
+    def abrir_modo(modo):
+        bot = TradingBot()
+        bot.modo_app = modo  # solo guardamos el modo, sin lógica todavía
 
-    btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
+        app = BotInterfaz(
+            bot,
+            master=ventana_loggin,
+            usuario=nombre
+        )
+
+        if modo == "dum":
+            app.root.iconbitmap(DUM_ICON_PATH)
+        else:
+            app.root.iconbitmap("imagenes/icon/urand_eternal_torment.ico")
+
+        def _al_cerrar():
+            try:
+                app.root.destroy()
+            except Exception:
+                pass
+
+        app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
+
+    modo_selector_win_ref = {"win": None}
+
+    def abrir_selector_modo(modo):
+        # evitar duplicar ventana
+        win = modo_selector_win_ref["win"]
+        if win is not None and win.winfo_exists():
+            win.lift()
+            win.focus_force()
+            return
+
+        sel = tk.Toplevel(ventana_loggin)
+        modo_selector_win_ref["win"] = sel
+        sel.geometry("320x220")
+        sel.title(("Libre" if modo == "libre" else "Dum"))
+        sel.config(background="PaleGoldenRod")
+       
+        
+        if modo == "dum":
+            sel.iconbitmap(DUM_ICON_PATH)
+        else:
+            sel.iconbitmap("imagenes/icon/urand_eternal_torment.ico")
+
+        def _al_cerrar():
+            try:
+                sel.destroy()
+            except Exception:
+                pass
+            modo_selector_win_ref["win"] = None
+
+        sel.protocol("WM_DELETE_WINDOW", _al_cerrar)
+
+        titulo = tk.Label(
+            sel,
+            font=("Carolingia", 16),
+            bg="PaleGoldenRod"
+        )
+        titulo.pack(pady=10)
+
+        def abrir_khazad_bot():
+            _al_cerrar()  # cerrar selector
+            abrir_modo(modo)  # <-- SOLO acá abrimos el bot
+
+        def abrir_spot():
+            print(f"[{modo}] Spot (pendiente)")
+            # acá más adelante vas a abrir tu interfaz spot correspondiente
+
+        def abrir_futuros():
+            print(f"[{modo}] Futuros (pendiente)")
+            # acá más adelante vas a abrir tu interfaz futures correspondiente
+
+        btn_spot = tk.Button(sel, text="Spot", font=("Carolingia", 14), command=abrir_spot)
+        btn_spot.pack(pady=5)
+
+        btn_khaz = tk.Button(sel, text="Khazad bot", font=("Carolingia", 14), command=abrir_khazad_bot)
+        btn_khaz.pack(pady=5)
+
+        btn_fut = tk.Button(sel, text="Futuros", font=("Carolingia", 14), command=abrir_futuros)
+        btn_fut.pack(pady=5)
+
+
+    """btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
     canvas_menu.create_window(120, 140, window=btn_exchange, anchor="nw")
+"""
+    btn_libre = tk.Button(
+        main_menu_var,
+        text="Libre",
+        font=("Carolingia", 16),
+        command=lambda: abrir_selector_modo("libre")
+    )
+    canvas_menu.create_window(280, 140, window=btn_libre, anchor="nw")
 
-    btn_khazad = tk.Button(main_menu_var, text="Khazad", font=("Carolingia", 16), command=abrir_khazad)
-    canvas_menu.create_window(320, 140, window=btn_khazad, anchor="nw")
-
-    btn_dum = tk.Button(main_menu_var, text="Dum", font=("Carolingia", 16))
-    canvas_menu.create_window(500, 140, window=btn_dum, anchor="nw")
+    btn_dum = tk.Button(
+        main_menu_var,
+        text="Dum",
+        font=("Carolingia", 16),
+        command=lambda: abrir_selector_modo("dum")
+    )
+    canvas_menu.create_window(400, 140, window=btn_dum, anchor="nw")
 
     # Si el usuario ya eligió avatar, no mostramos el botón
     tiene_avatar = bool((perfil.get("avatar", {}) or {}).get("img"))
@@ -270,7 +361,7 @@ def main_menu(nombre):
     )
     canvas_menu.create_window(730, 770, window=btn_cerrar_sesion, anchor="se")
 
-def exchange_def():
+"""def exchange_def():
     global exchange_win
     if exchange_win:
         return
@@ -300,7 +391,7 @@ def fantasy_spot():
 def fantasy_futures():
     fantasy_futures_win = tk.Toplevel(ventana_loggin)
     fantasy_futures_win.geometry("200x200")
-    fantasy_futures_win.title("Fantasy Futures - Dungeon Market")    
+    fantasy_futures_win.title("Fantasy Futures - Dungeon Market") """   
 
 def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_avatar):
     avatar_win = tk.Toplevel(ventana_loggin)
