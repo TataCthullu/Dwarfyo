@@ -3,6 +3,7 @@ from database import init_db, agregar_usuario, validar_usuario, usuario_existe, 
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 from PIL import Image, ImageTk
+import os
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -108,6 +109,31 @@ def rellenar_mosaico(canvas, image_path, escala=1):
         for y in range(0, height, imagen.height()):
             canvas.create_image(x, y, image=imagen, anchor='nw')
 
+AVATAR_DIR = os.path.join("imagenes", "deco", "Player", "AvatarBase")
+
+def _listar_avatares():
+    if not os.path.isdir(AVATAR_DIR):
+        return []
+    files = []
+    for fn in os.listdir(AVATAR_DIR):
+        if fn.lower().endswith((".png", ".jpg", ".jpeg")):
+            files.append(os.path.join(AVATAR_DIR, fn))
+    files.sort()
+    return files
+
+def _cargar_avatar_thumbnail(path, size=(64, 64)):
+    try:
+        img = Image.open(path)
+        img = img.resize(size, resample=Image.Resampling.NEAREST)
+        return ImageTk.PhotoImage(img)
+    except Exception:
+        return None
+
+def _avatar_name_from_path(path):
+    base = os.path.basename(path)
+    name, _ = os.path.splitext(base)
+    return name
+
 # Main Menu
 def main_menu(nombre):
     main_menu_var = tk.Toplevel(ventana_loggin)
@@ -165,8 +191,27 @@ def main_menu(nombre):
    
 
     perfil = cargar_perfil(nombre)
-    avatar_nombre = (perfil.get("avatar", {}) or {}).get("name", "Sin avatar")
+    avatar_data = (perfil.get("avatar", {}) or {})
+    avatar_nombre = avatar_data.get("name", "Sin avatar")
+    avatar_img_path = avatar_data.get("img", "")
 
+    # --- imagen arriba del nombre ---
+    avatar_img_id = canvas_menu.create_image(
+        375, 520,
+        image="",
+        anchor="center"
+    )
+
+    # mantener referencia para que no lo borre el GC
+    canvas_menu.avatar_photo = None
+
+    if avatar_img_path and os.path.exists(avatar_img_path):
+        ph = _cargar_avatar_thumbnail(avatar_img_path, size=(96, 96))
+        if ph:
+            canvas_menu.avatar_photo = ph
+            canvas_menu.itemconfig(avatar_img_id, image=ph)
+
+    # --- texto del nombre abajo ---
     avatar_text_id = canvas_menu.create_text(
         375, 605,
         text=avatar_nombre,
@@ -174,6 +219,7 @@ def main_menu(nombre):
         font=("Carolingia", 16),
         anchor="center"
     )
+
 
    
 
@@ -186,13 +232,18 @@ def main_menu(nombre):
     btn_dum = tk.Button(main_menu_var, text="Dum", font=("Carolingia", 16))
     canvas_menu.create_window(500, 140, window=btn_dum, anchor="nw")
 
-    btn_crear_avatar = tk.Button(
-        main_menu_var,
-        text="Crear Avatar",
-        font=("Carolingia", 14),
-        command=lambda: crear_avatar(nombre, canvas_menu, avatar_text_id)
-    )
-    canvas_menu.create_window(120, 730, window=btn_crear_avatar, anchor="nw")
+    # Si el usuario ya eligió avatar, no mostramos el botón
+    tiene_avatar = bool((perfil.get("avatar", {}) or {}).get("img"))
+
+    btn_crear_avatar = None
+    if not tiene_avatar:
+        btn_crear_avatar = tk.Button(
+            main_menu_var,
+            text="Elegir Avatar",
+            font=("Carolingia", 14),
+            command=lambda: crear_avatar(nombre, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_avatar)
+        )
+        canvas_menu.create_window(120, 730, window=btn_crear_avatar, anchor="nw")
 
     def cerrar_todo():
             ventana_loggin.destroy()
@@ -244,34 +295,71 @@ def fantasy_futures():
     fantasy_futures_win.geometry("200x200")
     fantasy_futures_win.title("Fantasy Futures - Dungeon Market")    
 
-def crear_avatar(usuario, canvas_menu, avatar_text_id):
-
+def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_avatar):
     avatar_win = tk.Toplevel(ventana_loggin)
-    avatar_win.geometry("320x120")
-    avatar_win.title("Crear Avatar")
+    avatar_win.title("Elegir Avatar")
     avatar_win.configure(background="PaleGoldenRod")
 
-    label_name = tk.Label(avatar_win, text="Nombre del Avatar:", bg="PaleGoldenRod")
-    label_name.pack(anchor="w", padx=10, pady=(10, 0))
+    # lista de avatares
+    paths = _listar_avatares()
+    if not paths:
+        lab = tk.Label(avatar_win, text=f"No hay avatares en:\n{AVATAR_DIR}", bg="PaleGoldenRod")
+        lab.pack(padx=10, pady=10)
+        return
 
-    entry_name = tk.Entry(avatar_win)
-    entry_name.pack(anchor="w", padx=10, pady=5)
+    frame = tk.Frame(avatar_win, bg="PaleGoldenRod")
+    frame.pack(padx=10, pady=10)
 
-    def _guardar_avatar():
-        nombre_avatar = entry_name.get().strip()
-        if not nombre_avatar:
-            return
+    # refs de thumbnails para que no se borren
+    avatar_win.thumbs = []
+
+    def _select(path):
+        nombre_avatar = _avatar_name_from_path(path)
 
         perfil = cargar_perfil(usuario)
-        perfil["avatar"] = {"name": nombre_avatar}
+        perfil["avatar"] = {"name": nombre_avatar, "img": path}
         guardar_perfil(usuario, perfil)
 
+        # actualizar UI (texto + imagen)
         canvas_menu.itemconfig(avatar_text_id, text=nombre_avatar)
+
+        ph = _cargar_avatar_thumbnail(path, size=(76, 76))
+        if ph:
+            canvas_menu.avatar_photo = ph
+            canvas_menu.itemconfig(avatar_img_id, image=ph)
+
+        # borrar el botón de crear avatar
+        try:
+            btn_crear_avatar.destroy()
+        except Exception:
+            pass
 
         avatar_win.destroy()
 
-    btn_crear = tk.Button(avatar_win, text="Crear", command=_guardar_avatar)
-    btn_crear.pack(pady=10)
+    # grilla simple
+    cols = 4
+    r = c = 0
+    for p in paths:
+        thumb = _cargar_avatar_thumbnail(p, size=(64, 64))
+        if not thumb:
+            continue
+        avatar_win.thumbs.append(thumb)
+
+        name = _avatar_name_from_path(p)
+
+        b = tk.Button(
+            frame,
+            image=thumb,
+            text=name,
+            compound="top",
+            command=lambda pp=p: _select(pp)
+        )
+        b.grid(row=r, column=c, padx=6, pady=6)
+
+        c += 1
+        if c >= cols:
+            c = 0
+            r += 1
 
 
 
