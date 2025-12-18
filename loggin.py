@@ -150,7 +150,7 @@ def main_menu(nombre):
     canvas_menu.create_text(
         375, 30,
         text="Dungeon Market",
-        fill="PaleGoldenRod",
+        fill="Gold",
         font=("Carolingia", 20),
         anchor="center"
     )
@@ -158,7 +158,7 @@ def main_menu(nombre):
     canvas_menu.create_text(
         375, 70,
         text=f"Salve, {nombre}!",
-        fill="Crimson",
+        fill="GoldenRod",
         font=("Carolingia", 18),
         anchor="center"
     )
@@ -168,9 +168,9 @@ def main_menu(nombre):
     avatar_nombre = (perfil.get("avatar", {}) or {}).get("name", "Sin avatar")
 
     avatar_text_id = canvas_menu.create_text(
-        375, 105,
+        375, 605,
         text=avatar_nombre,
-        fill="DarkBlue",
+        fill="Crimson",
         font=("Carolingia", 16),
         anchor="center"
     )
@@ -189,10 +189,10 @@ def main_menu(nombre):
     btn_crear_avatar = tk.Button(
         main_menu_var,
         text="Crear Avatar",
-        font=("Carolingia", 16),
+        font=("Carolingia", 14),
         command=lambda: crear_avatar(nombre, canvas_menu, avatar_text_id)
     )
-    canvas_menu.create_window(120, 220, window=btn_crear_avatar, anchor="nw")
+    canvas_menu.create_window(120, 730, window=btn_crear_avatar, anchor="nw")
 
     def cerrar_todo():
             ventana_loggin.destroy()
