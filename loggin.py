@@ -12,6 +12,8 @@ ventana_loggin.config(background="PaleGoldenRod")
 ventana_loggin.iconbitmap(
     "imagenes/icon/urand_eternal_torment.ico"
 )
+BALROG_LEFT_PATH  = "imagenes/deco/balrug_old.png"
+BALROG_RIGHT_PATH = "imagenes/deco/balrug_new.png"
 
 
 def cerrar_app():
@@ -150,10 +152,39 @@ def main_menu(nombre):
         # ===== Canvas full para fondo + layout =====
     canvas_menu = tk.Canvas(main_menu_var, width=750, height=800, highlightthickness=0, bd=0)
     canvas_menu.pack(fill="both", expand=True)
-
     # Fondo mosaico (elegí la textura que quieras)
     rellenar_mosaico(canvas_menu, "imagenes/decoa/wall/catacombs_5.png", escala=2)
 
+    # --- Balrogs decorativos ---
+    try:
+        img_left = Image.open(BALROG_LEFT_PATH).resize((76, 76), resample=Image.Resampling.NEAREST)
+        img_right = Image.open(BALROG_RIGHT_PATH).resize((76, 76), resample=Image.Resampling.NEAREST)
+
+        balrog_left = ImageTk.PhotoImage(img_left)
+        balrog_right = ImageTk.PhotoImage(img_right)
+
+        # guardar referencias
+        canvas_menu.balrog_left = balrog_left
+        canvas_menu.balrog_right = balrog_right
+
+        # balrog izquierda
+        canvas_menu.create_image(
+            120, 550,   # X, Y → tocá solo estos valores
+            image=balrog_right,
+            anchor="center"
+        )
+
+        # balrog derecha
+        canvas_menu.create_image(
+            630, 550,   # X, Y → tocá solo estos valores
+            image=balrog_left,
+            anchor="center"
+        )
+
+    except Exception as e:
+        print("Error cargando balrogs:", e)
+
+    
     khazad_win = {"open": False, "app": None}  # mini-flag simple
 
     def abrir_khazad():
