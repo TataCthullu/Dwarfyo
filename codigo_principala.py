@@ -94,6 +94,7 @@ class TradingBot:
         self.update_btc_fixed_seller()
         self.hist_tentacles = None
         self.total_fees_btc = Decimal("0")
+        self.dum_mode = False
 
     def format_fn(self, valor, simbolo=""):
         # Nada → vacío
@@ -173,6 +174,15 @@ class TradingBot:
         return None
         
     def actualizar_balance(self):
+
+        if getattr(self, "dum_mode", False):
+            # En Dum no consultamos exchange. Solo recalculamos el balance local.
+            usdt = self.usdt or Decimal("0")
+            btc = self.btc or Decimal("0")
+            precio = self.precio_actual or Decimal("0")
+            self.usdt_mas_btc = usdt + (btc * precio)
+            return
+
         """
         Actualiza BTC valorado en USDT y balance total usando Decimal.
         Si btc o precio_actual no son válidos, pone ambos balances a Decimal('0').
@@ -1103,6 +1113,8 @@ class TradingBot:
     def detener(self, motivo=None):
         self.running = False
         self._stop_flag = True
+       
+
         if motivo:
             self.log(f"🔴 Khazâd detenido. Motivo: {motivo}")
         else:

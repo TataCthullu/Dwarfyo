@@ -50,7 +50,11 @@ class DumTranslator:
           - bot.btc_usdt (si no existe, toma 0)
         """
         total = self._leer_total_bot(bot)
-        slot = self.slot_1
+        slot = self._to_decimal(getattr(bot, "dum_slot_used", self.slot_1))
+        if slot <= 0:
+            slot = self.slot_1  # fallback por seguridad
+
+
 
         if total > slot:
             quad = total - slot

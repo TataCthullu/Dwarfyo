@@ -1,7 +1,10 @@
 import sqlite3
 import json
-
+from decimal import Decimal
+import sqlite3
 DB_NAME = "usuarios.db"
+
+SLOT_1_OBSIDIANA = Decimal("5000")
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -13,7 +16,7 @@ def init_db():
             password TEXT NOT NULL
         )
     """)
-    
+
     cur.execute("""
         CREATE TABLE IF NOT EXISTS perfiles (
             nombre TEXT PRIMARY KEY,
@@ -22,8 +25,20 @@ def init_db():
         )
     """)
 
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS wallet (
+            nombre TEXT PRIMARY KEY,
+            obsidiana TEXT NOT NULL,
+            quad TEXT NOT NULL,
+            FOREIGN KEY(nombre) REFERENCES usuarios(nombre)
+        )
+    """)
+
+
     conn.commit()
     conn.close()
+
 
 def agregar_usuario(nombre, password):
     conn = sqlite3.connect(DB_NAME)
@@ -34,7 +49,12 @@ def agregar_usuario(nombre, password):
             (nombre, password)
         )
         conn.commit()
+        # crear wallet base para el usuario nuevo
+        init_wallet(nombre)
         return True
+
+
+    
     except sqlite3.IntegrityError:
         # El usuario ya existe (PRIMARY KEY duplicada)
         return False
@@ -86,3 +106,63 @@ def cargar_perfil(nombre):
         return json.loads(row[0])
     except Exception:
         return {}
+
+
+def _conn():
+    return sqlite3.connect(DB_NAME)
+
+def init_wallet(nombre: str):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        return
+
+    with _conn() as con:
+        con.execute(
+            "INSERT OR IGNORE INTO wallet (nombre, obsidiana, quad) VALUES (?, ?, ?)",
+            (nombre, str(SLOT_1_OBSIDIANA), "0")
+        )
+        con.commit()
+
+
+def get_wallet(nombre: str):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        return Decimal("0"), Decimal("0")
+
+    with _conn() as con:
+        cur = con.execute(
+            "SELECT obsidiana, quad FROM wallet WHERE nombre = ?",
+            (nombre,)
+        )
+        row = cur.fetchone()
+        if row:
+            return Decimal(row[0]), Decimal(row[1])
+
+        # si no existe, lo crea (base)
+        con.execute(
+            "INSERT INTO wallet (nombre, obsidiana, quad) VALUES (?, ?, ?)",
+            (nombre, str(SLOT_1_OBSIDIANA), "0")
+        )
+        con.commit()
+        return Decimal(str(SLOT_1_OBSIDIANA)), Decimal("0")
+
+
+def set_wallet(nombre: str, obsidiana, quad):
+    nombre = (nombre or "").strip()
+    if not nombre:
+        return
+
+    obs = str(Decimal(str(obsidiana)))
+    qd  = str(Decimal(str(quad)))
+
+    with _conn() as con:
+        con.execute("""
+            INSERT INTO wallet (nombre, obsidiana, quad)
+            VALUES (?, ?, ?)
+            ON CONFLICT(nombre) DO UPDATE SET
+                obsidiana = excluded.obsidiana,
+                quad      = excluded.quad
+        """, (nombre, obs, qd))
+        con.commit()
+
+

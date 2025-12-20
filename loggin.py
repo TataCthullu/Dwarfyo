@@ -1,9 +1,14 @@
 import tkinter as tk
-from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil
+from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil, init_wallet, get_wallet, set_wallet
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 from PIL import Image, ImageTk
 import os
+from dum import DumTranslator
+from decimal import Decimal
+init_db()
+
+SLOT_1_OBSIDIANA = Decimal("5000")
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -25,7 +30,7 @@ ventana_loggin.protocol("WM_DELETE_WINDOW", cerrar_app)
 crear_user_win = False
 user_win_ref = None
 
-init_db()
+#init_db()
 
 def crear_user():
     global user_win_ref
@@ -82,6 +87,8 @@ def crear_user():
 
         if agregar_usuario(nombre, password):
             print("Usuario creado correctamente")
+            init_wallet(nombre)
+            guardar_perfil(nombre, {"dum": {"deposito": "0", "slot_used_last": "0"}, "avatar": {}})
             global crear_user_win
             crear_user_win = False
             user_win.destroy()
@@ -92,7 +99,7 @@ def crear_user():
     btn_crear_pj = tk.Button(user_win, text="Crear", font=("Carolingia", 18), command=guardar_usuario)
     btn_crear_pj.pack(pady=10)
 
-    
+
 
 def rellenar_mosaico(canvas, image_path, escala=1):
     imagen_original = Image.open(image_path)
@@ -198,6 +205,7 @@ def main_menu(nombre):
 
         bot = TradingBot()
         app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
+        app._refrescar_main_menu = refrescar_menu   # hook simple
         khazad_win["open"] = True
         khazad_win["app"] = app
 
@@ -226,7 +234,95 @@ def main_menu(nombre):
         font=("Carolingia", 18),
         anchor="center"
     )
-   
+    # =========================
+    # WALLET + DUM (Canvas HUD)
+    # =========================
+    init_wallet(nombre)
+
+    # 1) crear textos primero (con algo inicial)
+    obsidiana_var, quad_var = get_wallet(nombre)
+
+    wallet_text_id = canvas_menu.create_text(
+        375, 105,
+        text=f"Obsidiana: {obsidiana_var}  |  Quad: {quad_var}",
+        fill="Orange",
+        font=("Carolingia", 14),
+        anchor="center"
+    )
+
+    perfil = cargar_perfil(nombre)
+    if not isinstance(perfil, dict):
+        perfil = {}
+    dum_info = (perfil.get("dum", {}) or {})
+    dum_deposito = dum_info.get("deposito", "0")
+    dum_slot_used_last = dum_info.get("slot_used_last", "0")
+
+    obs_now, quad_now = get_wallet(nombre)
+    slot_cap_hoy = min(Decimal(str(obs_now)), SLOT_1_OBSIDIANA)
+
+    dum_text_id = canvas_menu.create_text(
+        375, 130,
+        text=f"Dum · Slot cap: {slot_cap_hoy} | Depósito: {dum_deposito} | Slot usado: {dum_slot_used_last}",
+        fill="Gold",
+        font=("Carolingia", 16),
+        anchor="center"
+    )
+
+    # 2) refrescar HUD (ya existen wallet_text_id y dum_text_id)
+    def refrescar_menu():
+        try:
+            obs, quad = get_wallet(nombre)
+            obs_d = Decimal(str(obs))
+            quad_d = Decimal(str(quad))
+        except Exception:
+            obs_d = Decimal("0")
+            quad_d = Decimal("0")
+
+        perf = cargar_perfil(nombre)
+        if not isinstance(perf, dict):
+            perf = {}
+        di = (perf.get("dum", {}) or {})
+        dep = Decimal(str(di.get("deposito", "0")))
+        su  = Decimal(str(di.get("slot_used_last", "0")))
+
+        slot_cap = min(obs_d, SLOT_1_OBSIDIANA)
+
+        canvas_menu.itemconfig(wallet_text_id, text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}")
+        canvas_menu.itemconfig(dum_text_id, text=f"Dum · Slot cap: {slot_cap} | Depósito: {dep} | Slot usado: {su}")
+
+    refrescar_menu()
+
+
+
+    # asegurar wallet y leer saldo
+    init_wallet(nombre)
+    obsidiana_var, quad_var = get_wallet(nombre)
+
+    wallet_text_id = canvas_menu.create_text(
+        375, 105,
+        text=f"Obsidiana: {obsidiana_var}  |  Quad: {quad_var}",
+        fill="Gold",
+        font=("Carolingia", 14),
+        anchor="center"
+    )
+
+    # --- info Dum (debajo de wallet) ---
+    perfil = cargar_perfil(nombre)
+    dum_info = (perfil.get("dum", {}) or {})
+    dum_deposito = dum_info.get("deposito", "0")
+    dum_slot_used_last = dum_info.get("slot_used_last", "0")
+
+    # cap real del slot hoy
+    obs_now, quad_now = get_wallet(nombre)
+    slot_cap_hoy = min(obs_now, SLOT_1_OBSIDIANA)
+
+    dum_text_id = canvas_menu.create_text(
+        375, 130,
+        text=f"Dum · Slot cap: {slot_cap_hoy} | Depósito: {dum_deposito} | Slot usado: {dum_slot_used_last}",
+        fill="Gold",
+        font=("Carolingia", 16),
+        anchor="center"
+    )
 
     perfil = cargar_perfil(nombre)
     avatar_data = (perfil.get("avatar", {}) or {})
@@ -284,6 +380,123 @@ def main_menu(nombre):
 
     modo_selector_win_ref = {"win": None}
 
+    def abrir_dum_khazad():
+        if khazad_win["open"]:
+            try:
+                khazad_win["app"].root.lift()
+                khazad_win["app"].root.focus_force()
+            except Exception:
+                pass
+            return
+
+        
+
+        # 1) leer wallet del usuario
+        obsidiana_total, quad_total = get_wallet(nombre)
+
+        # 2) crear bot en 0 (el user deposita en Configurar Operativa)
+        bot = TradingBot()
+        bot.modo_app = "dum"
+        
+        dum = DumTranslator()
+        dum_cerrado = {"ok": False}
+
+        old_cb = getattr(bot, "ui_callback_on_stop", None)
+
+
+        bot.inv_inic = Decimal("0")
+        bot.usdt     = Decimal("0")
+
+        # 3) metadata Dum
+        bot.dum_slot_cap   = SLOT_1_OBSIDIANA  # cap duro del Slot 1 (5000)
+        bot.dum_disponible = Decimal(str(obsidiana_total))  # lo que tiene en wallet HOY
+        bot.dum_deposito   = Decimal("0")      # lo que ya quedó depositado (pre-run)
+        bot.dum_slot_used  = Decimal("0")      # slot usado en ESTA run (se setea al depositar)
+
+
+
+        # 5) persistencia Dum (se ejecuta al STOP real)
+        def persistir_dum(res):
+            obs_a, quad_a = get_wallet(nombre)
+            obs_a = Decimal(str(obs_a))
+            quad_a = Decimal(str(quad_a))
+
+            nuevo_obs  = obs_a + Decimal(str(res.obsidiana_vuelve))
+            nuevo_quad = quad_a + Decimal(str(res.quad_ganado))
+
+            set_wallet(nombre, nuevo_obs, nuevo_quad)
+
+            perfil = cargar_perfil(nombre)
+            if not isinstance(perfil, dict):
+                perfil = {}
+            di = (perfil.get("dum", {}) or {})
+            di["slot_used_last"] = str(res.slot)
+            di["last_total"] = str(res.resultado_total)
+            di["last_quad"]  = str(res.quad_ganado)
+            perfil["dum"] = di
+            guardar_perfil(nombre, perfil)
+
+            refrescar_menu()
+
+        def _cb_stop(motivo="stop"):
+            # evitar doble persist
+            if dum_cerrado["ok"]:
+                return
+            dum_cerrado["ok"] = True
+
+            try:
+                if callable(old_cb):
+                    try:
+                        old_cb(motivo)
+                    except TypeError:
+                        old_cb()
+
+            except Exception:
+                pass
+
+            try:
+                dum.cerrar_run(usuario=nombre, bot=bot, motivo=motivo)
+            except Exception as e:
+                print("Error Dum:", e)
+
+        try:
+            bot.ui_callback_on_stop = _cb_stop
+                        # 7) abrir UI Dum Khazad
+            app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
+
+            try:
+                app.root.iconbitmap(DUM_ICON_PATH)
+            except Exception:
+                pass
+
+            khazad_win["open"] = True
+            khazad_win["app"] = app
+
+            def _al_cerrar_ui():
+                # si cierran con la X, lo tratamos como stop (para que Dum persista)
+                try:
+                    _cb_stop("cerrar_ui")
+                except Exception:
+                    pass
+                khazad_win["open"] = False
+                try:
+                    app.root.destroy()
+                except Exception:
+                    pass
+
+            app.root.protocol("WM_DELETE_WINDOW", _al_cerrar_ui)
+
+            
+
+        except Exception:
+            pass
+        
+       
+
+        bot.modo_app = "dum"
+    # bot.dum_mode = True
+
+
     def abrir_selector_modo(modo):
         # evitar duplicar ventana
         win = modo_selector_win_ref["win"]
@@ -320,9 +533,16 @@ def main_menu(nombre):
         )
         titulo.pack(pady=10)
 
+       
+
         def abrir_khazad_bot():
             _al_cerrar()  # cerrar selector
-            abrir_modo(modo)  # <-- SOLO acá abrimos el bot
+
+            if modo == "dum":
+                abrir_dum_khazad()   # nueva función
+            else:
+                abrir_modo("libre")
+
 
         def abrir_spot():
             print(f"[{modo}] Spot (pendiente)")
@@ -359,6 +579,7 @@ def main_menu(nombre):
         font=("Carolingia", 16),
         command=lambda: abrir_selector_modo("dum")
     )
+
     canvas_menu.create_window(400, 140, window=btn_dum, anchor="nw")
 
     # Si el usuario ya eligió avatar, no mostramos el botón
