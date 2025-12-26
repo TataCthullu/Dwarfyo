@@ -364,6 +364,31 @@ def main_menu(nombre):
     modo_selector_win_ref = {"win": None}
 
     def abrir_dum_khazad():
+        # 5) persistencia Dum (se ejecuta al STOP real)
+        def persistir_dum(res):
+            obs_a, quad_a = get_wallet(nombre)
+            obs_a = Decimal(str(obs_a))
+            quad_a = Decimal(str(quad_a))
+
+            nuevo_obs  = obs_a + Decimal(str(res.obsidiana_vuelve))
+            nuevo_quad = quad_a + Decimal(str(res.quad_ganado))
+
+            set_wallet(nombre, nuevo_obs, nuevo_quad)
+
+            perfil = cargar_perfil(res.usuario)
+            if not isinstance(perfil, dict):
+                perfil = {}
+            di = (perfil.get("dum", {}) or {})
+            di["deposito"] = "0"  # ✅ al cerrar run, depósito se resuelve
+            di["slot_used_last"] = str(res.slot)
+            di["last_total"] = str(res.resultado_total)
+            di["last_quad"] = str(res.quad_ganado)
+            perfil["dum"] = di
+            guardar_perfil(res.usuario, perfil)
+
+
+            refrescar_menu()
+
         if khazad_win["open"]:
             try:
                 khazad_win["app"].root.lift()
@@ -399,30 +424,7 @@ def main_menu(nombre):
 
 
 
-        # 5) persistencia Dum (se ejecuta al STOP real)
-        def persistir_dum(res):
-            obs_a, quad_a = get_wallet(nombre)
-            obs_a = Decimal(str(obs_a))
-            quad_a = Decimal(str(quad_a))
-
-            nuevo_obs  = obs_a + Decimal(str(res.obsidiana_vuelve))
-            nuevo_quad = quad_a + Decimal(str(res.quad_ganado))
-
-            set_wallet(nombre, nuevo_obs, nuevo_quad)
-
-            perfil = cargar_perfil(res.usuario)
-            if not isinstance(perfil, dict):
-                perfil = {}
-            di = (perfil.get("dum", {}) or {})
-            di["deposito"] = "0"  # ✅ al cerrar run, depósito se resuelve
-            di["slot_used_last"] = str(res.slot)
-            di["last_total"] = str(res.resultado_total)
-            di["last_quad"] = str(res.quad_ganado)
-            perfil["dum"] = di
-            guardar_perfil(res.usuario, perfil)
-
-
-            refrescar_menu()
+        
 
         def _cb_stop(motivo="stop"):
             # evitar doble persist

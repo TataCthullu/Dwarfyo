@@ -5,8 +5,9 @@ import sqlite3
 import json
 from decimal import Decimal
 from dum import SLOT_1_OBSIDIANA
+import os
+DB_NAME = os.path.join(os.path.dirname(__file__), "usuarios.db")
 
-DB_NAME = "usuarios.db"
 
 
 
@@ -114,11 +115,11 @@ def init_wallet(nombre: str):
     if not nombre:
         return
 
-    # Saldo inicial real del jugador: 0 obsidiana, 0 quad
+    # saldo inicial del jugador: SLOT_1_OBSIDIANA obsidiana, 0 quad
     with _conn() as con:
         con.execute(
             "INSERT OR IGNORE INTO wallet (nombre, obsidiana, quad) VALUES (?, ?, ?)",
-            (nombre, "0", "0")
+            (nombre, str(SLOT_1_OBSIDIANA), "0")
         )
         con.commit()
 
@@ -128,14 +129,25 @@ def get_wallet(nombre: str):
     if not nombre:
         return Decimal("0"), Decimal("0")
 
+    def _d(x):
+        try:
+            s = str(x).strip()
+            if s in ("", "None", "null", "NULL"):
+                return Decimal("0")
+            return Decimal(s)
+        except Exception:
+            return Decimal("0")
+
     with _conn() as con:
         cur = con.execute(
             "SELECT obsidiana, quad FROM wallet WHERE nombre = ?",
             (nombre,)
         )
         row = cur.fetchone()
+
         if row:
-            return Decimal(row[0]), Decimal(row[1])
+            # ✅ aunque estén "sucios", no explota
+            return _d(row[0]), _d(row[1])
 
         # si no existe, lo crea
         con.execute(
@@ -151,8 +163,17 @@ def set_wallet(nombre: str, obsidiana, quad):
     if not nombre:
         return
 
-    obs = str(Decimal(str(obsidiana)))
-    qd  = str(Decimal(str(quad)))
+    def _s(x):
+        try:
+            s = str(x).strip()
+            if s in ("", "None", "null", "NULL"):
+                s = "0"
+            return str(Decimal(s))
+        except Exception:
+            return "0"
+
+    obs = _s(obsidiana)
+    qd  = _s(quad)
 
     with _conn() as con:
         con.execute("""
