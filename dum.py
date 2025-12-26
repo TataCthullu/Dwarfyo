@@ -1,5 +1,4 @@
-# dum.py
-# © 2025 Dungeon Market (Dum) - Traductor económico
+# © 2025 Dungeon Market (Dum) 
 # Todos los derechos reservados.
 
 from __future__ import annotations

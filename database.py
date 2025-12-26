@@ -1,3 +1,6 @@
+# © 2025 Dungeon Market (Database)
+# Todos los derechos reservados.
+
 import sqlite3
 import json
 from decimal import Decimal

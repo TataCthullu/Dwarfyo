@@ -1,3 +1,6 @@
+# © 2025 Dungeon Market (Loggin)
+# Todos los derechos reservados.
+
 import tkinter as tk
 from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil, init_wallet, get_wallet, set_wallet
 from codigo_principala import TradingBot
