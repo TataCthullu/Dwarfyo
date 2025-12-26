@@ -1351,12 +1351,12 @@ class BotInterfaz(AnimationMixin):
         # ===== Rebalance =====
         put_text(y, "* Rebalance *", color="PaleGoldenRod", size=18); y += row
         # Compras (umbral)
-        lbl = put_text(y, "- - - - Compras Fantasma (umbral):", color="PaleGoldenRod")
+        lbl = put_text(y, "-> Compras Fantasma (umbral):", color="PaleGoldenRod")
         self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
         put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row
 
         # Porcentaje a vender
-        lbl = put_text(y, "- - - - Porcentaje a vender: -%", color="PaleGoldenRod")
+        lbl = put_text(y, "-> Porcentaje a vender: -%", color="PaleGoldenRod")
         self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
         put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
 

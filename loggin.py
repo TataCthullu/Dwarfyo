@@ -363,6 +363,23 @@ def main_menu(nombre):
 
     modo_selector_win_ref = {"win": None}
 
+    def depositar_a_bot(usuario: str, bot):
+        obs, quad = get_wallet(usuario)
+
+        deposito = min(obs, SLOT_1_OBSIDIANA)
+        if deposito < 0:
+            deposito = Decimal("0")
+
+        # retirar del wallet (queda "bloqueado" en la run)
+        set_wallet(usuario, obs - deposito, quad)
+
+        # cargar al bot (Obsidiana == USDT en runtime)
+        bot.usdt = deposito
+        bot.dum_slot_used = deposito
+
+        return deposito
+    
+    
     def abrir_dum_khazad():
         # 5) persistencia Dum (se ejecuta al STOP real)
         def persistir_dum(res):
@@ -402,27 +419,39 @@ def main_menu(nombre):
         # 1) leer wallet del usuario
         obsidiana_total, quad_total = get_wallet(nombre)
 
-        # 2) crear bot en 0 (el user deposita en Configurar Operativa)
+        # 2) crear bot
         bot = TradingBot()
         bot.modo_app = "dum"
-        
+
+        deposito = depositar_a_bot(nombre, bot)  # usa wallet y carga usdt al bot
+
+        # por si la UI usa estos campos:
+        bot.inv_inic = Decimal(str(deposito))
+        bot.dum_deposito = Decimal(str(deposito))
+        bot.dum_slot_used = Decimal(str(deposito))
+
+        # 5) guardar el depósito en perfil (para HUD)
+        perfil = cargar_perfil(nombre)
+        if not isinstance(perfil, dict):
+            perfil = {}
+        di = (perfil.get("dum", {}) or {})
+        di["deposito"] = str(deposito)
+        di["slot_used_last"] = str(deposito)   # durante la run, el slot usado actual
+        perfil["dum"] = di
+        guardar_perfil(nombre, perfil)
+
         dum = DumTranslator(persist_callback=persistir_dum)
+
 
         dum_cerrado = {"ok": False}
 
         old_cb = getattr(bot, "ui_callback_on_stop", None)
 
 
-        bot.inv_inic = Decimal("0")
+        """bot.inv_inic = Decimal("0")
         bot.usdt     = Decimal("0")
-
-        # 3) metadata Dum
-        bot.dum_slot_cap   = SLOT_1_OBSIDIANA  # cap duro del Slot 1 (5000)
-        bot.dum_disponible = Decimal(str(obsidiana_total))  # lo que tiene en wallet HOY
-        bot.dum_deposito   = Decimal("0")      # lo que ya quedó depositado (pre-run)
-        bot.dum_slot_used  = Decimal("0")      # slot usado en ESTA run (se setea al depositar)
-
-
+"""
+       
 
         
 
