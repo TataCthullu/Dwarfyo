@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 import re
 import csv
 from datetime import datetime
-from dum import DumTranslator
+
 from database import get_wallet, set_wallet, cargar_perfil, guardar_perfil
 
 class BotInterfaz(AnimationMixin):
@@ -80,7 +80,7 @@ class BotInterfaz(AnimationMixin):
 
         self.bot.ui_callback_on_stop = _chained_stop_cb
 
-        self.dum = DumTranslator()
+        
         self.was_offline = False
         self.bot.log_fn = self.logf
         self.operativa_configurada = False

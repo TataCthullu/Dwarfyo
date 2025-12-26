@@ -95,6 +95,7 @@ class TradingBot:
         self.hist_tentacles = None
         self.total_fees_btc = Decimal("0")
         self.dum_mode = False
+        self.var_total_usdt = Decimal("0")
 
     def format_fn(self, valor, simbolo=""):
         # Nada → vacío
@@ -316,7 +317,9 @@ class TradingBot:
                 if isinstance(precio_compra_tx, Decimal) and btc_vender > 0:
                     costo_base = btc_vender * precio_compra_tx
                     perdida = costo_base - usdt_obtenido
-                    rebalance_loss_event += perdida
+                    if perdida > 0:
+                        rebalance_loss_event += perdida
+
                     self.log(
                         f" • Pérdida por rebalance en esta compra: "
                         f"{self.format_fn(perdida, '$')} (base {self.format_fn(costo_base, '$')} → "
@@ -1036,6 +1039,7 @@ class TradingBot:
                     self.hold_btc_var = self.hold_btc()
                     self.hold_usdt_var = self.hold_usdt()
                     self.var_total = self.variacion_total()
+                    self.var_total_usdt = self.variacion_total_usdt()
 
                     # Check global TP/SL
                     if self.check_take_profit_stop_loss():

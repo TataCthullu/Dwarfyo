@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Callable, Optional, Any
@@ -50,9 +51,17 @@ class DumTranslator:
           - bot.btc_usdt (si no existe, toma 0)
         """
         total = self._leer_total_bot(bot)
-        slot = self._to_decimal(getattr(bot, "dum_slot_used", self.slot_1))
-        if slot <= 0:
-            slot = self.slot_1  # fallback por seguridad
+        raw = getattr(bot, "dum_slot_used", None)
+        if raw is None:
+            slot = self.slot_1
+        else:
+            slot = self._to_decimal(raw)
+
+        if slot < 0:
+            slot = Decimal("0")
+        if slot > self.slot_1:
+            slot = self.slot_1
+
 
 
 

@@ -4,11 +4,11 @@ from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 from PIL import Image, ImageTk
 import os
-from dum import DumTranslator
+from dum import DumTranslator, SLOT_1_OBSIDIANA
 from decimal import Decimal
 init_db()
 
-SLOT_1_OBSIDIANA = Decimal("5000")
+
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -293,18 +293,7 @@ def main_menu(nombre):
     refrescar_menu()
 
 
-
-    # asegurar wallet y leer saldo
-    init_wallet(nombre)
-    obsidiana_var, quad_var = get_wallet(nombre)
-
-    wallet_text_id = canvas_menu.create_text(
-        375, 105,
-        text=f"Obsidiana: {obsidiana_var}  |  Quad: {quad_var}",
-        fill="Gold",
-        font=("Carolingia", 14),
-        anchor="center"
-    )
+    
 
     # --- info Dum (debajo de wallet) ---
     perfil = cargar_perfil(nombre)
@@ -312,17 +301,8 @@ def main_menu(nombre):
     dum_deposito = dum_info.get("deposito", "0")
     dum_slot_used_last = dum_info.get("slot_used_last", "0")
 
-    # cap real del slot hoy
-    obs_now, quad_now = get_wallet(nombre)
-    slot_cap_hoy = min(obs_now, SLOT_1_OBSIDIANA)
-
-    dum_text_id = canvas_menu.create_text(
-        375, 130,
-        text=f"Dum · Slot cap: {slot_cap_hoy} | Depósito: {dum_deposito} | Slot usado: {dum_slot_used_last}",
-        fill="Gold",
-        font=("Carolingia", 16),
-        anchor="center"
-    )
+    
+ 
 
     perfil = cargar_perfil(nombre)
     avatar_data = (perfil.get("avatar", {}) or {})
@@ -398,7 +378,8 @@ def main_menu(nombre):
         bot = TradingBot()
         bot.modo_app = "dum"
         
-        dum = DumTranslator()
+        dum = DumTranslator(persist_callback=persistir_dum)
+
         dum_cerrado = {"ok": False}
 
         old_cb = getattr(bot, "ui_callback_on_stop", None)
@@ -426,15 +407,17 @@ def main_menu(nombre):
 
             set_wallet(nombre, nuevo_obs, nuevo_quad)
 
-            perfil = cargar_perfil(nombre)
+            perfil = cargar_perfil(res.usuario)
             if not isinstance(perfil, dict):
                 perfil = {}
             di = (perfil.get("dum", {}) or {})
+            di["deposito"] = "0"  # ✅ al cerrar run, depósito se resuelve
             di["slot_used_last"] = str(res.slot)
             di["last_total"] = str(res.resultado_total)
-            di["last_quad"]  = str(res.quad_ganado)
+            di["last_quad"] = str(res.quad_ganado)
             perfil["dum"] = di
-            guardar_perfil(nombre, perfil)
+            guardar_perfil(res.usuario, perfil)
+
 
             refrescar_menu()
 
