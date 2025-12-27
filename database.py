@@ -8,12 +8,11 @@ from dum import SLOT_1_OBSIDIANA
 import os
 DB_NAME = os.path.join(os.path.dirname(__file__), "usuarios.db")
 
-
-
-
-
 def _conn():
-    return sqlite3.connect(DB_NAME)
+    con = sqlite3.connect(DB_NAME)
+    con.execute("PRAGMA foreign_keys = ON;")
+    con.execute("PRAGMA journal_mode = WAL;")
+    return con
 
 
 def init_db():
@@ -146,17 +145,16 @@ def get_wallet(nombre: str):
         row = cur.fetchone()
 
         if row:
-            # ✅ aunque estén "sucios", no explota
             return _d(row[0]), _d(row[1])
 
-        # si no existe, lo crea
-        con.execute(
-            "INSERT INTO wallet (nombre, obsidiana, quad) VALUES (?, ?, ?)",
-            (nombre, "0", "0")
-        )
-        con.commit()
-        return Decimal("0"), Decimal("0")
-
+    # si no existe, inicializar como corresponde (SLOT_1_OBSIDIANA, 0)
+    init_wallet(nombre)
+    with _conn() as con:
+        cur = con.execute("SELECT obsidiana, quad FROM wallet WHERE nombre = ?", (nombre,))
+        row = cur.fetchone()
+        if row:
+            return _d(row[0]), _d(row[1])
+    return Decimal("0"), Decimal("0")
 
 def set_wallet(nombre: str, obsidiana, quad):
     nombre = (nombre or "").strip()

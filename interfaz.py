@@ -731,7 +731,8 @@ class BotInterfaz(AnimationMixin):
                                                  fill="gold",
                                                  font=self._font_normal,
                                                  anchor="nw")
-            self.nd_canvas.append((var, self.canvas_uno, txt_id, x_val, y_offset))
+            self.nd_canvas.append((var, self.canvas_uno, txt_id, x_val, y_offset, ""))
+
             if key:
                 self.info_canvas[key] = (self.canvas_uno, txt_id)
             
@@ -792,14 +793,15 @@ class BotInterfaz(AnimationMixin):
                                                     fill="gold",
                                                     font=self._font_normal,
                                                     anchor="nw")
-            self.nd_canvas.append((var, self.canvas_center, txt_id, x_val, y_offset))
+            self.nd_canvas.append((var, self.canvas_center, txt_id, x_val, y_offset, ""))
+
             if key:
                 self.info_canvas[key] = (self.canvas_center, txt_id)
             y_offset += row_height
 
             if key:
                 self.info_labels[key] = (self.canvas_center, lbl_id)
-                self.info_canvas[key] = (self.canvas_center, txt_id)
+                
 
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")    
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
@@ -1019,13 +1021,11 @@ class BotInterfaz(AnimationMixin):
             self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
         else:
             if getattr(self.bot, "modo_app", "") == "dum":
-                try:
-                    dep = Decimal(str(getattr(self.bot, "inv_inic", "0")))
-                except Exception:
-                    dep = Decimal("0")
-            
-
-
+                dep = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
+                if dep <= 0:
+                    self.log_en_consola("⚠️ Dum: configurá el depósito antes de iniciar.")
+                    self.log_en_consola("- - - - - - - - - -")
+                    return
 
             self.bot.iniciar()
             if not self.bot.running:
@@ -1590,7 +1590,7 @@ class BotInterfaz(AnimationMixin):
                     # Nota: si el bot ya estaba corriendo y querés permitir "aumentar depósito",
                     # esto debería descontar de wallet (obsidiana) y bajar dum_disponible.
                     # Por ahora: cap duro sin aumentar.
-                    if usdtinit > self.bot.inv_inic and self.bot.running:
+                    if usdtinit > old_inv_inic and self.bot.running:
                         self.log_en_consola("⚠️ En Dum no se permite aumentar el depósito con el bot corriendo.")
                         self.log_en_consola("- - - - - - - - - -")
                         return
@@ -1744,72 +1744,59 @@ class BotInterfaz(AnimationMixin):
             pass
 
     def _dum_aplicar_deposito(self, nuevo_deposito: Decimal):
-                
-                """
-                Dum: mueve obsidiana <-> depósito (USDT) y deja el bot consistente.
-                Reglas:
-                - Respeta cap del slot (SLOT_1_OBSIDIANA en main menu se lo pasás como dum_slot_cap)
-                - Permite cambiar depósito SOLO con bot detenido (pre-run)
-                """
-                if not self.usuario:
-                    raise ValueError("usuario no definido")
+        """
+        Dum: mueve obsidiana <-> depósito (USDT) y deja el bot consistente.
+        Reglas:
+        - Respeta cap del slot (SLOT_1_OBSIDIANA en main menu se lo pasás como dum_slot_cap)
+        - Permite cambiar depósito SOLO con bot detenido (pre-run)
+        """
+        if not self.usuario:
+            raise ValueError("usuario no definido")
 
-                cap = Decimal(str(getattr(self.bot, "dum_slot_cap", "5000")))
-                ya  = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
+        cap = Decimal(str(getattr(self.bot, "dum_slot_cap", "5000")))
+        ya  = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
 
-                # wallet actual
-                obs_s, quad_s = get_wallet(self.usuario)
-                obs  = Decimal(str(obs_s))
-                quad = Decimal(str(quad_s))
+        obs_s, quad_s = get_wallet(self.usuario)
+        obs  = Decimal(str(obs_s))
+        quad = Decimal(str(quad_s))
 
-                # máximo permitido: cap y lo que podés juntar entre (obs disponible + lo ya depositado)
-                maximo = min(cap, obs + ya)
+        maximo = min(cap, obs + ya)
 
-                if nuevo_deposito < 0:
-                    raise ValueError("El depósito no puede ser negativo")
-                
-                minimo = Decimal("100")
-                if nuevo_deposito != 0 and nuevo_deposito < minimo:
-                    raise ValueError(f"Depósito mínimo disponible: {minimo}")
+        if nuevo_deposito < 0:
+            raise ValueError("El depósito no puede ser negativo")
 
-                if nuevo_deposito > maximo:
-                    raise ValueError(f"Depósito máximo disponible: {maximo}")
+        minimo = Decimal("100")
+        if nuevo_deposito != 0 and nuevo_deposito < minimo:
+            raise ValueError(f"Depósito mínimo disponible: {minimo}")
 
-                # delta vs lo ya depositado
-                delta = nuevo_deposito - ya
+        if nuevo_deposito > maximo:
+            raise ValueError(f"Depósito máximo disponible: {maximo}")
 
-                # aplicar delta al wallet
-                if delta > 0:
-                    # aumentar depósito: descontar obsidiana
-                    if obs < delta:
-                        raise ValueError("No tenés suficiente obsidiana para aumentar el depósito")
-                    obs -= delta
-                elif delta < 0:
-                    # reducir depósito: devolver obsidiana
-                    obs += (-delta)
+        delta = nuevo_deposito - ya
 
-                # persistir wallet
-                set_wallet(self.usuario, obs, quad)
+        if delta > 0:
+            if obs < delta:
+                raise ValueError("No tenés suficiente obsidiana para aumentar el depósito")
+            obs -= delta
+        elif delta < 0:
+            obs += (-delta)
 
-                # dejar bot consistente
-                self.bot.dum_deposito  = nuevo_deposito
-                self.bot.dum_slot_used = nuevo_deposito   # slot usado en esta run (al iniciar)
+        set_wallet(self.usuario, obs, quad)
 
-                # en Dum, el capital del bot = depósito
-                self.bot.inv_inic = nuevo_deposito
-                self.bot.usdt     = nuevo_deposito
+        self.bot.dum_deposito  = nuevo_deposito
+        self.bot.dum_slot_used = nuevo_deposito
+        self.bot.inv_inic = nuevo_deposito
+        self.bot.usdt     = nuevo_deposito
+        self.bot.dum_disponible = obs
 
-                # informativo: disponible actual
-                self.bot.dum_disponible = obs
+        perfil = cargar_perfil(self.usuario)
+        if not isinstance(perfil, dict):
+            perfil = {}
+        di = (perfil.get("dum", {}) or {})
+        di["deposito"] = str(nuevo_deposito)
+        perfil["dum"] = di
+        guardar_perfil(self.usuario, perfil)
 
-                # persistir perfil dum (deposito)
-                perfil = cargar_perfil(self.usuario)
-                if not isinstance(perfil, dict):
-                    perfil = {}
-                di = (perfil.get("dum", {}) or {})
-                di["deposito"] = str(nuevo_deposito)
-                perfil["dum"] = di
-                guardar_perfil(self.usuario, perfil)
 
     def _loop(self):
         # Si el bot ya no corre o la ventana ya no existe, salimos
