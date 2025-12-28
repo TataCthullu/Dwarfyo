@@ -50,7 +50,10 @@ class DumTranslator:
           - bot.btc_usdt (si no existe, toma 0)
         """
         total = self._leer_total_bot(bot)
-        raw = getattr(bot, "dum_slot_used", None)
+        raw = getattr(bot, "_dum_slot_frozen", None)
+        if raw is None:
+            raw = getattr(bot, "dum_slot_used", None)
+
         if raw is None:
             slot = self.slot_1
         else:
@@ -88,6 +91,12 @@ class DumTranslator:
     # ----------------- helpers -----------------
 
     def _leer_total_bot(self, bot: Any) -> Decimal:
+        # 1) preferir un total ya calculado por el bot (si existe)
+        for attr in ("resultado_total", "total_final", "balance_total", "valor_total", "equity_usdt", "total_usdt"):
+            if hasattr(bot, attr):
+                return self._to_decimal(getattr(bot, attr, 0))
+
+        # 2) fallback: usdt + btc_usdt (solo si tu bot los mantiene coherentes)
         usdt = self._to_decimal(getattr(bot, "usdt", 0))
         btc_usdt = self._to_decimal(getattr(bot, "btc_usdt", 0))
         return usdt + btc_usdt

@@ -1,5 +1,6 @@
 # © 2025 Dungeon Market (Database)
 # Todos los derechos reservados.
+import traceback
 
 import sqlite3
 import json
@@ -173,6 +174,9 @@ def set_wallet(nombre: str, obsidiana, quad):
     obs = _s(obsidiana)
     qd  = _s(quad)
 
+    print("DEBUG set_wallet CALLER:\n", "".join(traceback.format_stack(limit=6)))
+    print("DEBUG set_wallet DATA:", nombre, obs, qd)
+
     with _conn() as con:
         con.execute("""
             INSERT INTO wallet (nombre, obsidiana, quad)
@@ -182,3 +186,10 @@ def set_wallet(nombre: str, obsidiana, quad):
                 quad      = excluded.quad
         """, (nombre, obs, qd))
         con.commit()
+
+def debug_wallet_raw(nombre: str):
+    with _conn() as con:
+        cur = con.execute("SELECT obsidiana, quad FROM wallet WHERE nombre = ?", (nombre,))
+        return cur.fetchone()
+
+print("DEBUG DB PATH:", DB_NAME)

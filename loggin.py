@@ -2,7 +2,7 @@
 # Todos los derechos reservados.
 
 import tkinter as tk
-from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil, init_wallet, get_wallet, set_wallet
+from database import init_db, debug_wallet_raw, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil, init_wallet, get_wallet, set_wallet
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 from PIL import Image, ImageTk
@@ -273,6 +273,11 @@ def main_menu(nombre):
 
     # 2) refrescar HUD (ya existen wallet_text_id y dum_text_id)
     def refrescar_menu():
+        raw = debug_wallet_raw(nombre)
+        print("DEBUG MAIN raw wallet row:", raw)
+        obs, quad = get_wallet(nombre)
+        print("DEBUG MAIN get_wallet:", obs, quad)
+
         try:
             obs, quad = get_wallet(nombre)
             obs_d = Decimal(str(obs))
@@ -292,7 +297,7 @@ def main_menu(nombre):
 
         canvas_menu.itemconfig(wallet_text_id, text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}")
         canvas_menu.itemconfig(dum_text_id, text=f"Dum · Slot cap: {slot_cap} | Depósito: {dep} | Slot usado: {su}")
-
+        
     refrescar_menu()
 
 
@@ -447,34 +452,70 @@ def main_menu(nombre):
 
         old_cb = getattr(bot, "ui_callback_on_stop", None)
 
-
-        """bot.inv_inic = Decimal("0")
-        bot.usdt     = Decimal("0")
-"""
        
+        def _dum_flatten_total(bot):
+            """
+            Normaliza el estado del bot para que Dum NO duplique capital.
+            Convierte todo a 'usdt' de forma contable:
+              total = usdt + btc_usdt
+              usdt = total
+              btc_usdt = 0
+              btc (si existe) = 0
+            """
+            try:
+                usdt = Decimal(str(getattr(bot, "usdt", "0")))
+            except Exception:
+                usdt = Decimal("0")
+
+            try:
+                btc_usdt = Decimal(str(getattr(bot, "btc_usdt", "0")))
+            except Exception:
+                btc_usdt = Decimal("0")
+
+            total = usdt + btc_usdt
+
+            try:
+                bot.usdt = total
+            except Exception:
+                pass
+
+            # importantísimo: evitar doble conteo
+            try:
+                bot.btc_usdt = Decimal("0")
+            except Exception:
+                pass
+
+            # si tu bot maneja btc directo, lo bajamos también
+            if hasattr(bot, "btc"):
+                try:
+                    bot.btc = Decimal("0")
+                except Exception:
+                    pass
+
+            # debug útil
+            print("DEBUG DUM FLATTEN:", "usdt=", getattr(bot, "usdt", None),
+                  "btc_usdt=", getattr(bot, "btc_usdt", None),
+                  "total=", total)
 
         
 
         def _cb_stop(motivo="stop"):
-            # evitar doble persist
             if dum_cerrado["ok"]:
                 return
             dum_cerrado["ok"] = True
 
-            try:
-                if callable(old_cb):
-                    try:
-                        old_cb(motivo)
-                    except TypeError:
-                        old_cb()
+            # NO llamamos old_cb acá porque puede disparar otro cierre/persistencia Dum
+            # (la UI queda como visual, Dum persiste solo desde acá)
 
-            except Exception:
-                pass
+            _dum_flatten_total(bot)
+            bot._dum_slot_frozen = Decimal(str(getattr(bot, "dum_slot_used", "0")))
 
             try:
                 dum.cerrar_run(usuario=nombre, bot=bot, motivo=motivo)
             except Exception as e:
                 print("Error Dum:", e)
+
+
 
         try:
             bot.ui_callback_on_stop = _cb_stop

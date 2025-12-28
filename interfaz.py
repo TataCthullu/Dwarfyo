@@ -68,6 +68,10 @@ class BotInterfaz(AnimationMixin):
             # res es DumResultado
             if not self.usuario:
                 return
+            
+            print("DEBUG DUM res.obsidiana_vuelve =", getattr(res, "obsidiana_vuelve", None))
+            print("DEBUG DUM res.quad_ganado      =", getattr(res, "quad_ganado", None))
+
             try:
                 obs_s, quad_s = get_wallet(self.usuario)
                 obs  = Decimal(str(obs_s))
@@ -77,10 +81,18 @@ class BotInterfaz(AnimationMixin):
                 quad += Decimal(str(getattr(res, "quad_ganado", "0")))
 
                 set_wallet(self.usuario, obs, quad)
+                obs2, quad2 = get_wallet(self.usuario)
+                print("DEBUG WALLET post-set:", obs2, quad2)
+
             except Exception:
                 pass
 
-        self.dum = DumTranslator(persist_callback=_dum_persist_callback)
+        # Si el bot está en modo Dum, la persistencia (wallet) la maneja loggin.py.
+        # La UI NO debe persistir, para evitar doble guardado.
+        if getattr(self.bot, "modo_app", "") == "dum":
+            self.dum = None
+        else:
+            self.dum = DumTranslator(persist_callback=_dum_persist_callback)
 
 
 
@@ -94,7 +106,10 @@ class BotInterfaz(AnimationMixin):
                     # motivo puede venir "TP"/"SL"/None
                     m = motivo if motivo else "detener"
 
-                    res = self.dum.cerrar_run(self.usuario, self.bot, motivo=m)
+                    res = None
+                    if self.dum is not None:
+                        res = self.dum.cerrar_run(self.usuario, self.bot, motivo=m)
+
 
                     # log
                     try:
