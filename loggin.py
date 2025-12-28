@@ -9,6 +9,7 @@ from PIL import Image, ImageTk
 import os
 from dum import DumTranslator, SLOT_1_OBSIDIANA
 from decimal import Decimal
+import datetime
 init_db()
 
 
@@ -405,6 +406,8 @@ def main_menu(nombre):
             di["slot_used_last"] = str(res.slot)
             di["last_total"] = str(res.resultado_total)
             di["last_quad"] = str(res.quad_ganado)
+            di["last_run_id"] = str(datetime.now().timestamp())
+
             perfil["dum"] = di
             guardar_perfil(res.usuario, perfil)
 
@@ -549,10 +552,7 @@ def main_menu(nombre):
         except Exception:
             pass
         
-       
-
-        bot.modo_app = "dum"
-    # bot.dum_mode = True
+    
 
 
     def abrir_selector_modo(modo):

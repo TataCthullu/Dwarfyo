@@ -176,6 +176,10 @@ def set_wallet(nombre: str, obsidiana, quad):
 
     print("DEBUG set_wallet CALLER:\n", "".join(traceback.format_stack(limit=6)))
     print("DEBUG set_wallet DATA:", nombre, obs, qd)
+    # dentro de set_wallet, solo debug:
+    stack = "".join(traceback.format_stack(limit=12))
+    if "interfaz.py" in stack:
+        print("⚠️ WARNING: set_wallet llamado desde interfaz.py (posible duplicación)")
 
     with _conn() as con:
         con.execute("""

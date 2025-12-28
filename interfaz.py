@@ -100,58 +100,15 @@ class BotInterfaz(AnimationMixin):
         _old_stop_cb = getattr(self.bot, "ui_callback_on_stop", None)
 
         def _chained_stop_cb(motivo=None):
-            # 1.5) DUM (Modelo A): cerrar run y persistir wallet
-            try:
-                if getattr(self.bot, "modo_app", "") == "dum" and self.usuario:
-                    # motivo puede venir "TP"/"SL"/None
-                    m = motivo if motivo else "detener"
-
-                    res = None
-                    if self.dum is not None:
-                        res = self.dum.cerrar_run(self.usuario, self.bot, motivo=m)
-
-
-                    # log
-                    try:
-                        self.log_en_consola(
-                            f"🏁 Dum: vuelve {self.format_var(res.obsidiana_vuelve, '$')} obsidiana "
-                            f"+ {self.format_var(res.quad_ganado, '$')} quad."
-                        )
-                        self.log_en_consola("- - - - - - - - - -")
-                    except Exception:
-                        pass
-
-                    # reset depósito a 0 para la próxima run (Modelo A)
-                    try:
-                        self.bot.dum_deposito = Decimal("0")
-                        self.bot.dum_slot_used = Decimal("0")
-                        self.bot.inv_inic = Decimal("0")
-                        self.bot.usdt = Decimal("0")
-                    except Exception:
-                        pass
-
-                    # persistir perfil dum (deposito=0) para que al volver a loguear se vea limpio
-                    try:
-                        perfil = cargar_perfil(self.usuario)
-                        if not isinstance(perfil, dict):
-                            perfil = {}
-                        di = (perfil.get("dum", {}) or {})
-                        di["deposito"] = "0"
-                        perfil["dum"] = di
-                        guardar_perfil(self.usuario, perfil)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
-            
-            # 1) UI local
-
             try:
                 self._on_bot_stop(motivo)
             except Exception:
                 pass
-            # 2) callback anterior (Dum/persistencia/etc.)
+
+            # En modo Dum: NO encadenar callbacks viejos para evitar doble cierre/persistencia.
+            if getattr(self.bot, "modo_app", "") == "dum":
+                return
+
             try:
                 if callable(_old_stop_cb) and _old_stop_cb is not _chained_stop_cb:
                     try:
@@ -160,6 +117,7 @@ class BotInterfaz(AnimationMixin):
                         _old_stop_cb()
             except Exception:
                 pass
+
 
         self.bot.ui_callback_on_stop = _chained_stop_cb
 
@@ -1419,27 +1377,13 @@ class BotInterfaz(AnimationMixin):
                 # DUM: "Total Usdt" = depósito desde Slot 1
                 # =========================
                 if getattr(self.bot, "modo_app", "") == "dum":
-                    if self.bot.running:
-                        self.log_en_consola("⚠️ En Dum no se puede modificar el depósito con el bot corriendo.")
+                    # En Dum la wallet NO se toca desde la UI.
+                    # El depósito se define en loggin.py (menú principal / depositar_a_bot).
+                    if usdtinit != Decimal(str(getattr(self.bot, "inv_inic", "0") or "0")):
+                        self.log_en_consola("⚠️ Dum: el depósito se configura en el menú principal. Aquí no se modifica.")
                         self.log_en_consola("- - - - - - - - - -")
                         return
 
-                    else:
-                        try:
-                            self._dum_aplicar_deposito(usdtinit)
-                        except Exception as e:
-                            self.log_en_consola(f"⚠️ {e}")
-                            self.log_en_consola("- - - - - - - - - -")
-                            return
-
-                    # hook main menu (si existe)
-                    try:
-                        if callable(getattr(self, "_refrescar_main_menu", None)):
-                            self._refrescar_main_menu()
-                    except Exception:
-                        pass
-
-                
 
                 tp = Decimal(txt_tp)
                 sl = Decimal(txt_sl)
@@ -1758,13 +1702,8 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-    def _dum_aplicar_deposito(self, nuevo_deposito: Decimal):
-        """
-        Dum: mueve obsidiana <-> depósito (USDT) y deja el bot consistente.
-        Reglas:
-        - Respeta cap del slot (SLOT_1_OBSIDIANA en main menu se lo pasás como dum_slot_cap)
-        - Permite cambiar depósito SOLO con bot detenido (pre-run)
-        """
+    """ def _dum_aplicar_deposito(self, nuevo_deposito: Decimal):
+        
         if not self.usuario:
             raise ValueError("usuario no definido")
 
@@ -1810,7 +1749,7 @@ class BotInterfaz(AnimationMixin):
         di = (perfil.get("dum", {}) or {})
         di["deposito"] = str(nuevo_deposito)
         perfil["dum"] = di
-        guardar_perfil(self.usuario, perfil)
+        guardar_perfil(self.usuario, perfil)"""
 
 
     def _loop(self):
