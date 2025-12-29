@@ -1,12 +1,12 @@
 # © 2025 Dungeon Market (Database)
 # Todos los derechos reservados.
-import traceback
 import sqlite3
 import json
 from decimal import Decimal
 from dum import SLOT_1_OBSIDIANA
 import os
 DB_NAME = os.path.join(os.path.dirname(__file__), "usuarios.db")
+DEBUG_DB = False
 
 def _conn():
     con = sqlite3.connect(DB_NAME)
@@ -152,7 +152,6 @@ def get_wallet(nombre: str):
 
 def set_wallet(nombre: str, obsidiana, quad):
     nombre = (nombre or "").strip()
-
     if not nombre:
         return
 
@@ -168,12 +167,8 @@ def set_wallet(nombre: str, obsidiana, quad):
     obs = _s(obsidiana)
     qd  = _s(quad)
 
-    print("DEBUG set_wallet CALLER:\n", "".join(traceback.format_stack(limit=6)))
-    print("DEBUG set_wallet DATA:", nombre, obs, qd)
-    # dentro de set_wallet, solo debug:
-    stack = "".join(traceback.format_stack(limit=12))
-    if "interfaz.py" in stack:
-        print("⚠️ WARNING: set_wallet llamado desde interfaz.py (posible duplicación)")
+    if DEBUG_DB:
+        print("DEBUG set_wallet DATA:", nombre, obs, qd)
 
     with _conn() as con:
         con.execute("""
@@ -185,9 +180,11 @@ def set_wallet(nombre: str, obsidiana, quad):
         """, (nombre, obs, qd))
         con.commit()
 
+
 def debug_wallet_raw(nombre: str):
     with _conn() as con:
         cur = con.execute("SELECT obsidiana, quad FROM wallet WHERE nombre = ?", (nombre,))
         return cur.fetchone()
-
-print("DEBUG DB PATH:", DB_NAME)
+    
+if DEBUG_DB:
+    print("DEBUG DB PATH:", DB_NAME)

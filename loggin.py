@@ -10,12 +10,9 @@ import os
 from dum import DumTranslator, SLOT_1_OBSIDIANA
 from decimal import Decimal
 from datetime import datetime
-# ...
-#datetime.now()
 
 init_db()
-
-
+DEBUG_DUM = False
 
 ventana_loggin = tk.Tk()
 ventana_loggin.title("Loggin")
@@ -272,9 +269,11 @@ def main_menu(nombre):
     # 2) refrescar HUD (ya existen wallet_text_id y dum_text_id)
     def refrescar_menu():
         raw = debug_wallet_raw(nombre)
-        print("DEBUG MAIN raw wallet row:", raw)
+        if DEBUG_DUM:
+            print("DEBUG MAIN raw wallet row:", raw)
         obs, quad = get_wallet(nombre)
-        print("DEBUG MAIN get_wallet:", obs, quad)
+        if DEBUG_DUM:
+            print("DEBUG MAIN get_wallet:", obs, quad)
 
         try:
             obs, quad = get_wallet(nombre)
@@ -455,13 +454,14 @@ def main_menu(nombre):
                 btc_usdt = Decimal("0")
 
             total = usdt + btc_usdt
-
-            print(
-                "DEBUG DUM TOTAL:",
-                "usdt=", usdt,
-                "btc_usdt=", btc_usdt,
-                "total=", total
-            )
+            
+            if DEBUG_DUM:
+                print(
+                    "DEBUG DUM TOTAL:",
+                    "usdt=", usdt,
+                    "btc_usdt=", btc_usdt,
+                    "total=", total
+                )
 
             return total
 
