@@ -15,8 +15,7 @@ import re
 import csv
 from datetime import datetime
 from dum import DumTranslator
-
-from database import get_wallet, set_wallet, cargar_perfil, guardar_perfil
+from database import get_wallet, set_wallet
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot, master=None, usuario=None):

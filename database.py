@@ -1,7 +1,6 @@
 # © 2025 Dungeon Market (Database)
 # Todos los derechos reservados.
 import traceback
-
 import sqlite3
 import json
 from decimal import Decimal
@@ -14,7 +13,6 @@ def _conn():
     con.execute("PRAGMA foreign_keys = ON;")
     con.execute("PRAGMA journal_mode = WAL;")
     return con
-
 
 def init_db():
     with _conn() as conn:
@@ -46,7 +44,6 @@ def init_db():
 
         conn.commit()
 
-
 def agregar_usuario(nombre, password):
     conn = _conn()
     cur = conn.cursor()
@@ -66,7 +63,6 @@ def agregar_usuario(nombre, password):
     finally:
         conn.close()
 
-
 def validar_usuario(nombre, password):
     with _conn() as conn:
         cur = conn.cursor()
@@ -77,14 +73,12 @@ def validar_usuario(nombre, password):
         return False
     return row[0] == password
 
-
 def usuario_existe(nombre):
     with _conn() as conn:
         cur = conn.cursor()
         cur.execute("SELECT 1 FROM usuarios WHERE nombre = ?", (nombre,))
         row = cur.fetchone()
     return row is not None
-
 
 def guardar_perfil(nombre, perfil: dict):
     perfil_json = json.dumps(perfil, ensure_ascii=False)
@@ -94,7 +88,6 @@ def guardar_perfil(nombre, perfil: dict):
             (nombre, perfil_json)
         )
         conn.commit()
-
 
 def cargar_perfil(nombre):
     with _conn() as conn:
@@ -109,9 +102,9 @@ def cargar_perfil(nombre):
     except Exception:
         return {}
 
-
 def init_wallet(nombre: str):
     nombre = (nombre or "").strip()
+
     if not nombre:
         return
 
@@ -123,9 +116,9 @@ def init_wallet(nombre: str):
         )
         con.commit()
 
-
 def get_wallet(nombre: str):
     nombre = (nombre or "").strip()
+
     if not nombre:
         return Decimal("0"), Decimal("0")
 
@@ -159,6 +152,7 @@ def get_wallet(nombre: str):
 
 def set_wallet(nombre: str, obsidiana, quad):
     nombre = (nombre or "").strip()
+
     if not nombre:
         return
 

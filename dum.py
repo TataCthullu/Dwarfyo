@@ -23,17 +23,6 @@ class DumResultado:
 
 
 class DumTranslator:
-    """
-    Dum NO opera trades.
-    Dum solo traduce el estado final del bot al cerrar la run:
-
-    - Slot 1 fijo = 5000 Obsidiana
-    - Quad = max(0, total_final - slot)
-    - Obsidiana que vuelve = min(total_final, slot)
-
-    Persistencia: se inyecta con persist_callback(resultado: DumResultado) -> None
-    """
-
     def __init__(
         self,
         slot_1: Decimal = SLOT_1_OBSIDIANA,
@@ -43,12 +32,6 @@ class DumTranslator:
         self.persist_callback = persist_callback
 
     def cerrar_run(self, usuario: str, bot: Any, motivo: str = "detener") -> DumResultado:
-        """
-        Debe llamarse SOLO cuando el bot se detiene (Detener / TP / SL / logout / etc).
-        Lee del bot:
-          - bot.usdt
-          - bot.btc_usdt (si no existe, toma 0)
-        """
         total = self._leer_total_bot(bot)
         raw = getattr(bot, "_dum_slot_frozen", None)
         if raw is None:
@@ -63,9 +46,6 @@ class DumTranslator:
             slot = Decimal("0")
         if slot > self.slot_1:
             slot = self.slot_1
-
-
-
 
         if total > slot:
             quad = total - slot

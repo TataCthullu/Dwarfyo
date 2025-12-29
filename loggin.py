@@ -9,7 +9,10 @@ from PIL import Image, ImageTk
 import os
 from dum import DumTranslator, SLOT_1_OBSIDIANA
 from decimal import Decimal
-import datetime
+from datetime import datetime
+# ...
+#datetime.now()
+
 init_db()
 
 
@@ -30,11 +33,8 @@ def cerrar_app():
 
 ventana_loggin.protocol("WM_DELETE_WINDOW", cerrar_app)
 
-#exchange_win = False
 crear_user_win = False
 user_win_ref = None
-
-#init_db()
 
 def crear_user():
     global user_win_ref
@@ -45,14 +45,16 @@ def crear_user():
         return
 
     global crear_user_win
+    
     if crear_user_win:
         return
+    
     crear_user_win = True
-
     user_win = tk.Toplevel(ventana_loggin)
     user_win_ref = user_win
     user_win.geometry("400x200")
     user_win.title("Creación De Usuario - Dungeon Market")
+
     def cerrar_user():
         global user_win_ref, crear_user_win
         crear_user_win = False
@@ -61,7 +63,6 @@ def crear_user():
         except Exception:
             pass
         user_win_ref = None
-
 
     user_win.protocol("WM_DELETE_WINDOW", cerrar_user)
     user_win.config(background="PaleGoldenRod")
@@ -99,11 +100,8 @@ def crear_user():
         else:
             print("Ese usuario ya existe")
 
-
     btn_crear_pj = tk.Button(user_win, text="Crear", font=("Carolingia", 18), command=guardar_usuario)
     btn_crear_pj.pack(pady=10)
-
-
 
 def rellenar_mosaico(canvas, image_path, escala=1):
     imagen_original = Image.open(image_path)
@@ -194,7 +192,6 @@ def main_menu(nombre):
 
     except Exception as e:
         print("Error cargando balrogs:", e)
-
     
     khazad_win = {"open": False, "app": None}  # mini-flag simple
 
@@ -301,18 +298,11 @@ def main_menu(nombre):
         
     refrescar_menu()
 
-
-    
-
     # --- info Dum (debajo de wallet) ---
     perfil = cargar_perfil(nombre)
     dum_info = (perfil.get("dum", {}) or {})
     dum_deposito = dum_info.get("deposito", "0")
     dum_slot_used_last = dum_info.get("slot_used_last", "0")
-
-    
- 
-
     perfil = cargar_perfil(nombre)
     avatar_data = (perfil.get("avatar", {}) or {})
     avatar_nombre = avatar_data.get("name", "Sin avatar")
@@ -343,7 +333,6 @@ def main_menu(nombre):
         anchor="center"
     )
 
-
     def abrir_modo(modo):
         bot = TradingBot()
         bot.modo_app = modo  # solo guardamos el modo, sin lógica todavía
@@ -372,9 +361,12 @@ def main_menu(nombre):
     def depositar_a_bot(usuario: str, bot):
         obs, quad = get_wallet(usuario)
 
+        # Normalizar: nunca trabajar con negativos
+        if obs < 0:
+            obs = Decimal("0")
+
+        # Depósito = lo disponible, pero topeado por slot
         deposito = min(obs, SLOT_1_OBSIDIANA)
-        if deposito < 0:
-            deposito = Decimal("0")
 
         # retirar del wallet (queda "bloqueado" en la run)
         set_wallet(usuario, obs - deposito, quad)
@@ -384,8 +376,7 @@ def main_menu(nombre):
         bot.dum_slot_used = deposito
 
         return deposito
-    
-    
+        
     def abrir_dum_khazad():
         # 5) persistencia Dum (se ejecuta al STOP real)
         def persistir_dum(res):
@@ -410,8 +401,6 @@ def main_menu(nombre):
 
             perfil["dum"] = di
             guardar_perfil(res.usuario, perfil)
-
-
             refrescar_menu()
 
         if khazad_win["open"]:
@@ -422,17 +411,13 @@ def main_menu(nombre):
                 pass
             return
 
-        
-
         # 1) leer wallet del usuario
         obsidiana_total, quad_total = get_wallet(nombre)
 
         # 2) crear bot
         bot = TradingBot()
         bot.modo_app = "dum"
-
         deposito = depositar_a_bot(nombre, bot)  # usa wallet y carga usdt al bot
-
         # por si la UI usa estos campos:
         bot.inv_inic = Decimal(str(deposito))
         bot.dum_deposito = Decimal(str(deposito))
@@ -447,24 +432,12 @@ def main_menu(nombre):
         di["slot_used_last"] = str(deposito)   # durante la run, el slot usado actual
         perfil["dum"] = di
         guardar_perfil(nombre, perfil)
-
         dum = DumTranslator(persist_callback=persistir_dum)
-
-
         dum_cerrado = {"ok": False}
-
         old_cb = getattr(bot, "ui_callback_on_stop", None)
 
-       
         def _dum_flatten_total(bot):
-            """
-            Normaliza el estado del bot para que Dum NO duplique capital.
-            Convierte todo a 'usdt' de forma contable:
-              total = usdt + btc_usdt
-              usdt = total
-              btc_usdt = 0
-              btc (si existe) = 0
-            """
+            
             try:
                 usdt = Decimal(str(getattr(bot, "usdt", "0")))
             except Exception:
@@ -500,8 +473,6 @@ def main_menu(nombre):
                   "btc_usdt=", getattr(bot, "btc_usdt", None),
                   "total=", total)
 
-        
-
         def _cb_stop(motivo="stop"):
             if dum_cerrado["ok"]:
                 return
@@ -517,8 +488,6 @@ def main_menu(nombre):
                 dum.cerrar_run(usuario=nombre, bot=bot, motivo=motivo)
             except Exception as e:
                 print("Error Dum:", e)
-
-
 
         try:
             bot.ui_callback_on_stop = _cb_stop
@@ -547,14 +516,9 @@ def main_menu(nombre):
 
             app.root.protocol("WM_DELETE_WINDOW", _al_cerrar_ui)
 
-            
-
         except Exception:
             pass
         
-    
-
-
     def abrir_selector_modo(modo):
         # evitar duplicar ventana
         win = modo_selector_win_ref["win"]
@@ -569,7 +533,6 @@ def main_menu(nombre):
         sel.title(("Libre" if modo == "libre" else "Dum"))
         sel.config(background="PaleGoldenRod")
        
-        
         if modo == "dum":
             sel.iconbitmap(DUM_ICON_PATH)
         else:
@@ -591,8 +554,6 @@ def main_menu(nombre):
         )
         titulo.pack(pady=10)
 
-       
-
         def abrir_khazad_bot():
             _al_cerrar()  # cerrar selector
 
@@ -600,7 +561,6 @@ def main_menu(nombre):
                 abrir_dum_khazad()   # nueva función
             else:
                 abrir_modo("libre")
-
 
         def abrir_spot():
             print(f"[{modo}] Spot (pendiente)")
@@ -618,7 +578,6 @@ def main_menu(nombre):
 
         btn_fut = tk.Button(sel, text="Futuros", font=("Carolingia", 14), command=abrir_futuros)
         btn_fut.pack(pady=5)
-
 
     """btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
     canvas_menu.create_window(120, 140, window=btn_exchange, anchor="nw")
@@ -639,11 +598,10 @@ def main_menu(nombre):
     )
 
     canvas_menu.create_window(400, 140, window=btn_dum, anchor="nw")
-
     # Si el usuario ya eligió avatar, no mostramos el botón
     tiene_avatar = bool((perfil.get("avatar", {}) or {}).get("img"))
-
     btn_crear_avatar = None
+
     if not tiene_avatar:
         btn_crear_avatar = tk.Button(
             main_menu_var,
