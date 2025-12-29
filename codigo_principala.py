@@ -94,6 +94,8 @@ class TradingBot:
         self.update_btc_fixed_seller()
         self.hist_tentacles = None
         self.total_fees_btc = Decimal("0")
+        self.dum_mode = False
+        self.var_total_usdt = Decimal("0")
 
     def format_fn(self, valor, simbolo=""):
         # Nada → vacío
@@ -173,6 +175,15 @@ class TradingBot:
         return None
         
     def actualizar_balance(self):
+
+        if getattr(self, "dum_mode", False):
+            # En Dum no consultamos exchange. Solo recalculamos el balance local.
+            usdt = self.usdt or Decimal("0")
+            btc = self.btc or Decimal("0")
+            precio = self.precio_actual or Decimal("0")
+            self.usdt_mas_btc = usdt + (btc * precio)
+            return
+
         """
         Actualiza BTC valorado en USDT y balance total usando Decimal.
         Si btc o precio_actual no son válidos, pone ambos balances a Decimal('0').
@@ -306,7 +317,9 @@ class TradingBot:
                 if isinstance(precio_compra_tx, Decimal) and btc_vender > 0:
                     costo_base = btc_vender * precio_compra_tx
                     perdida = costo_base - usdt_obtenido
-                    rebalance_loss_event += perdida
+                    if perdida > 0:
+                        rebalance_loss_event += perdida
+
                     self.log(
                         f" • Pérdida por rebalance en esta compra: "
                         f"{self.format_fn(perdida, '$')} (base {self.format_fn(costo_base, '$')} → "
@@ -1026,6 +1039,7 @@ class TradingBot:
                     self.hold_btc_var = self.hold_btc()
                     self.hold_usdt_var = self.hold_usdt()
                     self.var_total = self.variacion_total()
+                    self.var_total_usdt = self.variacion_total_usdt()
 
                     # Check global TP/SL
                     if self.check_take_profit_stop_loss():
@@ -1103,6 +1117,8 @@ class TradingBot:
     def detener(self, motivo=None):
         self.running = False
         self._stop_flag = True
+       
+
         if motivo:
             self.log(f"🔴 Khazâd detenido. Motivo: {motivo}")
         else:

@@ -1,42 +1,42 @@
 # player.py
+import os
+from PIL import Image, ImageTk
+from database import cargar_perfil, guardar_perfil
 
-from dataclasses import dataclass, field
-from typing import Dict
+AVATAR_DIR = os.path.join("imagenes", "deco", "Player", "AvatarBase")
 
-# avatar base por defecto
-DEFAULT_AVATAR_ID = "dwarf_male"
+def listar_avatares():
+    if not os.path.isdir(AVATAR_DIR):
+        return []
+    files = []
+    for fn in os.listdir(AVATAR_DIR):
+        if fn.lower().endswith((".png", ".jpg", ".jpeg")):
+            files.append(os.path.join(AVATAR_DIR, fn))
+    files.sort()
+    return files
 
+def avatar_name_from_path(path):
+    base = os.path.basename(path)
+    name, _ = os.path.splitext(base)
+    return name
 
-@dataclass
-class Inventory:
-    items: Dict[str, int] = field(default_factory=dict)
-    equipped: Dict[str, str] = field(default_factory=dict)
+def load_avatar_thumbnail(path, size=(64, 64)):
+    try:
+        img = Image.open(path)
+        img = img.resize(size, resample=Image.Resampling.NEAREST)
+        return ImageTk.PhotoImage(img)
+    except Exception:
+        return None
 
+def get_avatar(usuario):
+    perfil = cargar_perfil(usuario)
+    if not isinstance(perfil, dict):
+        perfil = {}
+    return (perfil.get("avatar", {}) or {})
 
-@dataclass
-class Settings:
-    music: bool = True
-    sound: bool = True
-    decimals: int = 2
-
-
-@dataclass
-class Loadout:
-    avatar_id: str = DEFAULT_AVATAR_ID
-
-    # representaciones visuales del bot
-    tp_item: str = "tp_base"
-    sl_item: str = "sl_base"
-    hodl_staff: str = "hodl_base"
-
-
-@dataclass
-class Player:
-    username: str
-
-    loadout: Loadout = field(default_factory=Loadout)
-    inventory: Inventory = field(default_factory=Inventory)
-    settings: Settings = field(default_factory=Settings)
-
-    def __repr__(self):
-        return f"<Player {self.username}>"
+def set_avatar(usuario, name, img_path):
+    perfil = cargar_perfil(usuario)
+    if not isinstance(perfil, dict):
+        perfil = {}
+    perfil["avatar"] = {"name": name, "img": img_path}
+    guardar_perfil(usuario, perfil)

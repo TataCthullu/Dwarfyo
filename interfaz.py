@@ -14,6 +14,8 @@ from decimal import Decimal, InvalidOperation
 import re
 import csv
 from datetime import datetime
+from dum import DumTranslator
+from database import get_wallet, set_wallet
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot, master=None, usuario=None):
@@ -25,7 +27,8 @@ class BotInterfaz(AnimationMixin):
             self.root = tk.Tk()
         else:
             self.root = tk.Toplevel(master)
-
+        
+        
         self.root.title("Khazad - Dungeon Market")
         #self.root.config(cursor="@imagenes/deco/cursor/stone_arrow_x4.cur")
         self.root.configure(bg="pink")
@@ -57,7 +60,67 @@ class BotInterfaz(AnimationMixin):
 
         # initialize bot and clear only ingreso price until started
         self.bot = bot
-        self.bot.ui_callback_on_stop = self._on_bot_stop
+        
+
+        # --- DUM Translator (Modelo A) ---
+        def _dum_persist_callback(res):
+            # res es DumResultado
+            if not self.usuario:
+                return
+            
+            print("DEBUG DUM res.obsidiana_vuelve =", getattr(res, "obsidiana_vuelve", None))
+            print("DEBUG DUM res.quad_ganado      =", getattr(res, "quad_ganado", None))
+
+            try:
+                obs_s, quad_s = get_wallet(self.usuario)
+                obs  = Decimal(str(obs_s))
+                quad = Decimal(str(quad_s))
+
+                obs  += Decimal(str(getattr(res, "obsidiana_vuelve", "0")))
+                quad += Decimal(str(getattr(res, "quad_ganado", "0")))
+
+                set_wallet(self.usuario, obs, quad)
+                obs2, quad2 = get_wallet(self.usuario)
+                print("DEBUG WALLET post-set:", obs2, quad2)
+
+            except Exception:
+                pass
+
+        # Si el bot está en modo Dum, la persistencia (wallet) la maneja loggin.py.
+        # La UI NO debe persistir, para evitar doble guardado.
+        if getattr(self.bot, "modo_app", "") == "dum":
+            self.dum = None
+        else:
+            self.dum = DumTranslator(persist_callback=_dum_persist_callback)
+
+
+
+        # Encadenar callback existente (por ej. el que setea Dum desde main_menu)
+        _old_stop_cb = getattr(self.bot, "ui_callback_on_stop", None)
+
+        def _chained_stop_cb(motivo=None):
+            try:
+                self._on_bot_stop(motivo)
+            except Exception:
+                pass
+
+            # En modo Dum: NO encadenar callbacks viejos para evitar doble cierre/persistencia.
+            if getattr(self.bot, "modo_app", "") == "dum":
+                return
+
+            try:
+                if callable(_old_stop_cb) and _old_stop_cb is not _chained_stop_cb:
+                    try:
+                        _old_stop_cb(motivo)
+                    except TypeError:
+                        _old_stop_cb()
+            except Exception:
+                pass
+
+
+        self.bot.ui_callback_on_stop = _chained_stop_cb
+
+        
         self.was_offline = False
         self.bot.log_fn = self.logf
         self.operativa_configurada = False
@@ -278,6 +341,9 @@ class BotInterfaz(AnimationMixin):
         else:
             self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
+        
+        
+    
 
     def _crear_menu_vista(self):
         view_menu = tk.Menu(self.menubar, tearoff=0)
@@ -637,10 +703,12 @@ class BotInterfaz(AnimationMixin):
                                                  fill="gold",
                                                  font=self._font_normal,
                                                  anchor="nw")
-            self.nd_canvas.append((var, self.canvas_uno, txt_id, x_val, y_offset))
+            self.nd_canvas.append((var, self.canvas_uno, txt_id, x_val, y_offset, ""))
+
             if key:
                 self.info_canvas[key] = (self.canvas_uno, txt_id)
-                y_offset += row_height
+            
+            y_offset += row_height
             
             if key:
                 self.info_labels[key] = (self.canvas_uno, lbl_id)
@@ -697,14 +765,15 @@ class BotInterfaz(AnimationMixin):
                                                     fill="gold",
                                                     font=self._font_normal,
                                                     anchor="nw")
-            self.nd_canvas.append((var, self.canvas_center, txt_id, x_val, y_offset))
+            self.nd_canvas.append((var, self.canvas_center, txt_id, x_val, y_offset, ""))
+
             if key:
                 self.info_canvas[key] = (self.canvas_center, txt_id)
             y_offset += row_height
 
             if key:
                 self.info_labels[key] = (self.canvas_center, lbl_id)
-                self.info_canvas[key] = (self.canvas_center, txt_id)
+                
 
         add("% Objetivo de venta, desde compra:", self.porc_objetivo_venta_str, "porc_obj_venta")    
         add("% Desde compra, para compra:", self.porc_desde_compra_str, "porc_desde_compra")
@@ -911,6 +980,10 @@ class BotInterfaz(AnimationMixin):
         
 
     def toggle_bot(self):
+        if getattr(self.bot, "modo_app", "") == "dum":
+            if not hasattr(self.bot, "dum_slot_used") or self.bot.dum_slot_used in (None, "", 0):
+                self.bot.dum_slot_used = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
+
         if self.bot.running:
             self.bot.detener()
             if self.sound_enabled:
@@ -919,6 +992,13 @@ class BotInterfaz(AnimationMixin):
             self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
             self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
         else:
+            if getattr(self.bot, "modo_app", "") == "dum":
+                dep = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
+                if dep <= 0:
+                    self.log_en_consola("⚠️ Dum: configurá el depósito antes de iniciar.")
+                    self.log_en_consola("- - - - - - - - - -")
+                    return
+
             self.bot.iniciar()
             if not self.bot.running:
                 self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa configuración de operativa y coloca números válidos.")
@@ -1243,12 +1323,12 @@ class BotInterfaz(AnimationMixin):
         # ===== Rebalance =====
         put_text(y, "* Rebalance *", color="PaleGoldenRod", size=18); y += row
         # Compras (umbral)
-        lbl = put_text(y, "- - - - Compras Fantasma (umbral):", color="PaleGoldenRod")
+        lbl = put_text(y, "-> Compras Fantasma (umbral):", color="PaleGoldenRod")
         self.var_rebalance_threshold = tk.StringVar(value=str(getattr(self.bot, "rebalance_threshold", 6)))
         put_entry_next_to(lbl, self.var_rebalance_threshold, width=8); y += row
 
         # Porcentaje a vender
-        lbl = put_text(y, "- - - - Porcentaje a vender: -%", color="PaleGoldenRod")
+        lbl = put_text(y, "-> Porcentaje a vender: -%", color="PaleGoldenRod")
         self.var_rebalance_pct = tk.StringVar(value=str(getattr(self.bot, "rebalance_pct", 50)))
         put_entry_next_to(lbl, self.var_rebalance_pct, width=8); y += row
 
@@ -1271,6 +1351,8 @@ class BotInterfaz(AnimationMixin):
             entries.append(var)
             y += row
 
+        
+
         # ===== guardar_config =====
         def guardar_config():
             try:
@@ -1289,6 +1371,19 @@ class BotInterfaz(AnimationMixin):
                 porc_profit  = Decimal(txt_profit)
                 porc_inv = Decimal(txt_porc_inv)
                 usdtinit = Decimal(txt_usdt_inic)
+
+                # =========================
+                # DUM: "Total Usdt" = depósito desde Slot 1
+                # =========================
+                if getattr(self.bot, "modo_app", "") == "dum":
+                    # En Dum la wallet NO se toca desde la UI.
+                    # El depósito se define en loggin.py (menú principal / depositar_a_bot).
+                    if usdtinit != Decimal(str(getattr(self.bot, "inv_inic", "0") or "0")):
+                        self.log_en_consola("⚠️ Dum: el depósito se configura en el menú principal. Aquí no se modifica.")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+
+
                 tp = Decimal(txt_tp)
                 sl = Decimal(txt_sl)
 
@@ -1444,19 +1539,40 @@ class BotInterfaz(AnimationMixin):
                     pass
 
                 old_inv_inic = old_cfg["inv_inic"]  # Decimal
+                # Si estamos en DUM, revalidar cap también en vivo
+                if getattr(self.bot, "modo_app", "") == "dum":
+                    slot_cap = getattr(self.bot, "dum_slot_cap", Decimal("5000"))
+                    disponible = getattr(self.bot, "dum_disponible", slot_cap)
+                    maximo = min(Decimal(str(slot_cap)), Decimal(str(disponible)))
+
+                    # Nota: si el bot ya estaba corriendo y querés permitir "aumentar depósito",
+                    # esto debería descontar de wallet (obsidiana) y bajar dum_disponible.
+                    # Por ahora: cap duro sin aumentar.
+                    if usdtinit > old_inv_inic and self.bot.running:
+                        self.log_en_consola("⚠️ En Dum no se permite aumentar el depósito con el bot corriendo.")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+
+                    if usdtinit > slot_cap:
+                        self.log_en_consola(f"⚠️ Límite Dum: {self.format_var(slot_cap, '$')}.")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
 
                 # Ajuste de capital según si el bot está corriendo o no
                 if self.bot.running:
-                    # Interpretamos el cambio como depósito / extracción en vivo
-                    delta = usdtinit - old_inv_inic
-                    if delta != 0:
-                        self.bot.usdt += delta
-                        self.log_en_consola(
-                            f"💰 Capital ajustado en vivo: {self.format_var(delta, '$')} → nuevo USDT: {self.format_var(self.bot.usdt, '$')}"
-                        )
+                    # En modo normal (no dum) permitís ajuste vivo, si querés
+                    if getattr(self.bot, "modo_app", "") != "dum":
+                        delta = usdtinit - old_inv_inic
+                        if delta != 0:
+                            self.bot.usdt += delta
+                            self.log_en_consola(
+                                f"💰 Capital ajustado en vivo: {self.format_var(delta, '$')} → nuevo USDT: {self.format_var(self.bot.usdt, '$')}"
+                            )
                 else:
-                    # Si está detenido, simplemente fijamos el capital
-                    self.bot.usdt = usdtinit
+                    # detenido: fijar capital (modo normal)
+                    if getattr(self.bot, "modo_app", "") != "dum":
+                        self.bot.usdt = usdtinit
+
 
                 # Recalcular fixed_buyer con el nuevo inv_inic
                 self.bot.fixed_buyer = (
@@ -1584,6 +1700,56 @@ class BotInterfaz(AnimationMixin):
             self.root.destroy()
         except Exception:
             pass
+
+    """ def _dum_aplicar_deposito(self, nuevo_deposito: Decimal):
+        
+        if not self.usuario:
+            raise ValueError("usuario no definido")
+
+        cap = Decimal(str(getattr(self.bot, "dum_slot_cap", "5000")))
+        ya  = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
+
+        obs_s, quad_s = get_wallet(self.usuario)
+        obs  = Decimal(str(obs_s))
+        quad = Decimal(str(quad_s))
+
+        maximo = min(cap, obs + ya)
+
+        if nuevo_deposito < 0:
+            raise ValueError("El depósito no puede ser negativo")
+
+        minimo = Decimal("100")
+        if nuevo_deposito != 0 and nuevo_deposito < minimo:
+            raise ValueError(f"Depósito mínimo disponible: {minimo}")
+
+        if nuevo_deposito > maximo:
+            raise ValueError(f"Depósito máximo disponible: {maximo}")
+
+        delta = nuevo_deposito - ya
+
+        if delta > 0:
+            if obs < delta:
+                raise ValueError("No tenés suficiente obsidiana para aumentar el depósito")
+            obs -= delta
+        elif delta < 0:
+            obs += (-delta)
+
+        set_wallet(self.usuario, obs, quad)
+
+        self.bot.dum_deposito  = nuevo_deposito
+        self.bot.dum_slot_used = nuevo_deposito
+        self.bot.inv_inic = nuevo_deposito
+        self.bot.usdt     = nuevo_deposito
+        self.bot.dum_disponible = obs
+
+        perfil = cargar_perfil(self.usuario)
+        if not isinstance(perfil, dict):
+            perfil = {}
+        di = (perfil.get("dum", {}) or {})
+        di["deposito"] = str(nuevo_deposito)
+        perfil["dum"] = di
+        guardar_perfil(self.usuario, perfil)"""
+
 
     def _loop(self):
         # Si el bot ya no corre o la ventana ya no existe, salimos
@@ -1728,8 +1894,6 @@ class BotInterfaz(AnimationMixin):
                 "excedente_compras": (self.bot.excedente_total_compras, "%"),
                 "excedente_ventas": (self.bot.excedente_total_ventas, "%"),
                 "excedente_total": (self.bot.excedente_total_compras + self.bot.excedente_total_ventas, "%"),
-                "diff_hodl": (self.bot.diff_vs_hold_usdt(), "$"),
-                "variacion_total_inv_usdt": (self.bot.variacion_total_usdt(), "$"),
                 "take_profit": ((self.bot.take_profit_pct, "%") if (getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or Decimal("0")) > 0) else ("", "")),
                 "stop_loss":  ((self.bot.stop_loss_pct, "%")  if (getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct  or Decimal("0")) > 0) else ("", "")),
                 "rebalances": self.bot.rebalance_count,
@@ -2218,7 +2382,6 @@ class BotInterfaz(AnimationMixin):
         self.actualizar_consola()
 
     def inicializar_valores_iniciales(self):
-        self.bot.actualizar_balance()
 
         def safe(val):
             try:

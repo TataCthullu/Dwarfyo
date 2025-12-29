@@ -1,8 +1,8 @@
-# dum.py
-# © 2025 Dungeon Market (Dum) - Traductor económico
+# © 2025 Dungeon Market (Dum) 
 # Todos los derechos reservados.
 
 from __future__ import annotations
+
 
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
@@ -23,17 +23,6 @@ class DumResultado:
 
 
 class DumTranslator:
-    """
-    Dum NO opera trades.
-    Dum solo traduce el estado final del bot al cerrar la run:
-
-    - Slot 1 fijo = 5000 Obsidiana
-    - Quad = max(0, total_final - slot)
-    - Obsidiana que vuelve = min(total_final, slot)
-
-    Persistencia: se inyecta con persist_callback(resultado: DumResultado) -> None
-    """
-
     def __init__(
         self,
         slot_1: Decimal = SLOT_1_OBSIDIANA,
@@ -43,14 +32,20 @@ class DumTranslator:
         self.persist_callback = persist_callback
 
     def cerrar_run(self, usuario: str, bot: Any, motivo: str = "detener") -> DumResultado:
-        """
-        Debe llamarse SOLO cuando el bot se detiene (Detener / TP / SL / logout / etc).
-        Lee del bot:
-          - bot.usdt
-          - bot.btc_usdt (si no existe, toma 0)
-        """
         total = self._leer_total_bot(bot)
-        slot = self.slot_1
+        raw = getattr(bot, "_dum_slot_frozen", None)
+        if raw is None:
+            raw = getattr(bot, "dum_slot_used", None)
+
+        if raw is None:
+            slot = self.slot_1
+        else:
+            slot = self._to_decimal(raw)
+
+        if slot < 0:
+            slot = Decimal("0")
+        if slot > self.slot_1:
+            slot = self.slot_1
 
         if total > slot:
             quad = total - slot
@@ -76,6 +71,12 @@ class DumTranslator:
     # ----------------- helpers -----------------
 
     def _leer_total_bot(self, bot: Any) -> Decimal:
+        # 1) preferir un total ya calculado por el bot (si existe)
+        for attr in ("resultado_total", "total_final", "balance_total", "valor_total", "equity_usdt", "total_usdt"):
+            if hasattr(bot, attr):
+                return self._to_decimal(getattr(bot, attr, 0))
+
+        # 2) fallback: usdt + btc_usdt (solo si tu bot los mantiene coherentes)
         usdt = self._to_decimal(getattr(bot, "usdt", 0))
         btc_usdt = self._to_decimal(getattr(bot, "btc_usdt", 0))
         return usdt + btc_usdt
