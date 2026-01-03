@@ -1,15 +1,12 @@
 # © 2025 Dungeon Market (Loggin)
 # Todos los derechos reservados.
 
+from player import DumWindow
 import tkinter as tk
-from database import init_db, debug_wallet_raw, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, cargar_perfil, init_wallet, get_wallet, set_wallet
+from database import init_db, agregar_usuario, validar_usuario, usuario_existe, guardar_perfil, init_wallet
+from PIL import Image, ImageTk
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
-from PIL import Image, ImageTk
-import os
-from dum import DumTranslator, SLOT_1_OBSIDIANA
-from decimal import Decimal
-from datetime import datetime
 
 init_db()
 DEBUG_DUM = False
@@ -121,30 +118,6 @@ def rellenar_mosaico(canvas, image_path, escala=1):
         for y in range(0, height, imagen.height()):
             canvas.create_image(x, y, image=imagen, anchor='nw')
 
-AVATAR_DIR = os.path.join("imagenes", "deco", "Player", "AvatarBase")
-
-def _listar_avatares():
-    if not os.path.isdir(AVATAR_DIR):
-        return []
-    files = []
-    for fn in os.listdir(AVATAR_DIR):
-        if fn.lower().endswith((".png", ".jpg", ".jpeg")):
-            files.append(os.path.join(AVATAR_DIR, fn))
-    files.sort()
-    return files
-
-def _cargar_avatar_thumbnail(path, size=(64, 64)):
-    try:
-        img = Image.open(path)
-        img = img.resize(size, resample=Image.Resampling.NEAREST)
-        return ImageTk.PhotoImage(img)
-    except Exception:
-        return None
-
-def _avatar_name_from_path(path):
-    base = os.path.basename(path)
-    name, _ = os.path.splitext(base)
-    return name
 
 # Main Menu
 def main_menu(nombre):
@@ -160,6 +133,20 @@ def main_menu(nombre):
     canvas_menu.pack(fill="both", expand=True)
     # Fondo mosaico (elegí la textura que quieras)
     rellenar_mosaico(canvas_menu, "imagenes/decoa/wall/catacombs_5.png", escala=2)
+
+    dungeon_win = DumWindow(
+        master=main_menu_var,
+        usuario=nombre,
+        rellenar_mosaico_fn=rellenar_mosaico,
+        bg_path="imagenes/decoa/wall/catacombs_5.png",
+        icon_path=DUM_ICON_PATH
+    )
+    def refrescar_menu():
+        # ahora el refresco vive en la ventana del jugador
+        try:
+            dungeon_win.refresh()
+        except Exception:
+            pass
 
     # --- Balrogs decorativos ---
     try:
@@ -192,6 +179,7 @@ def main_menu(nombre):
     
     khazad_win = {"open": False, "app": None}  # mini-flag simple
 
+   
     def abrir_khazad():
         if khazad_win["open"]:
             try:
@@ -202,8 +190,14 @@ def main_menu(nombre):
             return
 
         bot = TradingBot()
+        # si querés marcar modo:
+        bot.modo_app = "libre"
+
         app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
-        app._refrescar_main_menu = refrescar_menu   # hook simple
+
+        # hook para refrescar HUD del Dungeon (cuando cierres / stop / etc)
+        app._refrescar_main_menu = refrescar_menu
+
         khazad_win["open"] = True
         khazad_win["app"] = app
 
@@ -216,374 +210,20 @@ def main_menu(nombre):
 
         app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
-    # ---- textos flotantes (SIN fondo) ----
-    canvas_menu.create_text(
-        375, 30,
-        text="Dungeon Market",
-        fill="Gold",
-        font=("Carolingia", 20),
-        anchor="center"
-    )
    
-    canvas_menu.create_text(
-        375, 70,
-        text=f"Salve, {nombre}!",
-        fill="GoldenRod",
-        font=("Carolingia", 18),
-        anchor="center"
-    )
-    # =========================
-    # WALLET + DUM (Canvas HUD)
-    # =========================
-    init_wallet(nombre)
-
-    # 1) crear textos primero (con algo inicial)
-    obsidiana_var, quad_var = get_wallet(nombre)
-
-    wallet_text_id = canvas_menu.create_text(
-        375, 105,
-        text=f"Obsidiana: {obsidiana_var}  |  Quad: {quad_var}",
-        fill="Orange",
-        font=("Carolingia", 14),
-        anchor="center"
-    )
-
-    perfil = cargar_perfil(nombre)
-    if not isinstance(perfil, dict):
-        perfil = {}
-    dum_info = (perfil.get("dum", {}) or {})
-    dum_deposito = dum_info.get("deposito", "0")
-    dum_slot_used_last = dum_info.get("slot_used_last", "0")
-
-    obs_now, quad_now = get_wallet(nombre)
-    slot_cap_hoy = min(Decimal(str(obs_now)), SLOT_1_OBSIDIANA)
-
-    dum_text_id = canvas_menu.create_text(
-        375, 130,
-        text=f"Dum · Slot cap: {slot_cap_hoy} | Depósito: {dum_deposito} | Slot usado: {dum_slot_used_last}",
-        fill="Gold",
-        font=("Carolingia", 16),
-        anchor="center"
-    )
-
-    # 2) refrescar HUD (ya existen wallet_text_id y dum_text_id)
-    def refrescar_menu():
-        raw = debug_wallet_raw(nombre)
-        if DEBUG_DUM:
-            print("DEBUG MAIN raw wallet row:", raw)
-        obs, quad = get_wallet(nombre)
-        if DEBUG_DUM:
-            print("DEBUG MAIN get_wallet:", obs, quad)
-
-        try:
-            obs, quad = get_wallet(nombre)
-            obs_d = Decimal(str(obs))
-            quad_d = Decimal(str(quad))
-        except Exception:
-            obs_d = Decimal("0")
-            quad_d = Decimal("0")
-
-        perf = cargar_perfil(nombre)
-        if not isinstance(perf, dict):
-            perf = {}
-        di = (perf.get("dum", {}) or {})
-        dep = Decimal(str(di.get("deposito", "0")))
-        su  = Decimal(str(di.get("slot_used_last", "0")))
-
-        slot_cap = min(obs_d, SLOT_1_OBSIDIANA)
-
-        canvas_menu.itemconfig(wallet_text_id, text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}")
-        canvas_menu.itemconfig(dum_text_id, text=f"Dum · Slot cap: {slot_cap} | Depósito: {dep} | Slot usado: {su}")
         
-    refrescar_menu()
-
-    # --- info Dum (debajo de wallet) ---
-    perfil = cargar_perfil(nombre)
-    dum_info = (perfil.get("dum", {}) or {})
-    dum_deposito = dum_info.get("deposito", "0")
-    dum_slot_used_last = dum_info.get("slot_used_last", "0")
-    perfil = cargar_perfil(nombre)
-    avatar_data = (perfil.get("avatar", {}) or {})
-    avatar_nombre = avatar_data.get("name", "Sin avatar")
-    avatar_img_path = avatar_data.get("img", "")
-
-    # --- imagen arriba del nombre ---
-    avatar_img_id = canvas_menu.create_image(
-        375, 520,
-        image="",
-        anchor="center"
-    )
-
-    # mantener referencia para que no lo borre el GC
-    canvas_menu.avatar_photo = None
-
-    if avatar_img_path and os.path.exists(avatar_img_path):
-        ph = _cargar_avatar_thumbnail(avatar_img_path, size=(64, 64))
-        if ph:
-            canvas_menu.avatar_photo = ph
-            canvas_menu.itemconfig(avatar_img_id, image=ph)
-
-    # --- texto del nombre abajo ---
-    avatar_text_id = canvas_menu.create_text(
-        375, 605,
-        text=avatar_nombre,
-        fill="PaleGoldenRod",
-        font=("Carolingia", 16),
-        anchor="center"
-    )
-
-    def abrir_modo(modo):
-        bot = TradingBot()
-        bot.modo_app = modo  # solo guardamos el modo, sin lógica todavía
-
-        app = BotInterfaz(
-            bot,
-            master=ventana_loggin,
-            usuario=nombre
-        )
-
-        if modo == "dum":
-            app.root.iconbitmap(DUM_ICON_PATH)
-        else:
-            app.root.iconbitmap("imagenes/icon/urand_eternal_torment.ico")
-
-        def _al_cerrar():
-            try:
-                app.root.destroy()
-            except Exception:
-                pass
-
-        app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
-
-    modo_selector_win_ref = {"win": None}
-
-    def depositar_a_bot(usuario: str, bot):
-        obs, quad = get_wallet(usuario)
-
-        # Normalizar: nunca trabajar con negativos
-        if obs < 0:
-            obs = Decimal("0")
-
-        # Depósito = lo disponible, pero topeado por slot
-        deposito = min(obs, SLOT_1_OBSIDIANA)
-
-        # retirar del wallet (queda "bloqueado" en la run)
-        set_wallet(usuario, obs - deposito, quad)
-
-        # cargar al bot (Obsidiana == USDT en runtime)
-        bot.usdt = deposito
-        bot.dum_slot_used = deposito
-
-        return deposito
-        
-    def abrir_dum_khazad():
-        # 5) persistencia Dum (se ejecuta al STOP real)
-        def persistir_dum(res):
-            usuario = (res.usuario or "").strip()
-            if not usuario:
-                return
-
-            obs_a, quad_a = get_wallet(usuario)
-            obs_a = Decimal(str(obs_a))
-            quad_a = Decimal(str(quad_a))
-
-            nuevo_obs  = obs_a + Decimal(str(res.obsidiana_vuelve))
-            nuevo_quad = quad_a + Decimal(str(res.quad_ganado))
-
-            set_wallet(usuario, nuevo_obs, nuevo_quad)
-
-            perfil = cargar_perfil(usuario)
-            if not isinstance(perfil, dict):
-                perfil = {}
-
-            di = (perfil.get("dum", {}) or {})
-            di["deposito"] = "0"
-            di["slot_used_last"] = str(res.slot)
-            di["last_total"] = str(res.resultado_total)
-            di["last_quad"] = str(res.quad_ganado)
-            di["last_run_id"] = str(datetime.now().timestamp())  # ojo con el import datetime
-
-            perfil["dum"] = di
-            guardar_perfil(usuario, perfil)
-            refrescar_menu()
-
-
-
-        if khazad_win["open"]:
-            try:
-                khazad_win["app"].root.lift()
-                khazad_win["app"].root.focus_force()
-            except Exception:
-                pass
-            return
-
-        # 1) leer wallet del usuario
-        obsidiana_total, quad_total = get_wallet(nombre)
-
-        # 2) crear bot
-        bot = TradingBot()
-        bot.modo_app = "dum"
-        deposito = depositar_a_bot(nombre, bot)  # usa wallet y carga usdt al bot
-        # por si la UI usa estos campos:
-        bot.inv_inic = Decimal(str(deposito))
-        bot.dum_deposito = Decimal(str(deposito))
-        bot.dum_slot_used = Decimal(str(deposito))
-
-        # 5) guardar el depósito en perfil (para HUD)
-        perfil = cargar_perfil(nombre)
-        if not isinstance(perfil, dict):
-            perfil = {}
-        di = (perfil.get("dum", {}) or {})
-        di["deposito"] = str(deposito)
-        di["slot_used_last"] = str(deposito)   # durante la run, el slot usado actual
-        perfil["dum"] = di
-        guardar_perfil(nombre, perfil)
-        dum = DumTranslator(persist_callback=persistir_dum)
-        dum_cerrado = {"ok": False}
-        old_cb = getattr(bot, "ui_callback_on_stop", None)
-
-        def _dum_calcular_total(bot) -> Decimal:
-            try:
-                usdt = Decimal(str(getattr(bot, "usdt", "0")))
-            except Exception:
-                usdt = Decimal("0")
-
-            try:
-                btc_usdt = Decimal(str(getattr(bot, "btc_usdt", "0")))
-            except Exception:
-                btc_usdt = Decimal("0")
-
-            total = usdt + btc_usdt
-            
-            if DEBUG_DUM:
-                print(
-                    "DEBUG DUM TOTAL:",
-                    "usdt=", usdt,
-                    "btc_usdt=", btc_usdt,
-                    "total=", total
-                )
-
-            return total
-
-
-        def _cb_stop(motivo="stop"):
-            if dum_cerrado["ok"]:
-                return
-            dum_cerrado["ok"] = True
-
-            # 1) congelar el slot usado (por seguridad)
-            bot._dum_slot_frozen = Decimal(str(getattr(bot, "dum_slot_used", "0")))
-
-            # 2) calcular total FINAL sin tocar el bot
-            total = _dum_calcular_total(bot)
-
-            # 3) inyectar el total para que Dum lo lea
-            bot.resultado_total = total
-
-            try:
-                dum.cerrar_run(usuario=nombre, bot=bot, motivo=motivo)
-            except Exception as e:
-                print("Error Dum:", e)
-
-
-        try:
-            bot.ui_callback_on_stop = _cb_stop
-                        # 7) abrir UI Dum Khazad
-            app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
-
-            try:
-                app.root.iconbitmap(DUM_ICON_PATH)
-            except Exception:
-                pass
-
-            khazad_win["open"] = True
-            khazad_win["app"] = app
-
-            def _al_cerrar_ui():
-                # si cierran con la X, lo tratamos como stop (para que Dum persista)
-                try:
-                    _cb_stop("cerrar_ui")
-                except Exception:
-                    pass
-                khazad_win["open"] = False
-                try:
-                    app.root.destroy()
-                except Exception:
-                    pass
-
-            app.root.protocol("WM_DELETE_WINDOW", _al_cerrar_ui)
-
-        except Exception:
-            pass
-        
-    def abrir_selector_modo(modo):
-        # evitar duplicar ventana
-        win = modo_selector_win_ref["win"]
-        if win is not None and win.winfo_exists():
-            win.lift()
-            win.focus_force()
-            return
-
-        sel = tk.Toplevel(ventana_loggin)
-        modo_selector_win_ref["win"] = sel
-        sel.geometry("320x220")
-        sel.title(("Libre" if modo == "libre" else "Dum"))
-        sel.config(background="PaleGoldenRod")
+   
        
-        if modo == "dum":
-            sel.iconbitmap(DUM_ICON_PATH)
-        else:
-            sel.iconbitmap("imagenes/icon/urand_eternal_torment.ico")
-
-        def _al_cerrar():
-            try:
-                sel.destroy()
-            except Exception:
-                pass
-            modo_selector_win_ref["win"] = None
-
-        sel.protocol("WM_DELETE_WINDOW", _al_cerrar)
-
-        titulo = tk.Label(
-            sel,
-            font=("Carolingia", 16),
-            bg="PaleGoldenRod"
-        )
-        titulo.pack(pady=10)
-
-        def abrir_khazad_bot():
-            _al_cerrar()  # cerrar selector
-
-            if modo == "dum":
-                abrir_dum_khazad()   # nueva función
-            else:
-                abrir_modo("libre")
-
-        def abrir_spot():
-            print(f"[{modo}] Spot (pendiente)")
-            # acá más adelante vas a abrir tu interfaz spot correspondiente
-
-        def abrir_futuros():
-            print(f"[{modo}] Futuros (pendiente)")
-            # acá más adelante vas a abrir tu interfaz futures correspondiente
-
-        btn_spot = tk.Button(sel, text="Spot", font=("Carolingia", 14), command=abrir_spot)
-        btn_spot.pack(pady=5)
-
-        btn_khaz = tk.Button(sel, text="Khazad bot", font=("Carolingia", 14), command=abrir_khazad_bot)
-        btn_khaz.pack(pady=5)
-
-        btn_fut = tk.Button(sel, text="Futuros", font=("Carolingia", 14), command=abrir_futuros)
-        btn_fut.pack(pady=5)
+   
 
     """btn_exchange = tk.Button(main_menu_var, text="Exchange", font=("Carolingia", 16), command=exchange_def)
     canvas_menu.create_window(120, 140, window=btn_exchange, anchor="nw")
-"""
+""" 
     btn_libre = tk.Button(
         main_menu_var,
         text="Libre",
         font=("Carolingia", 16),
-        command=lambda: abrir_selector_modo("libre")
+        command=abrir_khazad  # o la función que ABRA el bot libre
     )
     canvas_menu.create_window(280, 140, window=btn_libre, anchor="nw")
 
@@ -591,22 +231,13 @@ def main_menu(nombre):
         main_menu_var,
         text="Dum",
         font=("Carolingia", 16),
-        command=lambda: abrir_selector_modo("dum")
+        command=dungeon_win.open
     )
-
     canvas_menu.create_window(400, 140, window=btn_dum, anchor="nw")
-    # Si el usuario ya eligió avatar, no mostramos el botón
-    tiene_avatar = bool((perfil.get("avatar", {}) or {}).get("img"))
-    btn_crear_avatar = None
 
-    if not tiene_avatar:
-        btn_crear_avatar = tk.Button(
-            main_menu_var,
-            text="Elegir Avatar",
-            font=("Carolingia", 14),
-            command=lambda: crear_avatar(nombre, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_avatar)
-        )
-        canvas_menu.create_window(120, 730, window=btn_crear_avatar, anchor="nw")
+
+  
+    
 
     def cerrar_todo():
             ventana_loggin.destroy()
@@ -658,102 +289,6 @@ def fantasy_futures():
     fantasy_futures_win.geometry("200x200")
     fantasy_futures_win.title("Fantasy Futures - Dungeon Market") """   
 
-def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_avatar):
-    avatar_win = tk.Toplevel(ventana_loggin)
-    avatar_win.title("Elegir Avatar")
-    avatar_win.configure(background="PaleGoldenRod")
-
-    # lista de avatares
-    paths = _listar_avatares()
-    if not paths:
-        lab = tk.Label(avatar_win, text=f"No hay avatares en:\n{AVATAR_DIR}", bg="PaleGoldenRod")
-        lab.pack(padx=10, pady=10)
-        return
-
-    # --- nombre obligatorio ---
-    lab_nombre = tk.Label(avatar_win, text="Nombre del avatar:", bg="PaleGoldenRod", font=("Carolingia", 12))
-    lab_nombre.pack(padx=10, pady=(10, 0), anchor="w")
-
-    nombre_var = tk.StringVar()
-    entry_nombre = tk.Entry(avatar_win, textvariable=nombre_var)
-    entry_nombre.pack(padx=10, pady=(0, 10), anchor="w")
-    entry_nombre.focus_force()
-
-    # contenedor de botones
-    frame = tk.Frame(avatar_win, bg="PaleGoldenRod")
-    frame.pack(padx=10, pady=10)
-
-    # refs de thumbnails para que no se borren
-    avatar_win.thumbs = []
-    avatar_win.avatar_buttons = []  # para habilitar/deshabilitar
-
-    def _update_buttons_state(*_):
-        ok = bool(nombre_var.get().strip())
-        state = "normal" if ok else "disabled"
-        for b in avatar_win.avatar_buttons:
-            try:
-                b.configure(state=state)
-            except Exception:
-                pass
-
-    nombre_var.trace_add("write", _update_buttons_state)
-
-
-    def _select(path):
-        nombre_avatar = nombre_var.get().strip()
-        if not nombre_avatar:
-            return  # por seguridad
-
-        perfil = cargar_perfil(usuario)
-        perfil["avatar"] = {"name": nombre_avatar, "img": path}
-        guardar_perfil(usuario, perfil)
-
-        # actualizar UI (texto + imagen)
-        canvas_menu.itemconfig(avatar_text_id, text=nombre_avatar)
-
-        ph = _cargar_avatar_thumbnail(path, size=(64, 64))
-        if ph:
-            canvas_menu.avatar_photo = ph
-            canvas_menu.itemconfig(avatar_img_id, image=ph)
-
-        # borrar el botón de crear avatar
-        try:
-            btn_crear_avatar.destroy()
-        except Exception:
-            pass
-
-        avatar_win.destroy()
-
-
-    # grilla simple
-    cols = 4
-    r = c = 0
-    for p in paths:
-        thumb = _cargar_avatar_thumbnail(p, size=(64, 64))
-        if not thumb:
-            continue
-        avatar_win.thumbs.append(thumb)
-
-        name = _avatar_name_from_path(p)
-
-        b = tk.Button(
-            frame,
-            image=thumb,
-            text=name,
-            compound="top",
-            command=lambda pp=p: _select(pp),
-            state="disabled"  # arranca bloqueado hasta que pongan nombre
-        )
-        b.grid(row=r, column=c, padx=6, pady=6)
-
-        avatar_win.avatar_buttons.append(b)
-
-        c += 1
-        if c >= cols:
-            c = 0
-            r += 1
-
-    _update_buttons_state()
 
 
 def login_win():
