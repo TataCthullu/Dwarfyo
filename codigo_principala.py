@@ -1,4 +1,4 @@
-# © 2025 Dungeon Market (Khazâd - Trading Bot)
+# © 2025 Dungeon Market (Khazâd - Trading Bot - codigo principal)
 # Todos los derechos reservados.
 
 import ccxt

@@ -1,4 +1,5 @@
-# player.py
+# © 2025 Dungeon Market (Player)
+  
 import os
 import tkinter as tk
 from decimal import Decimal
@@ -192,14 +193,23 @@ def depositar_a_bot(usuario: str, bot):
 
 class DumWindow:
     """
-    Ventana principal del jugador (por ahora solo HUD de wallet/Dum).
+    Ventana principal del jugador (HUD de wallet/Dum).
     """
-    def __init__(self, master, usuario: str, rellenar_mosaico_fn, bg_path: str, icon_path: str = None):
+    def __init__(
+        self,
+        master,
+        usuario: str,
+        rellenar_mosaico_fn,
+        bg_path: str,
+        icon_path: str = None,
+        open_khazad_dum_fn=None,   # <-- NUEVO (opcional)
+    ):
         self.master = master
         self.usuario = usuario
         self.rellenar_mosaico_fn = rellenar_mosaico_fn
         self.bg_path = bg_path
         self.icon_path = icon_path
+        self.open_khazad_dum_fn = open_khazad_dum_fn  # <-- GUARDA callback
 
         self.win = None
         self.canvas = None
@@ -247,16 +257,17 @@ class DumWindow:
             anchor="center"
         )
 
+        # Botón Khazad (Dum) bot (si te pasaron el callback)
+        if callable(self.open_khazad_dum_fn):
+            btn = tk.Button(
+                self.win,
+                text="Khazad bot (Dum)",
+                font=("Carolingia", 14),
+                command=self.open_khazad_dum_fn
+            )
+            self.canvas.create_window(375, 180, window=btn, anchor="center")
+
         self.refresh()
-        
-        def _tick_refresh():
-            if self.win is None or not self.win.winfo_exists():
-                return
-            self.refresh()
-            self.win.after(1000, _tick_refresh)
-
-        _tick_refresh()
-
 
         def _al_cerrar():
             try:
@@ -264,11 +275,12 @@ class DumWindow:
             except Exception:
                 pass
             self.win = None
+            self.canvas = None
 
         self.win.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
     def refresh(self):
-        if self.win is None or not self.win.winfo_exists():
+        if self.win is None or not self.win.winfo_exists() or self.canvas is None:
             return
 
         # wallet
@@ -300,9 +312,6 @@ class DumWindow:
 
         self.canvas.itemconfig(self.wallet_text_id, text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}")
         self.canvas.itemconfig(self.dum_text_id, text=f"Dum · Slot cap: {slot_cap} | Depósito: {dep} | Slot usado: {su}")
-
-
-
 
 
 

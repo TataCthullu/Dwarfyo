@@ -1,4 +1,4 @@
-# © 2025 Khazâd Trading Bot
+# © 2025 Dungeon Market (utils) 
 # Todos los derechos reservados.
 
 import pygame

@@ -1,4 +1,4 @@
-# © 2025 Dungeon Market (Khazâd - Trading Bot)
+# © 2025 Dungeon Market (Khazâd - Trading Bot - animation mixin)
 # Todos los derechos reservados.
 from tkinter import PhotoImage
 import os
