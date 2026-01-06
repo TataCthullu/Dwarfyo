@@ -11,9 +11,13 @@ from database import (
     usuario_existe,
     guardar_perfil,
     init_wallet,
+    cargar_perfil,
+    get_wallet,
+    set_wallet,
 )
 
-from player import DumWindow
+from player import DumWindow, depositar_a_bot
+from dum import DumTranslator
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 
@@ -228,6 +232,56 @@ def main_menu(nombre: str):
 
         bot = TradingBot()
         bot.modo_app = "dum"
+        # =========================
+        # Dum: depositar slot desde wallet -> bot
+        # =========================
+        deposito = depositar_a_bot(nombre, bot)
+        
+        if deposito <= 0:
+            print("No hay obsidiana disponible para depositar en Dum.")
+            return
+
+        # Guardar estado dum en perfil (para HUD)
+        perfil = cargar_perfil(nombre)
+        if not isinstance(perfil, dict):
+            perfil = {}
+        dum_state = (perfil.get("dum", {}) or {})
+        dum_state["deposito"] = str(deposito)
+        dum_state["slot_used_last"] = str(deposito)  # lo usado en esta run al inicio
+        perfil["dum"] = dum_state
+        guardar_perfil(nombre, perfil)
+        refrescar_menu()
+
+        # =========================
+        # Dum: translator + persistencia a wallet
+        # =========================
+        dum_persistido = {"ok": False}  # evita doble persistencia
+
+        def persistir_dum(resultado):
+            # Evitar doble ejecución
+            if dum_persistido["ok"]:
+                return
+            dum_persistido["ok"] = True
+
+            # 1) devolver a wallet lo que corresponde
+            obs_actual, quad_actual = get_wallet(resultado.usuario)
+            nuevo_obs = obs_actual + resultado.obsidiana_vuelve
+            nuevo_quad = quad_actual + resultado.quad_ganado
+            set_wallet(resultado.usuario, nuevo_obs, nuevo_quad)
+
+            # 2) actualizar perfil dum para HUD (deposito vuelve a 0)
+            perfil = cargar_perfil(resultado.usuario)
+            if not isinstance(perfil, dict):
+                perfil = {}
+            dum_state = (perfil.get("dum", {}) or {})
+            dum_state["deposito"] = "0"
+            dum_state["slot_used_last"] = str(resultado.slot)
+            perfil["dum"] = dum_state
+            guardar_perfil(resultado.usuario, perfil)
+            refrescar_menu()
+
+        dum_translator = DumTranslator(persist_callback=persistir_dum)
+
 
         app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
 
@@ -240,13 +294,28 @@ def main_menu(nombre: str):
 
         khazad_dum_win["open"] = True
         khazad_dum_win["app"] = app
+        cerrando = {"ok": False}
 
         def _al_cerrar():
+            # Dum: cerrar run y persistir (una sola vez)
+            if cerrando["ok"]:
+                return
+            cerrando["ok"] = True
+
+            try:
+                dum_translator.cerrar_run(nombre, bot, motivo="cerrar_ui")
+            except Exception as e:
+                print("Error DumTranslator.cerrar_run:", e)
+
             khazad_dum_win["open"] = False
+            
             try:
                 app.root.destroy()
             except Exception:
                 pass
+            
+            refrescar_menu()
+
 
         app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
 

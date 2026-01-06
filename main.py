@@ -1,4 +1,4 @@
-# © 2025 Dungeon Market (Khazâd - Trading Bot)
+# © 2025 Dungeon Market (Khazâd - main)
 # Todos los derechos reservados.
 
 from codigo_principala import TradingBot

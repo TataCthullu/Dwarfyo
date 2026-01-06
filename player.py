@@ -224,7 +224,7 @@ class DumWindow:
 
         self.win = tk.Toplevel(self.master)
         self.win.geometry("750x800")
-        self.win.title("Dungeon Market - Dungeon")
+        self.win.title("Dungeon Market - Dum")
 
         if self.icon_path:
             try:
