@@ -117,6 +117,8 @@ class TradingBot:
         # --- Estado de conexión ---
         self.sin_conexion = False
         self.precio_vta_fantasma = None
+        self._after_fn = None
+        self._after_id = None
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -1051,7 +1053,15 @@ class TradingBot:
             self.log("🌑 Sin conexión / sin precio. No se puede iniciar.")
             self.log("- - - - - - - - - -")
             return
+        # ✅ setear inversión inicial real
+        self.inv_inic = self.usdt
+
+        # ✅ recalcular tamaño fijo por compra
+        self.fixed_buyer = self.cant_inv()
+
+       
         self.update_btc_fixed_seller()
+
         if self.condiciones_para_comprar():
             #self.log(f"🧪 Init check: precio_actual={self.precio_actual}, fixed_buyer={self.fixed_buyer}, usdt={self.usdt}")
 
@@ -1204,8 +1214,16 @@ class TradingBot:
             reproducir_sonido("Sounds/error.wav")
 
         finally:
-            if after_fn:
-                after_fn(2000, lambda: self.loop(after_fn))
+            if after_fn and self.running and not self._stop_flag:
+                self._after_fn = after_fn
+                # cancelar el anterior si existía (por seguridad)
+                try:
+                    if self._after_id is not None:
+                        after_fn.__self__.after_cancel(self._after_id)  # si after_fn es root.after
+                except Exception:
+                    pass
+                self._after_id = after_fn(2000, lambda: self.loop(after_fn))
+
                 
     def comprar_en_precio(self, precio_exec: Decimal, trigger="C") -> bool:
         """
@@ -1368,7 +1386,14 @@ class TradingBot:
         self.running = False
         self._stop_flag = True
        
-
+    # cancelar loop programado
+        try:
+            if self._after_fn and self._after_id:
+                self._after_fn.__self__.after_cancel(self._after_id)
+        except Exception:
+            pass
+        self._after_id = None
+        
         if motivo:
             self.log(f"🔴 Khazâd detenido. Motivo: {motivo}")
         else:

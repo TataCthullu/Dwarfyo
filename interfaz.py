@@ -1574,10 +1574,26 @@ class BotInterfaz(AnimationMixin):
                         self.bot.usdt = usdtinit
 
 
-                # Recalcular fixed_buyer con el nuevo inv_inic
-                self.bot.fixed_buyer = (
-                    self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100')
-                )
+                # ✅ Recalcular tamaños dependientes de la inversión / % por operación
+                # (sin duplicar fórmulas)
+                try:
+                    self.bot.fixed_buyer = self.bot.cant_inv()  # usa tu lógica central
+                except Exception:
+                    # fallback por si cant_inv no existe o falla
+                    self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra / Decimal('100'))
+
+                # ✅ IMPORTANTÍSIMO: actualizar el tamaño fijo de venta en BTC
+                try:
+                    self.bot.update_btc_fixed_seller()
+                except Exception:
+                    pass
+
+                # (opcional pero recomendable si tocaste inv_inic/usdt)
+                try:
+                    self.bot.actualizar_balance()
+                except Exception:
+                    pass
+
 
                 # 5) Calculamos fixed_buyer y validamos
                 #self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
@@ -1760,18 +1776,23 @@ class BotInterfaz(AnimationMixin):
 
         # Ejecutamos el ciclo de trading en segundo plano
         future = self.executor.submit(self._run_trading_cycle)
-
-        def _replanear_en_main():
-            try:
-                if self.root.winfo_exists() and self.bot.running:
-                    self.root.after(3000, self._loop)
-            except Exception as e:
-                print(f"[⚠️ Error after loop]: {e}")
-
         try:
-            self.root.after(0, _replanear_en_main)
+            future.add_done_callback(self._thread_callback)
         except Exception:
             pass
+
+        # Reprogramar UN SOLO loop (y guardar el id para poder cancelarlo)
+        try:
+            if self.root.winfo_exists() and self.bot.running:
+                if getattr(self, "loop_id", None) is not None:
+                    try:
+                        self.root.after_cancel(self.loop_id)
+                    except Exception:
+                        pass
+                self.loop_id = self.root.after(3000, self._loop)
+        except Exception as e:
+            print(f"[⚠️ Error after loop]: {e}")
+
 
     def _run_trading_cycle(self):
         try:
