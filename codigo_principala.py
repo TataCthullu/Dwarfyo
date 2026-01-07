@@ -176,7 +176,9 @@ class TradingBot:
     def set_valores_iniciales(self, valores):
         self.valores_iniciales = valores  # un dict con los datos iniciales
                         
-    def _fetch_precio(self) -> Decimal:
+    def _fetch_precio(self) -> Decimal | None:
+        """Devuelve el precio como Decimal, o None si no se pudo obtener."""
+
         try:
             ticker = self.exchange.fetch_ticker('BTC/USDT')
             info = ticker.get('info', {}) or {}
@@ -241,7 +243,7 @@ class TradingBot:
             return Decimal("0")
         
 
-    def varpor_compra(self, precio_ult_comp: Decimal, precio_act_btc: Decimal) -> Decimal:
+    def varpor_compra(self, precio_ult_comp: Decimal | None, precio_act_btc: Decimal | None) -> Decimal:
         """Variación porcentual desde la última compra, o 0 si no aplicable."""
         if self.contador_compras_reales == 0:
             return Decimal("0")
@@ -257,7 +259,7 @@ class TradingBot:
                 self.log(f"❌ Error calculando varpor_compra: {e}")
                 return Decimal("0")
 
-    def varpor_venta(self, precio_ult_venta: Decimal, precio_act_btc: Decimal) -> Decimal:
+    def varpor_venta(self, precio_ult_venta: Decimal | None, precio_act_btc: Decimal | None) -> Decimal:
         """Variación porcentual desde la última venta, o 0 si no aplicable."""
         if self.contador_ventas_reales == 0:
             return Decimal("0")
@@ -377,7 +379,6 @@ class TradingBot:
                 reproducir_sonido("Sounds/rebalance.wav")
 
         else:
-            # una sola compra activa: vender % de esa compra
             tx = activos[0]
             btc_total_tx = tx.get("btc", Decimal("0"))
             cantidad_a_vender = Decimal("0")
@@ -389,28 +390,31 @@ class TradingBot:
 
                 self.usdt += usdt_obtenido
                 self.btc  -= cantidad_a_vender
-                tx["btc"]   = btc_total_tx - cantidad_a_vender
-            # 🔻 NUEVO: pérdida parcial
-            precio_compra_tx = tx.get("compra", None)
-            if isinstance(precio_compra_tx, Decimal) and cantidad_a_vender > 0:
-                costo_base = cantidad_a_vender * precio_compra_tx
-                perdida = costo_base - usdt_obtenido
-                if perdida > 0:
-                    rebalance_loss_event += perdida
-                self.log(
-                        f" • Pérdida por rebalance (parcial): "
-                        f"{self.format_fn(perdida, '$')} "
+                tx["btc"]  = btc_total_tx - cantidad_a_vender
+
+                _rebalance_done = True   # ✅ si vendió, se concretó
+
+                # pérdida (si hay compra Decimal)
+                precio_compra_tx = tx.get("compra", None)
+                if isinstance(precio_compra_tx, Decimal) and cantidad_a_vender > 0:
+                    costo_base = cantidad_a_vender * precio_compra_tx
+                    perdida = costo_base - usdt_obtenido
+                    if perdida > 0:
+                        rebalance_loss_event += perdida
+                    self.log(
+                        f" • Pérdida por rebalance (parcial): {self.format_fn(perdida, '$')} "
                         f"(base {self.format_fn(costo_base, '$')} → {self.format_fn(usdt_obtenido, '$')})"
                     )
+
                 self.log(f"   • Estado se mantiene: activa (parcialmente reducida)")
                 self.log(f"⚖️ Rebalance: vendiendo {self.rebalance_pct}% de la única compra activa.")
                 self.log(f"📉 BTC vendido: {self.format_fn(cantidad_a_vender, '₿')}")
                 self.log(f"💰 USDT recibido: {self.format_fn(usdt_obtenido, '$')}")
                 self.log("- - - - - - - - - -")
-                _rebalance_done = True
 
                 if self.sound_enabled:
                     reproducir_sonido("Sounds/rebalance.wav")
+
 
         # reset del trigger para no rebotar
         usdt = self.usdt if isinstance(self.usdt, Decimal) else Decimal(str(self.usdt or "0"))
@@ -579,7 +583,7 @@ class TradingBot:
             return False
         #Compra con referencia a la ultima venta
         if not self.param_b_enabled:
-            return
+            return False
         if self.varVenta <= -self.porc_desde_venta:            
             if self.condiciones_para_comprar():                     
                 self.comprar(trigger='B')
@@ -896,7 +900,7 @@ class TradingBot:
             if not self.inv_inic or self.inv_inic == Decimal("0"):
                 return Decimal("0")
 
-            self.actualizar_balance()  # ✅ volver a esto
+            
 
             actual = self.usdt_mas_btc or Decimal("0")
             inv = self.inv_inic if isinstance(self.inv_inic, Decimal) else Decimal(str(self.inv_inic))
@@ -1086,18 +1090,18 @@ class TradingBot:
             self.log("No se puede iniciar por montos invalidos")    
             return
         
-    def get_start_time_str(self) -> str:    
+    def get_start_time_str(self) -> str | None:   
         if not self.start_time:
-            return 
+            return None
         return self.start_time.strftime("%Y-%m-%d %H:%M:%S")
 
-    def get_runtime_str(self) -> str:
+    def get_runtime_str(self) -> str | None:
         """
         Devuelve una cadena tipo 'Xd Yh Zm' con
         días, horas y minutos transcurridos desde start_time.
         """
         if not self.start_time:
-            return 
+            return None
         delta = datetime.datetime.now() - self.start_time
         days = delta.days
         hours, rem = divmod(delta.seconds, 3600)
