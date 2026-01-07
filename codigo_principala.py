@@ -6,7 +6,7 @@ MODOS (NO CONFUNDIR):
 - modus_operativa: "standard" | "avanzado" -> reglas de trading/historial
 - modo_vista: "decimal" | "detallado" -> SOLO formato/decimales en UI
 """
-
+import threading
 import ccxt
 from utils import reproducir_sonido
 import datetime
@@ -119,7 +119,8 @@ class TradingBot:
         self.precio_vta_fantasma = None
         self._after_fn = None
         self._after_id = None
-
+        self.lock = threading.RLock()  # RLock por si hay funciones internas que se llamen entre sí
+    
     def format_fn(self, valor, simbolo=""):
         if valor is None:
             return ""

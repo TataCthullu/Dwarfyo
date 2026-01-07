@@ -649,6 +649,8 @@ class BotInterfaz(AnimationMixin):
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
         # Cargar imagen original
+        escala = int(escala)
+
         imagen_original = Image.open(image_path)
         ancho, alto = imagen_original.size
         imagen_redimensionada = imagen_original.resize((ancho * escala, alto * escala), Image.NEAREST)
@@ -1028,6 +1030,23 @@ class BotInterfaz(AnimationMixin):
     def clear_bot(self):
         if self.bot.running:
             return
+        
+        preservar_ids = set()
+        try:
+            preservar_ids.add(id(self.modus))
+        except Exception:
+            pass
+        try:
+            preservar_ids.add(id(self.display_mode))
+        except Exception:
+            pass
+
+
+        for attr in vars(self).values():
+            if isinstance(attr, tk.StringVar) and id(attr) not in preservar_ids:
+                attr.set("")
+
+
         # La limpieza invalida la configuración
         self.operativa_configurada = False
 # 🔒 bloquear cualquier ciclo residual
@@ -1054,8 +1073,9 @@ class BotInterfaz(AnimationMixin):
             pass
 # 5) Reset StringVars
         for attr in vars(self).values():
-            if isinstance(attr, tk.StringVar):
+            if isinstance(attr, tk.StringVar) and id(attr) not in preservar_ids:
                 attr.set("")
+
         # 10) Restaurar la vista del usuario
         self.display_mode.set(modo_vista_actual)
         self.float_precision = precision_actual
@@ -1155,6 +1175,8 @@ class BotInterfaz(AnimationMixin):
         self.log_en_consola("🧹 Bot limpiado.")
         self.log_en_consola("- - - - - - - - - -")
 
+        if not self.modus.get():
+            self.modus.set("avanzado")
 
     def _thread_callback(self, future):
         if future.cancelled():
@@ -1166,12 +1188,6 @@ class BotInterfaz(AnimationMixin):
                     self.log_en_consola(f"⚠️ Excepcion en hilo: {exc}")
                 )
     
-    """def open_calculator(self):
-         # pasamos los balances actuales
-        usdt_avail = self.bot.usdt
-        btc_avail  = self.bot.btc
-        CalculatorWindow(self.root, usdt_avail, btc_avail)"""
-
     def abrir_configuracion_subventana(self):
         # Si ya está abierta y no fue destruida, traerla al frente
         if self.config_ventana is not None and self.config_ventana.winfo_exists():
@@ -1509,34 +1525,35 @@ class BotInterfaz(AnimationMixin):
                     return
 
                 # 3) Asignamos al bot (para los cálculos internos)
-                self.bot.porc_desde_compra = porc_compra
-                self.bot.porc_desde_venta = porc_venta
-                self.bot.porc_profit_x_venta = porc_profit
-                self.bot.porc_inv_por_compra = porc_inv
-                self.bot.inv_inic = usdtinit
-                self.bot.take_profit_pct = (tp if tp > 0 else None)
-                self.bot.stop_loss_pct = (sl if sl > 0 else None)
-                self.bot.tp_enabled = self.var_tp_enabled.get()
-                self.bot.sl_enabled = self.var_sl_enabled.get()
-                # ⬅️ reflejar en altares la config recién guardada
-                if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:
-                    self.set_take_profit_state("armed")
-                else:
-                    self.set_take_profit_state("inactive")
+                with self.bot.lock:
+                    self.bot.porc_desde_compra = porc_compra
+                    self.bot.porc_desde_venta = porc_venta
+                    self.bot.porc_profit_x_venta = porc_profit
+                    self.bot.porc_inv_por_compra = porc_inv
+                    self.bot.inv_inic = usdtinit
+                    self.bot.take_profit_pct = (tp if tp > 0 else None)
+                    self.bot.stop_loss_pct = (sl if sl > 0 else None)
+                    self.bot.tp_enabled = self.var_tp_enabled.get()
+                    self.bot.sl_enabled = self.var_sl_enabled.get()
+                    # ⬅️ reflejar en altares la config recién guardada
+                    if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:
+                        self.set_take_profit_state("armed")
+                    else:
+                        self.set_take_profit_state("inactive")
 
-                if self.bot.sl_enabled and (self.bot.stop_loss_pct or 0) > 0:
-                    self.set_stop_loss_state("armed")
-                else:
-                    self.set_stop_loss_state("inactive")
+                    if self.bot.sl_enabled and (self.bot.stop_loss_pct or 0) > 0:
+                        self.set_stop_loss_state("armed")
+                    else:
+                        self.set_stop_loss_state("inactive")
 
-                self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
-                self.bot.rebalance_threshold = rb_thr
-                self.bot.rebalance_pct = rb_pct
+                    self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
+                    self.bot.rebalance_threshold = rb_thr
+                    self.bot.rebalance_pct = rb_pct
 
-                try:
-                    self._update_lamp_genie()
-                except Exception:
-                    pass
+                    try:
+                        self._update_lamp_genie()
+                    except Exception:
+                        pass
 
                 old_inv_inic = old_cfg["inv_inic"]  # Decimal
                 # Si estamos en DUM, revalidar cap también en vivo
@@ -1676,7 +1693,8 @@ class BotInterfaz(AnimationMixin):
         def _place_save_btn(event=None):
             # dejar 16 px del borde inferior
             cy = self.cfg_canvas.winfo_height() - 16
-            cx = self.cfg_canvas.winfo_width() // 1.5
+            cx = int(self.cfg_canvas.winfo_width() * 0.66)
+
             try:
                 self.cfg_canvas.coords(btn_id, cx, cy)
             except Exception:
@@ -1795,34 +1813,45 @@ class BotInterfaz(AnimationMixin):
 
 
     def _run_trading_cycle(self):
+        price = None
         try:
-            # ⛔️ si ya está detenido, no hacemos nada
             if not self.bot.running or getattr(self.bot, "_stop_flag", False):
                 return
-            # 1) Intentamos obtener el ticker
+
             ticker = self.bot.exchange.fetch_ticker('BTC/USDT')
             price = ticker['last']
+
             if not self.bot.running or getattr(self.bot, "_stop_flag", False):
                 return
-            # – Si salió bien, guardamos el precio y ejecutamos el ciclo de trading:
-            self.bot.precio_actual = price
-            self.bot.modus_actual = self.modus.get()
-            self.bot.loop()
+
+            with self.bot.lock:
+                self.bot.precio_actual = price
+                self.bot.modus_actual = self.modus.get()
+                self.bot.loop()
+
         except Exception as exc:
-            # Si falla, dejamos precio_actual en None para detectar desconexión
-            self.bot.precio_actual = None
+            with self.bot.lock:
+                self.bot.precio_actual = None
 
             if self.sound_enabled:
-                reproducir_sonido("Sounds/sin_conexion.wav")
+                try:
+                    reproducir_sonido("Sounds/sin_conexion.wav")
+                except Exception:
+                    pass
 
-            self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading (sin precio): {exc}"))
+            try:
+                if self.root.winfo_exists():
+                    self.root.after(0, lambda exc=exc: self.log_en_consola(f"⚠️ Error de trading (sin precio): {exc}"))
+            except Exception:
+                pass
+
         finally:
-            # Solo aquí reprogramamos la actualización de la UI (una vez por ciclo)
             try:
                 if self.root.winfo_exists():
                     self.root.after_idle(self.actualizar_ui)
-            except:
-                pass  # la ventana ya no existe
+            except Exception:
+                pass
+
 
     def format_var(self, valor, simbolo=""):
         if valor is None:
@@ -2054,7 +2083,10 @@ class BotInterfaz(AnimationMixin):
         try:
             if not hasattr(self, "historial"):
                 return
-
+# ✅ snapshot rápido bajo lock
+            with self.bot.lock:
+                txs = list(self.bot.transacciones)          # copia shallow
+                vs  = list(self.bot.precios_ventas)  
             try:
                 self.historial.configure(state="normal")
             except Exception:
@@ -2062,7 +2094,8 @@ class BotInterfaz(AnimationMixin):
 
             # === (A) PARCHEAR ESTADOS YA IMPRESOS (sin reconstruir) ===
             # Recorremos todas las transacciones y actualizamos solo si cambió
-            for t in self.bot.transacciones:
+            for t in txs:
+
                 tx_id = str(t.get("id", "")).strip()
                 numc  = str(t.get("numcompra", "")).strip()
                 estado = t.get("estado", "activa")
@@ -2080,12 +2113,13 @@ class BotInterfaz(AnimationMixin):
                     self._hist_estado_cache_by_num[numc] = estado
 
             # === (B) COMPRAS NUEVAS (solo append) ===
-            txs = self.bot.transacciones
-            start_tx = getattr(self, "_hist_last_tx_n", 0)
+           
+            start_tx = max(getattr(self, "_hist_last_tx_n", 0), 0)
             if start_tx < 0:
                 start_tx = 0
 
             for t in txs[start_tx:]:
+
                 ts = t.get("timestamp", "")
                 estado = t.get("estado", "activa")
                 tx_id = str(t.get("id", "")).strip()
@@ -2123,7 +2157,7 @@ class BotInterfaz(AnimationMixin):
             self._hist_last_tx_n = len(txs)
 
             # === (C) VENTAS NUEVAS (solo append) ===
-            vs = self.bot.precios_ventas
+           
             start_v = getattr(self, "_hist_last_sell_n", 0)
             if start_v < 0:
                 start_v = 0
@@ -2203,7 +2237,10 @@ class BotInterfaz(AnimationMixin):
             estado_por_id = {}
             estado_por_num = {}
             try:
-                for t in self.bot.transacciones:
+                with self.bot.lock:
+                    txs = list(self.bot.transacciones)
+
+                for t in txs:
                     tx_id = t.get("id")
                     if tx_id:
                         estado_por_id[str(tx_id).strip()] = t.get("estado", "activa")
@@ -2315,6 +2352,8 @@ class BotInterfaz(AnimationMixin):
             txt.configure(state="disabled")
         except Exception:
             pass
+
+    
 
     def actualizar_color(self, key, valor_actual):
         if valor_actual is None or key not in self.info_canvas:
