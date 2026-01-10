@@ -39,10 +39,10 @@ class TradingBot:
         self.parametro_venta_fantasma = False
         self.param_a_enabled = True 
         self.precio_ult_venta = None
-        self.porc_desde_compra = Decimal("0")
-        self.porc_desde_venta = Decimal("0")
-        self.porc_inv_por_compra = Decimal("0")
-        self.porc_profit_x_venta = Decimal("0")
+        self.porc_desde_compra = Decimal("0.5")
+        self.porc_desde_venta = Decimal("0.5")
+        self.porc_inv_por_compra = Decimal("10")
+        self.porc_profit_x_venta = Decimal("0.5")
         self.rebalance_threshold = int(0)
         self.rebalance_pct = int(0)  # porcentaje del BTC a vender
         self.fixed_buyer = self.cant_inv()

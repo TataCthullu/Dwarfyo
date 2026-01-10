@@ -501,11 +501,6 @@ class BotInterfaz(AnimationMixin):
         return line_start
 
     def _cambiar_precision(self, prec=None):
-        """
-        Vista:
-        - 'decimal' = auto (sin ceros basura)
-        - 'p4'      = recorta a N decimales (sin redondeo) + agranda fuente SOLO left/center
-        """
         if prec is not None:
             try:
                 self.decimal_precision = int(prec)
@@ -524,6 +519,13 @@ class BotInterfaz(AnimationMixin):
 
         self.left_panel()
         self.center_panel()
+
+        # 🔥 clave: re-crear decoraciones/imágenes que iban en esos paneles
+        try:
+            self.init_animation()
+        except Exception as e:
+            # opcional debug
+            print("init_animation falló tras cambiar vista:", e)
 
         try:
             self._aplicar_modus()
@@ -2009,24 +2011,14 @@ class BotInterfaz(AnimationMixin):
                 else:
                     continue  # No redibujar si no hay coordenadas
 
-                # 🔁 Redibujar sólo el nuevo texto (valor) pero no cambiar el color aquí
-                canvas.delete(item_id)
                 texto = self.format_fijo(clave, valor)
-
-                # Usamos el color actual ya calculado o default oro (evita colisiones)
                 color = self.colores_actuales.get(clave, "Gold")
 
-                # Reescribimos sólo el valor
-                new_id = canvas.create_text(
-                    x, y,
-                    text=texto,
-                    fill=color,
-                    font=self._font_normal,
-                    anchor="nw"
-                )
+                try:
+                    canvas.itemconfigure(item_id, text=texto, fill=color)
+                except Exception:
+                    pass
 
-                # Actualizamos la referencia
-                self.info_canvas[clave] = (canvas, new_id)
 
             self.actualizar_historial()
             # ─── Ocultar TP/SL si están desactivados ───
@@ -2404,23 +2396,22 @@ class BotInterfaz(AnimationMixin):
     
 
     def actualizar_color(self, key, valor_actual):
-        if valor_actual is None or key not in self.info_canvas:
+        if key not in self.info_canvas:
             return
 
+        # 1) Determinar color
         try:
-            # desempaquetar si viene como (valor, simbolo)
             if isinstance(valor_actual, tuple):
                 val_act_raw, _ = valor_actual
             else:
                 val_act_raw = valor_actual
 
-            # 🔒 si no hay valor numérico, no comparo ni convierto
             if val_act_raw in (None, ""):
                 color = "Gold"
             else:
                 val_act = Decimal(str(val_act_raw).strip())
-
                 val_ini_raw = self.valores_iniciales.get(key)
+
                 if val_ini_raw in (None, ""):
                     color = "Gold"
                 else:
@@ -2431,27 +2422,20 @@ class BotInterfaz(AnimationMixin):
                         color = "Crimson"
                     else:
                         color = "Gold"
-
         except Exception:
-            # antes imprimía el error; lo silenciamo s para no ensuciar la consola
             color = "Gold"
 
-        # redibujar el texto con el color decidido
         self.colores_actuales[key] = color
-        canvas, item_id = self.info_canvas[key]
-        coords = canvas.coords(item_id)
-        x, y = coords if coords and len(coords) == 2 else (20, 10)
 
-        canvas.delete(item_id)
-        texto = self.format_fijo(key, valor_actual)  # si el valor es None, ya devuelve ""
-        text_id = canvas.create_text(
-            x, y,
-            text=texto,
-            fill=color,
-            font=self._font_normal,
-            anchor="nw"
-        )
-        self.info_canvas[key] = (canvas, text_id)
+        # 2) Actualizar texto + color SIN recrear el item
+        canvas, item_id = self.info_canvas[key]
+        texto = self.format_fijo(key, valor_actual)
+
+        try:
+            canvas.itemconfigure(item_id, text=texto, fill=color)
+        except Exception:
+            pass
+
 
     def _aplicar_fuente_consolas(self):
         try:

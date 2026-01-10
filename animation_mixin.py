@@ -423,10 +423,11 @@ class AnimationMixin:
         # Crear imagen inicial
         initial_g = self.abyss_static_img or (self.abyss_frames[0] if self.abyss_frames else "")
         self.abyss_item = self.canvas_center.create_image(
-            x, y,
-            image=self.abyss_static_img,
+            650, 400,
+            image=initial_g,
             anchor="center"
         )
+
 
         # Garantizar que esté al frente después de que todo cargue
         #self.canvas_uno.tag_raise(self.abyss_item)
@@ -645,27 +646,75 @@ class AnimationMixin:
             y = random.randint(0, max(0, HH - h))
         return x, y
 
+
+    def _ensure_abyss_item(self):
+        """Garantiza que abyss_item exista y sea tipo 'image' en canvas_center."""
+        if not hasattr(self, "canvas_center"):
+            return False
+
+        c = self.canvas_center
+
+        # Si no hay imagen cargada aún, no hay nada que dibujar
+        img0 = getattr(self, "abyss_static_img", None) or (self.abyss_frames[0] if getattr(self, "abyss_frames", None) else None)
+        if img0 is None:
+            return False
+
+        # ¿abyss_item existe y es image?
+        try:
+            if getattr(self, "abyss_item", None) and c.type(self.abyss_item) == "image":
+                return True
+        except Exception:
+            pass
+
+        # Si había algo raro, intentar borrar
+        try:
+            if getattr(self, "abyss_item", None):
+                c.delete(self.abyss_item)
+        except Exception:
+            pass
+
+        # Crear de nuevo (coordenadas como las tuyas)
+        self.abyss_item = c.create_image(
+            650, 400,
+            image=img0,
+            anchor="center"
+        )
+        return True
+
+
+    def _abyss_set_image(self, img):
+        """Setea imagen al abyss solo si el item es válido."""
+        try:
+            if img is None:
+                return
+            if not self._ensure_abyss_item():
+                return
+            if self.canvas_center.type(self.abyss_item) != "image":
+                return
+            self.canvas_center.itemconfig(self.abyss_item, image=img)
+        except Exception:
+            pass
+
+
     def _update_abyss(self):
-        usar_animacion = getattr(self.bot, 'compra_en_venta_fantasma', False)
-        if usar_animacion and self.abyss_frames:
+        bot = getattr(self, "bot", None)
+        usar_animacion = bool(getattr(bot, "compra_en_venta_fantasma", False))
+
+        if usar_animacion and getattr(self, "abyss_frames", None):
             frame, self.abyss_frame_index = self._safe_next_frame(self.abyss_frames, self.abyss_frame_index)
-            self.canvas_center.itemconfig(self.abyss_item, image=frame)
-        elif self.abyss_static_img:
-            def _set_abyss_image(self, img):
-                try:
-                    if self.abyss_item is None:
-                        return
-
-                    item_type = self.canvas_center.type(self.abyss_item)
-                    if item_type != "image":
-                        return  # evita el crash silenciosamente
-
-                    self.canvas_center.itemconfig(self.abyss_item, image=img)
-
-                except Exception:
-                    pass
+            self._abyss_set_image(frame)
+        else:
+            # siempre mostrar estática cuando no hay animación
+            static_img = getattr(self, "abyss_static_img", None)
+            if static_img is not None:
+                self._abyss_set_image(static_img)
+            else:
+                # fallback: si no existe estática pero hay frames, usar el primero
+                if getattr(self, "abyss_frames", None):
+                    self._abyss_set_image(self.abyss_frames[0])
 
         self.animar(500, self._update_abyss)
+
 
     def _update_lamp_genie(self):
         """
