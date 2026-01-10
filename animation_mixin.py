@@ -422,7 +422,11 @@ class AnimationMixin:
         
         # Crear imagen inicial
         initial_g = self.abyss_static_img or (self.abyss_frames[0] if self.abyss_frames else "")
-        self.abyss_item = self.canvas_center.create_image(590, 350, image=initial_g, anchor='nw')
+        self.abyss_item = self.canvas_center.create_image(
+            x, y,
+            image=self.abyss_static_img,
+            anchor="center"
+        )
 
         # Garantizar que esté al frente después de que todo cargue
         #self.canvas_uno.tag_raise(self.abyss_item)
@@ -647,7 +651,19 @@ class AnimationMixin:
             frame, self.abyss_frame_index = self._safe_next_frame(self.abyss_frames, self.abyss_frame_index)
             self.canvas_center.itemconfig(self.abyss_item, image=frame)
         elif self.abyss_static_img:
-            self.canvas_center.itemconfig(self.abyss_item, image=self.abyss_static_img)
+            def _set_abyss_image(self, img):
+                try:
+                    if self.abyss_item is None:
+                        return
+
+                    item_type = self.canvas_center.type(self.abyss_item)
+                    if item_type != "image":
+                        return  # evita el crash silenciosamente
+
+                    self.canvas_center.itemconfig(self.abyss_item, image=img)
+
+                except Exception:
+                    pass
 
         self.animar(500, self._update_abyss)
 

@@ -113,6 +113,12 @@ class TradingBot:
 
         # vista / formato (si todavía no lo usás, lo dejamos listo)
         self.modo_vista = "decimal"  # "simple" | "detallado"
+        
+        # --- DUM: economía de run ---
+        self.dum_cap = Decimal("5000")               # slot operativo (máximo dentro del bot)
+        self.dum_deposit_total = Decimal("0")        # cuánto metió el usuario en total durante la run
+        self.dum_extra_obsidiana = Decimal("0")      # exceso depositado que no entra al slot (se devuelve igual al cerrar)
+        self.dum_run_abierta = False                 # para bloquear retiros/cambios manuales
 
         # --- Estado de conexión ---
         self.sin_conexion = False
@@ -1463,7 +1469,59 @@ class TradingBot:
         return False
 
 
+    def dum_depositar_obsidiana(self, monto) -> bool:
+        """
+        DUM: deposita obsidiana en cualquier momento durante la run.
+        - Se SUMA (no setea).
+        - El bot SOLO puede operar con hasta dum_cap (5000) dentro de self.usdt.
+        - El excedente se guarda en dum_extra_obsidiana para devolver al cerrar.
+        """
+        try:
+            if getattr(self, "modo_app", "libre") != "dum":
+                return False
 
+            m = monto if isinstance(monto, Decimal) else Decimal(str(monto))
+            if m <= 0:
+                return False
+
+            with self.lock:
+                # marcar run activa (si querés que empiece al primer depósito)
+                self.dum_run_abierta = True
+
+                self.dum_deposit_total = (self.dum_deposit_total or Decimal("0")) + m
+
+                # llenar slot operativo hasta el cap
+                cap = self.dum_cap or Decimal("5000")
+                usdt_actual = self.usdt if isinstance(self.usdt, Decimal) else Decimal(str(self.usdt or "0"))
+
+                espacio = cap - usdt_actual
+                if espacio <= 0:
+                    # todo va a excedente
+                    self.dum_extra_obsidiana = (self.dum_extra_obsidiana or Decimal("0")) + m
+                else:
+                    al_slot = m if m <= espacio else espacio
+                    exced = m - al_slot
+
+                    self.usdt = usdt_actual + al_slot
+                    if exced > 0:
+                        self.dum_extra_obsidiana = (self.dum_extra_obsidiana or Decimal("0")) + exced
+
+                # recalcular tamaño fijo / métricas
+                self.fixed_buyer = self.cant_inv()
+                self.update_btc_fixed_seller()
+                self.actualizar_balance()
+
+            self.log(
+                f"🟪 DUM: depósito aplicado.\n"
+                f" · Slot: {self.format_fn(self.usdt, '$')} / $ {self.dum_cap}\n"
+                f" · Excedente: {self.format_fn(self.dum_extra_obsidiana, '$')}\n"
+                f" · Total depositado: {self.format_fn(self.dum_deposit_total, '$')}"
+            )
+            self.log("- - - - - - - - - -")
+            return True
+
+        except (InvalidOperation, TypeError, ValueError):
+            return False
 
 
 

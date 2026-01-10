@@ -22,7 +22,8 @@ class BotInterfaz(AnimationMixin):
          # Main window setup
         self._owns_mainloop = (master is None)
         self.usuario = usuario  # por ahora solo lo guardamos
-
+        self.decimal_precision = 4
+        
         if master is None:
             self.root = tk.Tk()
         else:
@@ -238,9 +239,9 @@ class BotInterfaz(AnimationMixin):
 
         # —————— Barra de menú unificada ——————
         self.menubar = tk.Menu(self.root)
-        # Estado de vista: 'decimal' o 'float'
+        # Estado de vista
         self.display_mode = tk.StringVar(value='decimal')
-        self.float_precision = 2
+       
         self.ajustar_fuente_por_vista()
         # 3) Submenú Vista
         self._crear_menu_vista()
@@ -500,70 +501,50 @@ class BotInterfaz(AnimationMixin):
         return line_start
 
     def _cambiar_precision(self, prec=None):
+        """
+        Vista:
+        - 'decimal' = auto (sin ceros basura)
+        - 'p4'      = recorta a N decimales (sin redondeo) + agranda fuente SOLO left/center
+        """
         if prec is not None:
-            self.float_precision = prec
+            try:
+                self.decimal_precision = int(prec)
+            except Exception:
+                self.decimal_precision = 4
 
-        self.ajustar_fuente_por_vista()  
+        self.ajustar_fuente_por_vista()
 
-        # 🧼 Destruir y recrear paneles para que los textos fijos usen nueva fuente
-        try:
-            self.left_frame.destroy()
-            self.center_frame.destroy()
-            self.animation_frame.destroy()
-        except Exception:
-            pass
+        # reconstruir SOLO left + center
+        for fr in ("left_frame", "center_frame"):
+            try:
+                if hasattr(self, fr):
+                    getattr(self, fr).destroy()
+            except Exception:
+                pass
 
         self.left_panel()
         self.center_panel()
-        self.animation_panel()
-        self.init_animation()  
-        self._aplicar_modus()
-        self.actualizar_ui()
-        # 6) ♻️ Re-render retroactivo de la CONSOLA con la vista nueva
-        #    - Limpiamos el widget, reseteamos el puntero incremental
-        #      y volvemos a volcar todo el buffer usando el nuevo modo.
+
         try:
-            self.consola.configure(state='normal')
-            self.consola.delete("1.0", "end")
-            self.consola.configure(state='disabled')
+            self._aplicar_modus()
         except Exception:
             pass
-        # Reiniciar el índice incremental para que se reescriba todo
-        try:
-            self._consola_last_n = 0
-        except Exception:
-            self._consola_last_n = 0
-        # Vuelca el buffer completo re-formateando con _reformat_line
-        self.actualizar_consola()
-        # 7) Rehacer HISTORIAL (ya se formatea con format_var según vista)
-        self.actualizar_historial()
+
+        self.actualizar_ui()
+
 
     def ajustar_fuente_por_vista(self):
         modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
-        # default
+
         size = 16
         self.espaciado_vertical = 35
 
         if modo == 'p4':
-            size = 24           # un poco más grande si querés
+            size = 24
             self.espaciado_vertical = 40
-            #self.float_precision = 4  # aseguramos 4
 
         self._font_normal = ("LondonBetween", size)
 
-        # Tamaños FIJOS para consolas según la vista
-        if modo == 'p4':
-            hist_size = 18
-            cons_size = 18
-        else:
-            hist_size = 16
-            cons_size = 16
-
-        self._font_historial = (self._font_normal[0], hist_size)
-        self._font_consola   = (self._font_normal[0], cons_size)
-
-        # aplicar inmediatamente a los widgets existentes
-        self._aplicar_fuente_consolas()
 
     def music_enable(self):
         if not self.music_enabled:
@@ -701,28 +682,23 @@ class BotInterfaz(AnimationMixin):
         self.var_total_usdt_str = tk.StringVar()
 
     def rellenar_mosaico(self, canvas, image_path, escala=1):
-        # Cargar imagen original
-        escala = int(escala)
+        canvas.delete("all")
+        canvas.imagenes = []  # reinicia referencias
 
+        escala = int(escala)
         imagen_original = Image.open(image_path)
         ancho, alto = imagen_original.size
         imagen_redimensionada = imagen_original.resize((ancho * escala, alto * escala), Image.NEAREST)
         imagen = ImageTk.PhotoImage(imagen_redimensionada)
-
-        # Guardar referencia en el canvas (evita que se borre de memoria)
-        if not hasattr(canvas, 'imagenes'):
-            canvas.imagenes = []
         canvas.imagenes.append(imagen)
 
-        # Obtener tamaño del canvas
         width = int(canvas['width'])
         height = int(canvas['height'])
 
-        # Dibujar la imagen en mosaico
         for x in range(0, width, imagen.width()):
             for y in range(0, height, imagen.height()):
-                canvas.create_image(x, y, image=imagen, anchor='nw')    
-    
+                canvas.create_image(x, y, image=imagen, anchor='nw')
+
     #Frames
     def left_panel(self):
         self.left_frame = tk.Frame(self.root, bd=0,                 # sin borde
@@ -743,31 +719,25 @@ class BotInterfaz(AnimationMixin):
 
         def add(label_text, var, key=None):
             nonlocal y_offset
-            # 1) etiqueta fija
             color_etiqueta = self.colores_fijos.get(key, "White") if key else "White"
-            lbl_id = self.canvas_uno.create_text(10, y_offset,
-                                                 text=label_text,
-                                                 fill=color_etiqueta,
-                                                 font=self._font_normal,
-                                                 anchor="nw")
-            # 2) medir y posicionar valor a la derecha
+
+            lbl_id = self.canvas_uno.create_text(10, y_offset, text=label_text,
+                                                fill=color_etiqueta, font=self._font_normal, anchor="nw")
+
             bbox = self.canvas_uno.bbox(lbl_id)
             x_val = bbox[2] + self.espaciado_horizontal
-            txt_id = self.canvas_uno.create_text(x_val, y_offset,
-                                                 text=var.get(),
-                                                 fill="gold",
-                                                 font=self._font_normal,
-                                                 anchor="nw")
+
+            txt_id = self.canvas_uno.create_text(x_val, y_offset, text=var.get(),
+                                                fill="gold", font=self._font_normal, anchor="nw")
+
             self.nd_canvas.append((var, self.canvas_uno, txt_id, x_val, y_offset, ""))
 
             if key:
-                self.info_canvas[key] = (self.canvas_uno, txt_id)
-            
-            y_offset += row_height
-            
-            if key:
                 self.info_labels[key] = (self.canvas_uno, lbl_id)
                 self.info_canvas[key] = (self.canvas_uno, txt_id)
+
+            y_offset += row_height
+
 
         add("Usdt + Btc:", self.balance_str, "balance")
         add("Btc en Usdt:", self.btc_en_usdt, "btcnusdt")
@@ -1086,8 +1056,7 @@ class BotInterfaz(AnimationMixin):
 
         # 0) Preservar vista/precisión antes de tocar nada
         modo_vista_actual = self.display_mode.get() if hasattr(self, "display_mode") else "decimal"
-        precision_actual = getattr(self, "float_precision", 2)
-
+        
         # 1) Preservar StringVars que NO deben limpiarse
         preservar_ids = set()
         try:
@@ -1206,7 +1175,7 @@ class BotInterfaz(AnimationMixin):
             self.display_mode.set(modo_vista_actual)
         except Exception:
             pass
-        self.float_precision = precision_actual
+        
         self.ajustar_fuente_por_vista()
 
         # 11) Reconstruir paneles completos
@@ -1470,15 +1439,47 @@ class BotInterfaz(AnimationMixin):
                 usdtinit = Decimal(txt_usdt_inic)
 
                 # =========================
-                # DUM: "Total Usdt" = depósito desde Slot 1
+                # DUM: permitir sumar obsidiana cuando quieras (hasta 5000) y NO permitir bajar
                 # =========================
                 if getattr(self.bot, "modo_app", "") == "dum":
-                    # En Dum la wallet NO se toca desde la UI.
-                    # El depósito se define en loggin.py (menú principal / depositar_a_bot).
-                    if usdtinit != Decimal(str(getattr(self.bot, "inv_inic", "0") or "0")):
-                        self.log_en_consola("⚠️ Dum: el depósito se configura en el menú principal. Aquí no se modifica.")
+                    cap = Decimal("5000")
+
+                    with self.bot.lock:
+                        actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
+
+                    # no permitir retirar / bajar mientras la run está en curso (o incluso antes, según pediste)
+                    if usdtinit < actual:
+                        self.log_en_consola("⚠️ Dum: no se puede retirar obsidiana hasta terminar la run.")
                         self.log_en_consola("- - - - - - - - - -")
                         return
+
+                    if usdtinit > cap:
+                        self.log_en_consola(f"⚠️ Límite Dum: {self.format_var(cap, '$')}.")
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+
+                    delta = usdtinit - actual
+                    if delta > 0:
+                        ok = False
+                        try:
+                            ok = self.bot.dum_depositar_obsidiana(delta)  # <-- suma, no setea
+                        except Exception:
+                            ok = False
+
+                        if not ok:
+                            self.log_en_consola("⚠️ Dum: no se pudo aplicar el depósito.")
+                            self.log_en_consola("- - - - - - - - - -")
+                            return
+
+                        # reflejar el nuevo "capital" en inv_inic (slot) para que todo el sistema quede consistente
+                        try:
+                            with self.bot.lock:
+                                self.bot.inv_inic = Decimal(str(getattr(self.bot, "usdt", "0") or "0"))
+                        except Exception:
+                            pass
+
+                    # IMPORTANTE: desde acá en adelante, usdtinit debe seguir el valor real (slot) ya aplicado
+                    usdtinit = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
 
 
                 tp = Decimal(txt_tp)
@@ -1643,13 +1644,14 @@ class BotInterfaz(AnimationMixin):
                     disponible = getattr(self.bot, "dum_disponible", slot_cap)
                     maximo = min(Decimal(str(slot_cap)), Decimal(str(disponible)))
 
-                    # Nota: si el bot ya estaba corriendo y querés permitir "aumentar depósito",
-                    # esto debería descontar de wallet (obsidiana) y bajar dum_disponible.
-                    # Por ahora: cap duro sin aumentar.
-                    if usdtinit > old_inv_inic and self.bot.running:
-                        self.log_en_consola("⚠️ En Dum no se permite aumentar el depósito con el bot corriendo.")
-                        self.log_en_consola("- - - - - - - - - -")
-                        return
+                    if getattr(self.bot, "modo_app", "") == "dum":
+                        pass
+                    else:
+                        if usdtinit > old_inv_inic and self.bot.running:
+                            self.log_en_consola("⚠️ En Dum no se permite aumentar el depósito con el bot corriendo.")
+                            self.log_en_consola("- - - - - - - - - -")
+                            return
+
 
                     if usdtinit > slot_cap:
                         self.log_en_consola(f"⚠️ Límite Dum: {self.format_var(slot_cap, '$')}.")
@@ -1816,55 +1818,7 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-    """ def _dum_aplicar_deposito(self, nuevo_deposito: Decimal):
-        
-        if not self.usuario:
-            raise ValueError("usuario no definido")
-
-        cap = Decimal(str(getattr(self.bot, "dum_slot_cap", "5000")))
-        ya  = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
-
-        obs_s, quad_s = get_wallet(self.usuario)
-        obs  = Decimal(str(obs_s))
-        quad = Decimal(str(quad_s))
-
-        maximo = min(cap, obs + ya)
-
-        if nuevo_deposito < 0:
-            raise ValueError("El depósito no puede ser negativo")
-
-        minimo = Decimal("100")
-        if nuevo_deposito != 0 and nuevo_deposito < minimo:
-            raise ValueError(f"Depósito mínimo disponible: {minimo}")
-
-        if nuevo_deposito > maximo:
-            raise ValueError(f"Depósito máximo disponible: {maximo}")
-
-        delta = nuevo_deposito - ya
-
-        if delta > 0:
-            if obs < delta:
-                raise ValueError("No tenés suficiente obsidiana para aumentar el depósito")
-            obs -= delta
-        elif delta < 0:
-            obs += (-delta)
-
-        set_wallet(self.usuario, obs, quad)
-
-        self.bot.dum_deposito  = nuevo_deposito
-        self.bot.dum_slot_used = nuevo_deposito
-        self.bot.inv_inic = nuevo_deposito
-        self.bot.usdt     = nuevo_deposito
-        self.bot.dum_disponible = obs
-
-        perfil = cargar_perfil(self.usuario)
-        if not isinstance(perfil, dict):
-            perfil = {}
-        di = (perfil.get("dum", {}) or {})
-        di["deposito"] = str(nuevo_deposito)
-        perfil["dum"] = di
-        guardar_perfil(self.usuario, perfil)"""
-
+  
 
     def _loop(self):
         # Si el bot ya no corre o la ventana ya no existe, salimos
@@ -1938,7 +1892,7 @@ class BotInterfaz(AnimationMixin):
         if valor is None:
             return ""
 
-        # intenta Decimal siempre, incluso si vino como string
+        # siempre intentar Decimal (aunque venga string o float)
         try:
             d = Decimal(str(valor))
         except Exception:
@@ -1948,28 +1902,35 @@ class BotInterfaz(AnimationMixin):
         if d == 0:
             return f"{simbolo} 0" if simbolo else "0"
 
-        # base en string plano
-        s = format(d, "f")  # sin notación científica
+        modo = self.display_mode.get() if hasattr(self, "display_mode") else "decimal"
+        prec = int(getattr(self, "decimal_precision", 4))
 
-        # === modo de vista ===
-        modo = self.display_mode.get() if hasattr(self, 'display_mode') else 'decimal'
-        prec = self.float_precision if hasattr(self, 'float_precision') else 4
+        # string plano sin científica
+        s = format(d, "f")
 
-        if modo == 'decimal':
-            # limpiar ceros de más, sin redondear
+        if modo == "decimal":
+            # auto: limpiar ceros finales, sin redondear
             if "." in s:
                 s = s.rstrip("0").rstrip(".") or "0"
-        else:
-            # cortar decimales a 'prec' (sin redondeo)
+        elif modo == "p4":
+            # recorte duro a N decimales (sin redondeo)
             if "." in s and prec >= 0:
                 entero, frac = s.split(".", 1)
-                s = entero if prec == 0 else f"{entero}.{frac[:prec]}"
+                if prec == 0:
+                    s = entero
+                else:
+                    s = f"{entero}.{frac[:prec]}"
                 s = s.rstrip("0").rstrip(".") or "0"
-                
+        else:
+            # fallback seguro (si algún modo raro aparece)
+            if "." in s:
+                s = s.rstrip("0").rstrip(".") or "0"
+
         if s in ("-0", "-0.0"):
             s = "0"
 
         return f"{simbolo} {s}" if simbolo else s
+
 
     def format_fijo(self, clave, valor):
         if isinstance(valor, tuple):
