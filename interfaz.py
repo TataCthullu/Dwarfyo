@@ -419,9 +419,13 @@ class BotInterfaz(AnimationMixin):
 
         pos = None
         if id_compra is not None:
-            pos = self._hist_estado_pos_by_id.get(str(id_compra))
+            pos = self._hist_estado_pos_by_id.get(str(id_compra).strip())
         if pos is None and numcompra is not None:
-            pos = self._hist_estado_pos_by_num.get(str(numcompra))
+            pos = self._hist_estado_pos_by_num.get(str(numcompra).strip())
+
+        # 🔥 fallback: si no hay posición guardada, buscarla en el Text
+        if not pos:
+            pos = self._hist_ensure_estado_pos(id_compra=id_compra, numcompra=numcompra)
 
         if not pos:
             return
@@ -432,7 +436,6 @@ class BotInterfaz(AnimationMixin):
             pass
 
         try:
-            # borra SOLO la línea donde está "Estado: ..."
             line_start = pos
             line_end = txt.index(f"{pos} lineend +1c")
             txt.delete(line_start, line_end)
@@ -445,6 +448,56 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
+
+    def _hist_ensure_estado_pos(self, id_compra=None, numcompra=None):
+        """
+        Si no tenemos guardada la posición de 'Estado:' para esa compra,
+        la busca en el widget historial y la guarda en los dicts.
+        Devuelve la posición (line.start) o None.
+        """
+        txt = self.historial
+        try:
+            txt.configure(state="normal")
+        except Exception:
+            pass
+
+        # 1) buscar ancla por ID o por numcompra
+        anchor = None
+        if id_compra:
+            anchor = txt.search(f"Id: {id_compra}", "1.0", stopindex="end")
+        if (not anchor) and (numcompra is not None and numcompra != ""):
+            anchor = txt.search(f"Número de compra: {numcompra}", "1.0", stopindex="end")
+
+        if not anchor:
+            try:
+                txt.configure(state="disabled")
+            except Exception:
+                pass
+            return None
+
+        # 2) desde ese ancla, buscar la línea "Estado:"
+        estado_hit = txt.search("Estado:", anchor, stopindex="end")
+        if not estado_hit:
+            try:
+                txt.configure(state="disabled")
+            except Exception:
+                pass
+            return None
+
+        # Guardamos el inicio de la línea donde está "Estado:"
+        line_start = txt.index(f"{estado_hit} linestart")
+
+        if id_compra:
+            self._hist_estado_pos_by_id[str(id_compra).strip()] = line_start
+        if numcompra is not None and numcompra != "":
+            self._hist_estado_pos_by_num[str(numcompra).strip()] = line_start
+
+        try:
+            txt.configure(state="disabled")
+        except Exception:
+            pass
+
+        return line_start
 
     def _cambiar_precision(self, prec=None):
         if prec is not None:
@@ -1030,7 +1083,12 @@ class BotInterfaz(AnimationMixin):
     def clear_bot(self):
         if self.bot.running:
             return
-        
+
+        # 0) Preservar vista/precisión antes de tocar nada
+        modo_vista_actual = self.display_mode.get() if hasattr(self, "display_mode") else "decimal"
+        precision_actual = getattr(self, "float_precision", 2)
+
+        # 1) Preservar StringVars que NO deben limpiarse
         preservar_ids = set()
         try:
             preservar_ids.add(id(self.modus))
@@ -1041,68 +1099,57 @@ class BotInterfaz(AnimationMixin):
         except Exception:
             pass
 
-
+        # 2) Limpiar StringVars (una sola vez)
         for attr in vars(self).values():
             if isinstance(attr, tk.StringVar) and id(attr) not in preservar_ids:
-                attr.set("")
+                try:
+                    attr.set("")
+                except Exception:
+                    pass
 
-
-        # La limpieza invalida la configuración
+        # 3) La limpieza invalida la configuración
         self.operativa_configurada = False
-# 🔒 bloquear cualquier ciclo residual
+
+        # 🔒 bloquear cualquier ciclo residual
         try:
             self.bot._stop_flag = True
             self.bot.running = False
         except Exception:
             pass
-        # 1) Sonido y reinicio completo del bot
+
+        # 4) Sonido
         if self.sound_enabled:
-            reproducir_sonido("Sounds/limpiar.wav")
-        # 2) Reiniciar bot y resetear estado lógico
-        self.bot.reiniciar()
+            try:
+                reproducir_sonido("Sounds/limpiar.wav")
+            except Exception:
+                pass
+
+        # 5) Reset lógico del bot
+        try:
+            self.bot.reiniciar()
+        except Exception:
+            pass
         self.bot.log_fn = self.logf
-        #self.bot.sound_enabled = self.sound_enabled
-        modo_vista_actual = self.display_mode.get()
-        precision_actual = self.float_precision
-        self.ajustar_fuente_por_vista()
-# 🟢 dejarlo “idle listo para iniciar”
+
+        # 🟢 dejarlo “idle listo para iniciar”
         try:
             self.bot._stop_flag = False
             self.bot.running = False
         except Exception:
             pass
-# 5) Reset StringVars
-        for attr in vars(self).values():
-            if isinstance(attr, tk.StringVar) and id(attr) not in preservar_ids:
-                attr.set("")
 
-        # 10) Restaurar la vista del usuario
-        self.display_mode.set(modo_vista_actual)
-        self.float_precision = precision_actual
-
-        for key in list(self.info_canvas.keys()):
-            canvas, item_id = self.info_canvas[key]
-            try:
-                canvas.delete(item_id)
-            except Exception:
-                pass
-        self.info_canvas.clear()
-        # limpiar labels guardados
-        for key in list(getattr(self, "info_labels", {}).keys()):
-            canvas, lbl_id = self.info_labels[key]
-            try:
-                canvas.delete(lbl_id)
-            except Exception:
-                pass
-        self.info_labels.clear()
-        self.nd_canvas.clear()
-        # 4) Reset variables visuales
-        self.valores_iniciales.clear()
-        self.colores_actuales.clear()
-
-        # 6) Vaciar historial y consola
+        # 6) Limpiar estructuras de UI/cache
         try:
+            self.valores_iniciales.clear()
+            self.colores_actuales.clear()
+        except Exception:
+            pass
+
+        # Historial
+        try:
+            self.historial.configure(state="normal")
             self.historial.delete("1.0", tk.END)
+            self.historial.configure(state="disabled")
         except Exception:
             pass
 
@@ -1113,15 +1160,8 @@ class BotInterfaz(AnimationMixin):
         self._hist_estado_cache_by_id.clear()
         self._hist_estado_cache_by_num.clear()
 
-        self._con_estado_pos_by_id.clear()
-        self._con_estado_pos_by_num.clear()
-        self._con_estado_cache_by_id.clear()
-        self._con_estado_cache_by_num.clear()
-        self._estado_line_by_id.clear()
-        self._estado_line_by_num.clear()
-
+        # Consola
         try:
-            # habilitar, borrar y volver a deshabilitar la consola
             self.consola.configure(state='normal')
             self.consola.delete("1.0", tk.END)
             self.consola.configure(state='disabled')
@@ -1129,40 +1169,80 @@ class BotInterfaz(AnimationMixin):
             pass
 
         self._consola_buffer.clear()
-        # resetear índices/contexto de la consola
         self._consola_last_n = 0
         self._ctx_ultimo_id = None
         self._ctx_ultimo_num = None
-        # 7) Guardar la vista actual del usuario
-        self.reset_animaciones()
 
-        # 8) Destruir frames viejos
+        self._con_estado_pos_by_id.clear()
+        self._con_estado_pos_by_num.clear()
+        self._con_estado_cache_by_id.clear()
+        self._con_estado_cache_by_num.clear()
+        self._estado_line_by_id.clear()
+        self._estado_line_by_num.clear()
+
+        # 7) Reset animaciones
         try:
-            self.left_frame.destroy()
-            self.center_frame.destroy()
-            self.animation_frame.destroy()
+            self.reset_animaciones()
         except Exception:
             pass
 
-        # 9) Reconstruir paneles
+        # 8) Destruir frames viejos (TODOS los paneles)
+        for fr in ("left_frame", "center_frame", "animation_frame", "right_frame", "right_frame_b", "various_frame"):
+            try:
+                getattr(self, fr).destroy()
+            except Exception:
+                pass
+
+        # 9) Reset diccionarios de canvases
+        try:
+            self.info_canvas.clear()
+            self.info_labels.clear()
+            self.nd_canvas.clear()
+        except Exception:
+            pass
+
+        # 10) Restaurar vista/precisión y fuentes
+        try:
+            self.display_mode.set(modo_vista_actual)
+        except Exception:
+            pass
+        self.float_precision = precision_actual
+        self.ajustar_fuente_por_vista()
+
+        # 11) Reconstruir paneles completos
         self.left_panel()
         self.center_panel()
-        self.animation_panel() 
+        self.right_panel()
+        self.right_panel_b()
+        self.animation_panel()
+        self.various_panel()
+
         self.init_animation()
         self._aplicar_modus()
-        # ⬅️ AÑADIR: reset visual de altares al limpiar
+
+        # Tags de historial (porque recreaste el widget)
+        try:
+            self.historial.tag_configure('venta_tag', foreground='Green')
+            self.historial.tag_configure('compra_tag', foreground='Blue')
+        except Exception:
+            pass
+
+        # ⬅️ reset visual de altares
         try:
             self.set_take_profit_state("inactive")
             self.set_stop_loss_state("inactive")
         except Exception:
             pass
 
-        # 8) Redibujar datos actuales (aunque estén vacíos)
+        # 12) Redibujar datos actuales (vacíos pero consistentes)
         self.actualizar_ui()
 
-        # 9) Restaurar botones
-        self.btn_inicio.config(text="Iniciar")
-        # Solo mostrar 'Iniciar' si ya hay operativa configurada
+        # 13) Restaurar botones
+        try:
+            self.btn_inicio.config(text="Iniciar")
+        except Exception:
+            pass
+
         if getattr(self, 'operativa_configurada', False):
             self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
         else:
@@ -1170,13 +1250,14 @@ class BotInterfaz(AnimationMixin):
 
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
-        
-        # 10) Forzar primer log de limpieza
+
+        # 14) Log final
         self.log_en_consola("🧹 Bot limpiado.")
         self.log_en_consola("- - - - - - - - - -")
 
         if not self.modus.get():
             self.modus.set("avanzado")
+
 
     def _thread_callback(self, future):
         if future.cancelled():
@@ -2093,24 +2174,30 @@ class BotInterfaz(AnimationMixin):
                 pass
 
             # === (A) PARCHEAR ESTADOS YA IMPRESOS (sin reconstruir) ===
-            # Recorremos todas las transacciones y actualizamos solo si cambió
+            # Parchea aunque el cache esté vacío, PERO solo si esa compra ya fue impresa
+            
             for t in txs:
+                tx_id  = str(t.get("id", "")).strip()
+                numc   = str(t.get("numcompra", "")).strip()
+                estado = (t.get("estado") or "activa").strip()
 
-                tx_id = str(t.get("id", "")).strip()
-                numc  = str(t.get("numcompra", "")).strip()
-                estado = t.get("estado", "activa")
-
+                # --- por id ---
                 if tx_id:
-                    prev = self._hist_estado_cache_by_id.get(tx_id)
-                    if prev is not None and prev != estado:
-                        self._hist_patch_estado(id_compra=tx_id, nuevo_estado=estado)
+                    # solo tiene sentido parchear si la compra ya está impresa (tiene posición)
+                    if tx_id in self._hist_estado_pos_by_id:
+                        prev = self._hist_estado_cache_by_id.get(tx_id)
+                        if prev != estado:  # 👈 clave: parchea aunque prev sea None
+                            self._hist_patch_estado(id_compra=tx_id, nuevo_estado=estado)
                     self._hist_estado_cache_by_id[tx_id] = estado
 
+                # --- por numcompra ---
                 if numc:
-                    prevn = self._hist_estado_cache_by_num.get(numc)
-                    if prevn is not None and prevn != estado:
-                        self._hist_patch_estado(numcompra=numc, nuevo_estado=estado)
+                    if numc in self._hist_estado_pos_by_num:
+                        prevn = self._hist_estado_cache_by_num.get(numc)
+                        if prevn != estado:
+                            self._hist_patch_estado(numcompra=numc, nuevo_estado=estado)
                     self._hist_estado_cache_by_num[numc] = estado
+
 
             # === (B) COMPRAS NUEVAS (solo append) ===
            

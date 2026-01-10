@@ -718,11 +718,11 @@ class TradingBot:
         # ----- remover transacciones vendidas (FUERA DEL LOOP) -----
         if ejecutadas:
             # Solo borrar en modo Standard
-            modo_op = getattr(self, "modus_operativa", getattr(self, "modus_actual", "standard"))
+            """modo_op = getattr(self, "modus_operativa", getattr(self, "modus_actual", "standard"))
             if modo_op == "standard":
                 for transaccion in ejecutadas:
                     if transaccion in self.transacciones:
-                        self.transacciones.remove(transaccion)
+                        self.transacciones.remove(transaccion)"""
 
 
             # Reinicio de parámetros siempre
