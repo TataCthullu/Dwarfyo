@@ -17,6 +17,16 @@ from dum import SLOT_1_OBSIDIANA
 
 
 AVATAR_DIR = os.path.join("imagenes", "deco", "Player", "AvatarBase")
+SLOTS_CAP = {
+    1: Decimal("5000"),
+    2: Decimal("10000"),
+    # futuros slots...
+}
+
+def get_dum_slot_cap(usuario: str) -> Decimal:
+    perfil = cargar_perfil(usuario)  # o tu DB / dict
+    slot = int(perfil.get("dum_slot", 1))
+    return SLOTS_CAP.get(slot, Decimal("5000"))
 
 
 # =========================
@@ -163,6 +173,7 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
 def depositar_a_bot(usuario: str, bot):
     """
     Lógica de player (Dum): toma del wallet y carga al bot.
+    Acumula el depósito total de la run en perfil["dum"]["deposito"].
     """
     obs, quad = get_wallet(usuario)
 
@@ -179,16 +190,101 @@ def depositar_a_bot(usuario: str, bot):
     if obs < 0:
         obs = Decimal("0")
 
+    # Cap del slot: como máximo SLOT_1_OBSIDIANA por depósito
     deposito = min(obs, SLOT_1_OBSIDIANA)
 
     # retirar del wallet (queda "bloqueado" en la run)
     set_wallet(usuario, obs - deposito, quad)
 
-    # cargar al bot
-    bot.usdt = deposito
+    # cargar al bot (SUMA, no pisa)
+    try:
+        bot.usdt = Decimal(str(getattr(bot, "usdt", "0") or "0"))
+    except Exception:
+        bot.usdt = Decimal("0")
+
+    bot.usdt += deposito
+
+    # tracking en bot (opcional pero ya lo usás)
     bot.dum_slot_used = deposito
 
+    # Persistir dum: depósito acumulado + último slot usado
+    perfil = cargar_perfil(usuario)
+    if not isinstance(perfil, dict):
+        perfil = {}
+
+    dum = (perfil.get("dum", {}) or {})
+    try:
+        dep_prev = Decimal(str(dum.get("deposito", "0") or "0"))
+    except Exception:
+        dep_prev = Decimal("0")
+
+    dep_new = dep_prev + deposito
+    dum["deposito"] = str(dep_new)              # depósito TOTAL acumulado de la run
+    dum["slot_used_last"] = str(deposito)       # último depósito (slot usado)
+    perfil["dum"] = dum
+    guardar_perfil(usuario, perfil)
+
+    # también guardo en bot por si te sirve
+    bot.dum_deposito_total = dep_new
+
     return deposito
+
+def cerrar_run_dum(usuario: str, usdt_final):
+    """
+    Cierre Dum:
+    obsidiana_devuelta = min(usdt_final, deposito_total_obs)
+    quad_ganado        = max(usdt_final - deposito_total_obs, 0)
+    Luego resetea dum["deposito"] y dum["slot_used_last"].
+    """
+    # Normalizar usdt_final
+    try:
+        usdt_final = Decimal(str(usdt_final))
+    except Exception:
+        usdt_final = Decimal("0")
+
+    if usdt_final < 0:
+        usdt_final = Decimal("0")
+
+    # Leer depósito total acumulado de la run
+    perfil = cargar_perfil(usuario)
+    if not isinstance(perfil, dict):
+        perfil = {}
+    dum = (perfil.get("dum", {}) or {})
+
+    try:
+        deposito_total = Decimal(str(dum.get("deposito", "0") or "0"))
+    except Exception:
+        deposito_total = Decimal("0")
+
+    # Fórmula Dum
+    obs_devuelta = usdt_final if usdt_final <= deposito_total else deposito_total
+    quad_ganado = (usdt_final - deposito_total) if usdt_final > deposito_total else Decimal("0")
+
+    # Actualizar wallet
+    obs, quad = get_wallet(usuario)
+    try:
+        obs = Decimal(str(obs))
+    except Exception:
+        obs = Decimal("0")
+    try:
+        quad = Decimal(str(quad))
+    except Exception:
+        quad = Decimal("0")
+
+    if obs < 0:
+        obs = Decimal("0")
+    if quad < 0:
+        quad = Decimal("0")
+
+    set_wallet(usuario, obs + obs_devuelta, quad + quad_ganado)
+
+    # Reset dum perfil
+    dum["deposito"] = "0"
+    dum["slot_used_last"] = "0"
+    perfil["dum"] = dum
+    guardar_perfil(usuario, perfil)
+
+    return obs_devuelta, quad_ganado
 
 
 class DumWindow:

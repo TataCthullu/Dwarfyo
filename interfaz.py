@@ -15,7 +15,9 @@ import re
 import csv
 from datetime import datetime
 from dum import DumTranslator
-from database import get_wallet, set_wallet
+from player import cerrar_run_dum, get_dum_slot_cap
+from database import get_wallet
+
 
 class BotInterfaz(AnimationMixin):
     def __init__(self, bot: TradingBot, master=None, usuario=None):
@@ -61,39 +63,15 @@ class BotInterfaz(AnimationMixin):
 
         # initialize bot and clear only ingreso price until started
         self.bot = bot
-        
+        # DUM: evitar doble cierre/persistencia si detener() se llama más de una vez
+        self._dum_run_closed = False
 
-        # --- DUM Translator (Modelo A) ---
-        def _dum_persist_callback(res):
-            # res es DumResultado
-            if not self.usuario:
-                return
-            
-            print("DEBUG DUM res.obsidiana_vuelve =", getattr(res, "obsidiana_vuelve", None))
-            print("DEBUG DUM res.quad_ganado      =", getattr(res, "quad_ganado", None))
 
-            try:
-                obs_s, quad_s = get_wallet(self.usuario)
-                obs  = Decimal(str(obs_s))
-                quad = Decimal(str(quad_s))
-
-                obs  += Decimal(str(getattr(res, "obsidiana_vuelve", "0")))
-                quad += Decimal(str(getattr(res, "quad_ganado", "0")))
-
-                set_wallet(self.usuario, obs, quad)
-                obs2, quad2 = get_wallet(self.usuario)
-                print("DEBUG WALLET post-set:", obs2, quad2)
-
-            except Exception:
-                pass
-
-        # Si el bot está en modo Dum, la persistencia (wallet) la maneja loggin.py.
-        # La UI NO debe persistir, para evitar doble guardado.
-        if getattr(self.bot, "modo_app", "") == "dum":
-            self.dum = None
+        # DumTranslator solo se usa fuera de modo Dum
+        if getattr(self.bot, "modo_app", "") != "dum":
+            self.dum = DumTranslator()
         else:
-            self.dum = DumTranslator(persist_callback=_dum_persist_callback)
-
+            self.dum = None
 
 
         # Encadenar callback existente (por ej. el que setea Dum desde main_menu)
@@ -312,6 +290,32 @@ class BotInterfaz(AnimationMixin):
         self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
         self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
+        # =========================
+        # DUM: al detener, cerrar run y devolver (obsidiana/quad) según depósito acumulado
+        # =========================
+        if getattr(self.bot, "modo_app", "") == "dum":
+            if not getattr(self, "_dum_run_closed", False):
+                self._dum_run_closed = True
+
+                try:
+                    with self.bot.lock:
+                        usdt_final = Decimal(str(getattr(self.bot, "usdt", "0") or "0"))
+                except Exception:
+                    usdt_final = Decimal("0")
+
+                try:
+                    obs_v, quad_g = cerrar_run_dum(self.usuario, usdt_final)
+                    # (opcional) log mínimo para debug visual
+                    try:
+                        self.log_en_consola(
+                            f"🧾 Dum cierre: vuelve {self.format_var(obs_v, '')} obsidiana | gana {self.format_var(quad_g, '')} quad"
+                        )
+                        self.log_en_consola("- - - - - - - - - -")
+                    except Exception:
+                        pass
+                except Exception:
+                    # si falla, no rompemos el stop
+                    pass
 
         # Parada automática por TP/SL (nuevo y compat con el viejo "TP/SL")
         if motivo in ("TP", "SL", "TP/SL"):
@@ -1010,6 +1014,9 @@ class BotInterfaz(AnimationMixin):
         if getattr(self.bot, "modo_app", "") == "dum":
             if not hasattr(self.bot, "dum_slot_used") or self.bot.dum_slot_used in (None, "", 0):
                 self.bot.dum_slot_used = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
+        
+        if getattr(self.bot, "modo_app", "") == "dum":
+            self.bot.dum_slot_used = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
 
         if self.bot.running:
             self.bot.detener()
@@ -1025,6 +1032,9 @@ class BotInterfaz(AnimationMixin):
                     self.log_en_consola("⚠️ Dum: configurá el depósito antes de iniciar.")
                     self.log_en_consola("- - - - - - - - - -")
                     return
+            # DUM: al iniciar una run, habilitar cierre futuro
+            if getattr(self.bot, "modo_app", "") == "dum":
+                self._dum_run_closed = False
 
             self.bot.iniciar()
             if not self.bot.running:
@@ -1423,6 +1433,35 @@ class BotInterfaz(AnimationMixin):
 
         # ===== guardar_config =====
         def guardar_config():
+
+            def _parse_decimal_user(txt: str) -> Decimal:
+                s = (txt or "").strip().replace(" ", "")
+                if not s:
+                    return Decimal("0")
+
+                # AR/EU: 1.234,56
+                if "," in s and "." in s:
+                    if s.rfind(",") > s.rfind("."):
+                        s = s.replace(".", "").replace(",", ".")
+                    else:
+                        s = s.replace(",", "")
+
+                # Solo coma: "12,5" o "5,000"
+                elif "," in s:
+                    parts = s.split(",")
+                    if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit() and len(parts[1]) == 3:
+                        s = parts[0] + parts[1]  # miles
+                    else:
+                        s = s.replace(",", ".")
+
+                # Solo punto: "12.5" o "5.000" o "1.234.567"
+                elif "." in s:
+                    parts = s.split(".")
+                    if len(parts) > 1 and all(p.isdigit() for p in parts) and all(len(p) == 3 for p in parts[1:]):
+                        s = "".join(parts)  # miles
+
+                return Decimal(s)
+
             try:
                 # 1) Leemos la cadena exacta
                 txt_compra = entries[0].get().strip()   # p.e. "0.0003234" o "5"
@@ -1434,58 +1473,59 @@ class BotInterfaz(AnimationMixin):
                 txt_sl  = entries[6].get().strip()
 
                 # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
-                porc_compra = Decimal(txt_compra)
-                porc_venta  = Decimal(txt_venta)
-                porc_profit  = Decimal(txt_profit)
-                porc_inv = Decimal(txt_porc_inv)
-                usdtinit = Decimal(txt_usdt_inic)
+                porc_compra = _parse_decimal_user(txt_compra)
+                porc_venta  = _parse_decimal_user(txt_venta)
+                porc_profit = _parse_decimal_user(txt_profit)
+                porc_inv    = _parse_decimal_user(txt_porc_inv)
+                usdtinit    = _parse_decimal_user(txt_usdt_inic)
+                tp          = _parse_decimal_user(txt_tp)
+                sl          = _parse_decimal_user(txt_sl)
+
 
                 # =========================
                 # DUM: permitir sumar obsidiana cuando quieras (hasta 5000) y NO permitir bajar
                 # =========================
                 if getattr(self.bot, "modo_app", "") == "dum":
-                    cap = Decimal("5000")
+                    cap = get_dum_slot_cap(self.usuario)          # 5000 o 10000 según slot
+                    wallet_obs = get_wallet(self.usuario)         # tu función real
+                    actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
 
-                    with self.bot.lock:
-                        actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-
-                    # no permitir retirar / bajar mientras la run está en curso (o incluso antes, según pediste)
+                    # no permitir bajar (retirar) durante la run (o incluso siempre)
                     if usdtinit < actual:
                         self.log_en_consola("⚠️ Dum: no se puede retirar obsidiana hasta terminar la run.")
                         self.log_en_consola("- - - - - - - - - -")
                         return
 
+                    # cap por slot
                     if usdtinit > cap:
-                        self.log_en_consola(f"⚠️ Límite Dum: {self.format_var(cap, '$')}.")
+                        self.log_en_consola(f"⚠️ Dum: tu tope de slot es {self.format_var(cap, '$')}.")
                         self.log_en_consola("- - - - - - - - - -")
                         return
 
+                    # diferencia a depositar
                     delta = usdtinit - actual
                     if delta > 0:
-                        ok = False
-                        try:
-                            ok = self.bot.dum_depositar_obsidiana(delta)  # <-- suma, no setea
-                        except Exception:
-                            ok = False
+                        # validar contra wallet
+                        if Decimal(str(wallet_obs)) < delta:
+                            self.log_en_consola("⚠️ Dum: no tenés suficiente obsidiana en wallet para ese depósito.")
+                            self.log_en_consola("- - - - - - - - - -")
+                            return
 
+                        ok = self.bot.dum_depositar_obsidiana(delta)  # debería descontar wallet y sumar depósito
                         if not ok:
                             self.log_en_consola("⚠️ Dum: no se pudo aplicar el depósito.")
                             self.log_en_consola("- - - - - - - - - -")
                             return
 
-                        # reflejar el nuevo "capital" en inv_inic (slot) para que todo el sistema quede consistente
-                        try:
-                            with self.bot.lock:
-                                self.bot.inv_inic = Decimal(str(getattr(self.bot, "usdt", "0") or "0"))
-                        except Exception:
-                            pass
+                        # actualizar slot efectivo
+                        with self.bot.lock:
+                            self.bot.inv_inic = actual + delta
+                            self.bot.usdt = self.bot.inv_inic
 
-                    # IMPORTANTE: desde acá en adelante, usdtinit debe seguir el valor real (slot) ya aplicado
+                    # desde acá, el valor real es el que quedó
                     usdtinit = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
 
-
-                tp = Decimal(txt_tp)
-                sl = Decimal(txt_sl)
+               
 
                 # 1) SNAPSHOT de configuración anterior (para detectar cambios)
                 old_cfg = {
@@ -1640,25 +1680,7 @@ class BotInterfaz(AnimationMixin):
                         pass
 
                 old_inv_inic = old_cfg["inv_inic"]  # Decimal
-                # Si estamos en DUM, revalidar cap también en vivo
-                if getattr(self.bot, "modo_app", "") == "dum":
-                    slot_cap = getattr(self.bot, "dum_slot_cap", Decimal("5000"))
-                    disponible = getattr(self.bot, "dum_disponible", slot_cap)
-                    maximo = min(Decimal(str(slot_cap)), Decimal(str(disponible)))
-
-                    if getattr(self.bot, "modo_app", "") == "dum":
-                        pass
-                    else:
-                        if usdtinit > old_inv_inic and self.bot.running:
-                            self.log_en_consola("⚠️ En Dum no se permite aumentar el depósito con el bot corriendo.")
-                            self.log_en_consola("- - - - - - - - - -")
-                            return
-
-
-                    if usdtinit > slot_cap:
-                        self.log_en_consola(f"⚠️ Límite Dum: {self.format_var(slot_cap, '$')}.")
-                        self.log_en_consola("- - - - - - - - - -")
-                        return
+                
 
                 # Ajuste de capital según si el bot está corriendo o no
                 if self.bot.running:
