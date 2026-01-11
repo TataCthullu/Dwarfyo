@@ -1,37 +1,117 @@
 # © 2025 Dungeon Market (Khazâd - Trading Bot - animation mixin)
 # Todos los derechos reservados.
-from tkinter import PhotoImage
+
 import os
 import random
+import tkinter as tk
+from tkinter import PhotoImage
+
 
 class AnimationMixin:
     MAX_CABEZAS = 9
 
+    # ---------------------------
+    # Helpers seguros (sin "except Exception")
+    # ---------------------------
+
+    def _canvas_is_alive(self, canvas) -> bool:
+        try:
+            return canvas is not None and canvas.winfo_exists()
+        except tk.TclError:
+            return False
+
+    def _safe_type(self, canvas, item_id):
+        """Devuelve canvas.type(item_id) o None si falla por TclError."""
+        if not self._canvas_is_alive(canvas) or not item_id:
+            return None
+        try:
+            return canvas.type(item_id)
+        except tk.TclError:
+            return None
+
+    def _safe_itemconfig(self, canvas, item_id, **kwargs) -> bool:
+        """Itemconfig tolerante a items borrados/destruidos."""
+        if not self._canvas_is_alive(canvas) or not item_id:
+            return False
+        if self._safe_type(canvas, item_id) is None:
+            return False
+        try:
+            canvas.itemconfig(item_id, **kwargs)
+            return True
+        except tk.TclError:
+            return False
+
+    def _safe_itemconfigure(self, canvas, item_id, **kwargs) -> bool:
+        if not self._canvas_is_alive(canvas) or not item_id:
+            return False
+        if self._safe_type(canvas, item_id) is None:
+            return False
+        try:
+            canvas.itemconfigure(item_id, **kwargs)
+            return True
+        except tk.TclError:
+            return False
+
+    def _safe_coords(self, canvas, item_id, x, y) -> bool:
+        if not self._canvas_is_alive(canvas) or not item_id:
+            return False
+        if self._safe_type(canvas, item_id) is None:
+            return False
+        try:
+            canvas.coords(item_id, x, y)
+            return True
+        except tk.TclError:
+            return False
+
+    def _safe_delete(self, canvas, item_id) -> bool:
+        if not self._canvas_is_alive(canvas) or not item_id:
+            return False
+        try:
+            canvas.delete(item_id)
+            return True
+        except tk.TclError:
+            return False
+
+    def _safe_tag_raise(self, canvas, item_id, above_this=None) -> bool:
+        if not self._canvas_is_alive(canvas) or not item_id:
+            return False
+        try:
+            if above_this is None:
+                canvas.tag_raise(item_id)
+            else:
+                canvas.tag_raise(item_id, above_this)
+            return True
+        except tk.TclError:
+            return False
+
+    # ---------------------------
+    # Inicialización
+    # ---------------------------
+
     def init_animation(self):
         self.cancelar_animaciones()
-        if getattr(self, '_animaciones_activas', False):
+        if getattr(self, "_animaciones_activas", False):
             return
         self._animaciones_activas = True
-        
+
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
 
-            # ─── PEDESTAL ───
+        # ─── PEDESTAL ───
         pedestal_path = "imagenes/deco/rebalance/pedestal.png"
         if os.path.exists(pedestal_path):
-            self.pedestal_img = PhotoImage(file=pedestal_path).zoom(2,2)
+            self.pedestal_img = PhotoImage(file=pedestal_path).zoom(2, 2)
             self.pedestal_item = self.canvas_various.create_image(
-                1450, 25,   # coordenadas absolutas
-                image=self.pedestal_img,
-                anchor="nw"
+                1450, 25, image=self.pedestal_img, anchor="nw"
             )
 
         # ─── VARITA ───
         wand_path = "imagenes/deco/woods/gem_wood_new.png"
         if os.path.exists(wand_path):
-            self.wand_img = PhotoImage(file=wand_path).zoom(2,2)
-            # Abajo-derecha del left panel
-            self.wand_item = self.canvas_various.create_image(1450, 20, image=(self.wand_img or ''), anchor='nw')
+            self.wand_img = PhotoImage(file=wand_path).zoom(2, 2)
+            self.wand_item = self.canvas_various.create_image(
+                1450, 20, image=(self.wand_img or ""), anchor="nw"
+            )
 
         # ─── CARGA SEARING RAY ───
         self.searing_frames = []
@@ -47,144 +127,124 @@ class AnimationMixin:
             if os.path.exists(p):
                 self.magic_frames.append(PhotoImage(file=p))
 
-        # Item en el canvas_uno (left panel, abajo a la derecha)
-        self.searing_item = self.canvas_various.create_image(1450, 20, image='', anchor='nw')
-        
-                # ─── ALTARES TP / SL ───
-        # rutas posibles (usa las que tengas en tu proyecto; si no existen, se omiten)
+        # Item en el canvas_various
+        self.searing_item = self.canvas_various.create_image(
+            1450, 20, image="", anchor="nw"
+        )
+
+        # ─── ALTARES TP / SL ───
         def _img(path, zoom=2):
             return PhotoImage(file=path).zoom(zoom, zoom) if os.path.exists(path) else None
 
         # bases
-        self.altar_base     = _img("imagenes/deco/sltp/altar_base.png",      2) or _img("altar_base.png", 2)
-        self.altar_trog     = _img("imagenes/deco/sltp/altar_trog.png",      2) or _img("altar_trog.png", 2)
-        self.gozag_frames   = [p for p in (
-                                _img("imagenes/deco/sltp/gozag_0.png", 2) or _img("gozag_0.png", 2),
-                                _img("imagenes/deco/sltp/gozag_1.png", 2) or _img("gozag_1.png", 2),
-                                _img("imagenes/deco/sltp/gozag_2.png", 2) or _img("gozag_2.png", 2)
-                              ) if p]
-        self.jiyva_frames   = [p for p in (
-                                _img("imagenes/deco/sltp/altar_jiyva_0.png", 2) or _img("altar_jiyva_0.png", 2),
-                                _img("imagenes/deco/sltp/altar_jiyva_1.png", 2) or _img("altar_jiyva_1.png", 2)
-                              ) if p]
-        
-        # Imagen alternativa cuando el bot no está iniciado
+        self.altar_base = _img("imagenes/deco/sltp/altar_base.png", 2) or _img("altar_base.png", 2)
+        self.altar_trog = _img("imagenes/deco/sltp/altar_trog.png", 2) or _img("altar_trog.png", 2)
+        self.gozag_frames = [
+            p for p in (
+                _img("imagenes/deco/sltp/gozag_0.png", 2) or _img("gozag_0.png", 2),
+                _img("imagenes/deco/sltp/gozag_1.png", 2) or _img("gozag_1.png", 2),
+                _img("imagenes/deco/sltp/gozag_2.png", 2) or _img("gozag_2.png", 2)
+            ) if p
+        ]
+        self.jiyva_frames = [
+            p for p in (
+                _img("imagenes/deco/sltp/altar_jiyva_0.png", 2) or _img("altar_jiyva_0.png", 2),
+                _img("imagenes/deco/sltp/altar_jiyva_1.png", 2) or _img("altar_jiyva_1.png", 2)
+            ) if p
+        ]
+
         fedhas_path = "imagenes/deco/sltp/altar_fedhas.png"
         self.altar_fedhas = PhotoImage(file=fedhas_path).zoom(2, 2) if os.path.exists(fedhas_path) else None
 
-        # íconos
         self.icon_sword = _img("imagenes/deco/sltp/long_sword_1_new.png", 2) or _img("long_sword_1_new.png", 2)
-        self.icon_shield = _img("imagenes/deco/sltp/buckler_1_new.png",    2) or _img("buckler_1_new.png", 2)
+        self.icon_shield = _img("imagenes/deco/sltp/buckler_1_new.png", 2) or _img("buckler_1_new.png", 2)
 
-        # posiciones (pegado al lado derecho, antes del icono de sonido)
         Wv = int(self.canvas_various["width"])
         base_y = 30
-        tp_x = Wv - 440   # altar TP (espada)
-        sl_x = Wv - 360   # altar SL (escudo)
+        tp_x = Wv - 440
+        sl_x = Wv - 360
 
-        # crear ítems de base
-        self.altar_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.altar_base or '', anchor='nw')
-        self.altar_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.altar_base or '', anchor='nw')
+        self.altar_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.altar_base or "", anchor="nw")
+        self.altar_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.altar_base or "", anchor="nw")
 
-        # crear ítems de íconos sobrepuestos (offset pequeño para que se vean centrados)
-        self.tp_icon_item  = self.canvas_various.create_image(tp_x+12, base_y-25, image=self.icon_sword or '', anchor='nw')
-        self.sl_icon_item  = self.canvas_various.create_image(sl_x+2, base_y-16, image=self.icon_shield or '', anchor='nw')
-        self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
-        self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
+        self.tp_icon_item = self.canvas_various.create_image(tp_x + 12, base_y - 25, image=self.icon_sword or "", anchor="nw")
+        self.sl_icon_item = self.canvas_various.create_image(sl_x + 2, base_y - 16, image=self.icon_shield or "", anchor="nw")
+        self.canvas_various.itemconfigure(self.tp_icon_item, state="hidden")
+        self.canvas_various.itemconfigure(self.sl_icon_item, state="hidden")
 
-        # estados y frame para animación
-        self._tp_state = "inactive"   # 'inactive' | 'armed' | 'hit'
-        self._sl_state = "inactive"   # 'inactive' | 'armed' | 'hit'
+        self._tp_state = "inactive"
+        self._sl_state = "inactive"
         self._altar_frame = 0
 
-        # Mostrar Fedhas si el bot NO está iniciado (y ocultar íconos)
-        if not getattr(self, 'bot', None) or not self.bot.running:
+        if not getattr(self, "bot", None) or not self.bot.running:
             if self.altar_fedhas:
                 self.canvas_various.itemconfig(self.altar_tp_item, image=self.altar_fedhas)
                 self.canvas_various.itemconfig(self.altar_sl_item, image=self.altar_fedhas)
-                self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
-                self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
+                self.canvas_various.itemconfigure(self.tp_icon_item, state="hidden")
+                self.canvas_various.itemconfigure(self.sl_icon_item, state="hidden")
 
-        # animación suave de bases (gozag / jiyva alternan 0/1 si existen)
         self.animar(600, self._animate_altars)
 
-        # ─── imagen de altar destruido ───
         self.ashenzari_img = _img("imagenes/deco/sltp/ashenzari.png", 2) or _img("ashenzari.png", 2)
+        self.destroy_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.ashenzari_img or "", anchor="nw")
+        self.destroy_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.ashenzari_img or "", anchor="nw")
+        self.canvas_various.itemconfigure(self.destroy_tp_item, state="hidden")
+        self.canvas_various.itemconfigure(self.destroy_sl_item, state="hidden")
 
-        # overlays de altar destruido (uno para cada lado), ocultos por defecto
-        self.destroy_tp_item = self.canvas_various.create_image(tp_x, base_y, image=self.ashenzari_img or '', anchor='nw')
-        self.destroy_sl_item = self.canvas_various.create_image(sl_x, base_y, image=self.ashenzari_img or '', anchor='nw')
-        self.canvas_various.itemconfigure(self.destroy_tp_item, state='hidden')
-        self.canvas_various.itemconfigure(self.destroy_sl_item, state='hidden')
-
-        # ─── CARGA DE “ELEFANTES” ───
-        # 1) Ruta base de los elefantes
+        # ─── ELEFANTES ───
         ruta_ele = os.path.join("imagenes", "deco", "elefants")
-
-        # 2) Carga de la estatua
         stat_path = os.path.join(ruta_ele, "elephant_statue.png")
         self.elephant_statue = PhotoImage(file=stat_path).zoom(3, 3) if os.path.exists(stat_path) else None
 
-        # ✨ NUEVO: estatua de jade
-        """jade_path = os.path.join(ruta_ele, "statue_elephant_jade.png")
-        self.elephant_jade = PhotoImage(file=jade_path).zoom(3, 3) if os.path.exists(jade_path) else None
-        """
         self.elephants = []
         for i in range(8):
             p = os.path.join(ruta_ele, f"elephant_{i}.png")
-            if os.path.exists(p):
-                # Aumentamos de tamaño con zoom, si lo deseas
-                img = PhotoImage(file=p).zoom(3, 3)
-            else:
-                img = None
+            img = PhotoImage(file=p).zoom(3, 3) if os.path.exists(p) else None
             self.elephants.append(img)
 
-        # 4) Crear el ítem en el canvas_animation (inicialmente con la estatua)
-        #    Elegimos una posición fija dentro de canvas_animation; por ejemplo, esquina superior izquierda
         x_ele = 550
         y_ele = 330
-        initial_img = self.elephant_statue or (self.elephants[0] if self.elephants[0] else "")
-        self.elephant_item = self.canvas_animation.create_image(x_ele, y_ele, image=initial_img, anchor='nw')
-
-        # 5) Programamos la actualización periódica de los elefantes:
+        initial_img = self.elephant_statue or (self.elephants[0] if self.elephants and self.elephants[0] else "")
+        self.elephant_item = self.canvas_animation.create_image(x_ele, y_ele, image=initial_img, anchor="nw")
         self.animar(500, self._update_elephant)
 
-        # ─── CARGA DE FRAMES ───
-        # Antorcha
+        # ─── ANTORCHA ───
         self.torch_frames = []
         for i in range(1, 5):
             p = f"imagenes/deco/torch/torch_{i}.png"
             if os.path.exists(p):
-                self.torch_frames.append(PhotoImage(file=p).zoom(3,3))
-        # Imagen “apagada” si el bot no corre
+                self.torch_frames.append(PhotoImage(file=p).zoom(3, 3))
+
         off = "imagenes/deco/torch/torch_0.png"
-        self.torch_off = PhotoImage(file=off).zoom(3,3) if os.path.exists(off) else None
+        self.torch_off = PhotoImage(file=off).zoom(3, 3) if os.path.exists(off) else None
         self.torch_frame_index = 0
 
-        # ─── CARGA DE LÍANAS VERDES Y ROJAS ───
+        # ─── LÍANAS VERDES/ROJAS ───
         base_dir = os.path.join("imagenes", "deco", "lianas")
         dirs = {
             "green": os.path.join(base_dir, "verdes"),
-            "red":   os.path.join(base_dir, "rojas")
+            "red": os.path.join(base_dir, "rojas"),
         }
-        tokens   = ("north","south","east","west")
+        tokens = ("north", "south", "east", "west")
         diag_map = {
-            "northeast": ("north","east"),
-            "northwest": ("north","west"),
-            "southeast": ("south","east"),
-            "southwest": ("south","west"),
+            "northeast": ("north", "east"),
+            "northwest": ("north", "west"),
+            "southeast": ("south", "east"),
+            "southwest": ("south", "west"),
         }
 
         self.vine_sequence_green = {t: [] for t in tokens}
-        self.vine_sequence_red   = {t: [] for t in tokens}
+        self.vine_sequence_red = {t: [] for t in tokens}
 
         for color, folder in dirs.items():
-            seq_map = self.vine_sequence_green if color=="green" else self.vine_sequence_red
+            seq_map = self.vine_sequence_green if color == "green" else self.vine_sequence_red
+            if not os.path.isdir(folder):
+                continue
             for fname in os.listdir(folder):
                 if not fname.lower().endswith(".png"):
                     continue
 
-                if color=="red":
+                if color == "red":
                     if not fname.startswith("starspawn_"):
                         continue
                     name = fname[len("starspawn_"):-4]
@@ -195,13 +255,13 @@ class AnimationMixin:
 
                 parts = name.split("_")
 
-                if parts[0]=="corner" and len(parts)==2:
+                if parts[0] == "corner" and len(parts) == 2:
                     direcciones = [parts[1]]
-                elif parts[0]=="tentacle" and len(parts)==2:
+                elif parts[0] == "tentacle" and len(parts) == 2:
                     direcciones = [parts[1]]
-                elif parts[0]=="tentacle" and len(parts)==4 and parts[1]=="segment":
+                elif parts[0] == "tentacle" and len(parts) == 4 and parts[1] == "segment":
                     direcciones = parts[2:4]
-                elif parts[0]=="segment" and len(parts)==3:
+                elif parts[0] == "segment" and len(parts) == 3:
                     direcciones = parts[1:3]
                 else:
                     continue
@@ -213,36 +273,29 @@ class AnimationMixin:
                     elif d in tokens:
                         bordes.append(d)
 
-                img = PhotoImage(file=os.path.join(folder, fname)).zoom(2,2)
+                img = PhotoImage(file=os.path.join(folder, fname)).zoom(2, 2)
                 for b in set(bordes):
                     seq_map[b].append(img)
 
-#items
-        self.vine_items   = []                # (borde, item_id)
+        # items vines sobre canvas_right_b
+        self.vine_items = []
         self.vine_indices = {t: 0 for t in tokens}
 
-        # dimensiones del canvas
         W = int(self.canvas_right_b["width"])
         H = int(self.canvas_right_b["height"])
 
-        # calculamos anchuras y altos (usamos uno de los mapas, da igual)
-        width_top    = self.vine_sequence_green["north"][0].width()  if self.vine_sequence_green["north"] else 0
-        width_bottom = self.vine_sequence_green["south"][0].width()  if self.vine_sequence_green["south"] else 0
-        height_left  = self.vine_sequence_green["west"][0].height()  if self.vine_sequence_green["west"] else 0
-        height_right = self.vine_sequence_green["east"][0].height()  if self.vine_sequence_green["east"] else 0
-        width_right  = self.vine_sequence_green["east"][0].width()   if self.vine_sequence_green["east"] else 0
+        width_top = self.vine_sequence_green["north"][0].width() if self.vine_sequence_green["north"] else 0
+        width_bottom = self.vine_sequence_green["south"][0].width() if self.vine_sequence_green["south"] else 0
+        height_left = self.vine_sequence_green["west"][0].height() if self.vine_sequence_green["west"] else 0
+        height_right = self.vine_sequence_green["east"][0].height() if self.vine_sequence_green["east"] else 0
+        width_right = self.vine_sequence_green["east"][0].width() if self.vine_sequence_green["east"] else 0
         height_bottom = self.vine_sequence_green["south"][0].height() if self.vine_sequence_green["south"] else 0
 
         if width_top > 0:
             for x in range(0, W, width_top):
-                iid = self.canvas_right_b.create_image(
-                    x, 0,
-                    image='',     # arranca vacío
-                    anchor="nw"
-                )
+                iid = self.canvas_right_b.create_image(x, 0, image="", anchor="nw")
                 self.vine_items.append(("north", iid))
 
-         # Bottom (south) correcto sobre canvas_right_b
         if width_bottom > 0 and height_bottom > 0:
             y_bottom = H - height_bottom
             for x in range(0, W, width_bottom):
@@ -251,28 +304,24 @@ class AnimationMixin:
 
         if height_left > 0:
             for y in range(0, H, height_left):
-                iid = self.canvas_right_b.create_image(
-                    0, y,
-                    image='',     # arranca vacío
-                    anchor="nw"
-                )
+                iid = self.canvas_right_b.create_image(0, y, image="", anchor="nw")
                 self.vine_items.append(("west", iid))
 
-        # Right (east) correcto sobre canvas_right_b
         if width_right > 0:
             x_right = W - width_right
-            for y in range(0, H, height_right if height_right > 0 else 1):
+            step = height_right if height_right > 0 else 1
+            for y in range(0, H, step):
                 iid = self.canvas_right_b.create_image(x_right, y, image="", anchor="nw")
                 self.vine_items.append(("east", iid))
-        
-        # —————— (1) Carga de los iconos de sonido ——————
-        on_path  = "imagenes/deco/noise/i-noise_new.png"
+
+        # ─── ICONOS SONIDO ───
+        on_path = "imagenes/deco/noise/i-noise_new.png"
         off_path = "imagenes/deco/noise/i-noise_old.png"
-        self.noise_on  = PhotoImage(file=on_path).zoom(2,2)  if os.path.exists(on_path)  else None
-        self.noise_off = PhotoImage(file=off_path).zoom(2,2) if os.path.exists(off_path) else None
+        self.noise_on = PhotoImage(file=on_path).zoom(2, 2) if os.path.exists(on_path) else None
+        self.noise_off = PhotoImage(file=off_path).zoom(2, 2) if os.path.exists(off_path) else None
 
         self._hydra_gate = "imagenes/deco/gates/enter_snake.png"
-        self.hydra_gate = PhotoImage(file=self._hydra_gate).zoom(4,4) if os.path.exists(self._hydra_gate) else None
+        self.hydra_gate = PhotoImage(file=self._hydra_gate).zoom(4, 4) if os.path.exists(self._hydra_gate) else None
 
         # Guardián
         self.guard_open_frames = []
@@ -281,228 +330,194 @@ class AnimationMixin:
             po = f"imagenes/deco/guards/guardian-eyeopen-flame_{i}.png"
             pc = f"imagenes/deco/guards/guardian-eyeclosed-flame_{i}.png"
             if os.path.exists(po):
-                self.guard_open_frames.append(PhotoImage(file=po).zoom(2,2))
+                self.guard_open_frames.append(PhotoImage(file=po).zoom(2, 2))
             if os.path.exists(pc):
-                self.guard_closed_frames.append(PhotoImage(file=pc).zoom(2,2))
+                self.guard_closed_frames.append(PhotoImage(file=pc).zoom(2, 2))
         self.guard_frame_index = 0
-        
-        #abyssal gate
+
+        # Abyss gate
         self.abyss_frames = []
         for i in range(1, 4):
-            path = "imagenes/deco/gates/abyss/enter_abyss_{}.png".format(i)
+            path = f"imagenes/deco/gates/abyss/enter_abyss_{i}.png"
             if os.path.exists(path):
                 self.abyss_frames.append(PhotoImage(file=path).zoom(3, 3))
 
-        # Imagen estática (cuando está desactivado)
         abyss_static = "imagenes/deco/gates/abyss/enter_abyss.png"
         self.abyss_static_img = PhotoImage(file=abyss_static).zoom(3, 3) if os.path.exists(abyss_static) else None
-
-        # Índice para animación
         self.abyss_frame_index = 0
 
-        # dithmenos
+        # Dithmenos
         self.dithmenos_frames = []
         for name in ("dithmenos.png", "dithmenos_2.png", "dithmenos_3.png", "dithmenos_4.png"):
             path = os.path.join("imagenes", "deco", "dith", name)
             if os.path.exists(path):
-                self.dithmenos_frames.append(PhotoImage(file=path).zoom(2,2))
+                self.dithmenos_frames.append(PhotoImage(file=path).zoom(2, 2))
         self.dithmenos_index = 0
 
-        # Montones de oro (ventas reales)
-        piles = list(range(1,11)) + [16,19,23,25]
+        # Oro (ventas reales)
+        piles = list(range(1, 11)) + [16, 19, 23, 25]
         self.sales_frames = []
         for n in piles:
             p = f"imagenes/deco/gold_pile/gold_pile_{n}.png"
             if os.path.exists(p):
-                self.sales_frames.append(PhotoImage(file=p).zoom(2,2))
+                self.sales_frames.append(PhotoImage(file=p).zoom(2, 2))
 
         # Hidra (ventas fantasma)
-        bottom_idxs = [1,5,7,8,9]
+        bottom_idxs = [1, 5, 7, 8, 9]
         self.hydra_bottom = {}
         for n in bottom_idxs:
             p = f"imagenes/deco/hydra/lernaean_hydra_{n}_bottom.png"
             if os.path.exists(p):
-                self.hydra_bottom[n] = PhotoImage(file=p).zoom(2,2)
+                self.hydra_bottom[n] = PhotoImage(file=p).zoom(2, 2)
         self.hydra_top = []
-        for i in range(1, self.MAX_CABEZAS+1):
+        for i in range(1, self.MAX_CABEZAS + 1):
             p = f"imagenes/deco/hydra/lernaean_hydra_{i}_top.png"
-            if not os.path.exists(p): break
-            self.hydra_top.append(PhotoImage(file=p).zoom(2,2))
+            if not os.path.exists(p):
+                break
+            self.hydra_top.append(PhotoImage(file=p).zoom(2, 2))
 
         # Esqueleto hidra (compras/ventas)
-        self.skel_buy  = []
+        self.skel_buy = []
         self.skel_sell = []
         idx = 1
         while True:
             nb = f"imagenes/deco/skl_hydra/skeleton_hydra_{idx}_new.png"
             ns = f"imagenes/deco/skl_hydra/skeleton_hydra_{idx}_old.png"
-            if not os.path.exists(nb) and not os.path.exists(ns): break
-            if os.path.exists(nb): self.skel_buy.append(PhotoImage(file=nb).zoom(2,2))
-            if os.path.exists(ns): self.skel_sell.append(PhotoImage(file=ns).zoom(2,2))
+            if not os.path.exists(nb) and not os.path.exists(ns):
+                break
+            if os.path.exists(nb):
+                self.skel_buy.append(PhotoImage(file=nb).zoom(2, 2))
+            if os.path.exists(ns):
+                self.skel_sell.append(PhotoImage(file=ns).zoom(2, 2))
             idx += 1
 
-        # ─── CREACIÓN DE ITEMS ───
-            # ─── LÁMPARA + EFREET (abajo del animation panel) ───
+        # ─── LÁMPARA + EFREET ───
         lamppaths = [
-            (os.path.join("imagenes", "deco", "rebalance", "magic_lamp.png"),
-             os.path.join("imagenes", "deco", "rebalance", "efreet.png")),
+            (
+                os.path.join("imagenes", "deco", "rebalance", "magic_lamp.png"),
+                os.path.join("imagenes", "deco", "rebalance", "efreet.png"),
+            ),
             ("/mnt/data/magic_lamp.png", "/mnt/data/efreet.png"),
         ]
-        lamp_path = efreet_path = None
+        lamp_path = None
+        efreet_path = None
         for lp, ep in lamppaths:
             if os.path.exists(lp) and os.path.exists(ep):
                 lamp_path, efreet_path = lp, ep
                 break
 
-        self.lamp_img   = PhotoImage(file=lamp_path).zoom(2, 2)   if lamp_path   else None
+        self.lamp_img = PhotoImage(file=lamp_path).zoom(2, 2) if lamp_path else None
         self.efreet_img = PhotoImage(file=efreet_path).zoom(3, 3) if efreet_path else None
 
-        # Posicionar en la parte inferior izquierda del canvas_animation
-        # anchor='sw' → ancla abajo-izquierda; y=alto del canvas para que “apoye” en el borde inferior
         y_bottom = 400
-        x_left   = 400
-
+        x_left = 400
         self.lamp_item = self.canvas_animation.create_image(
-            x_left, y_bottom,
-            image=(self.lamp_img or ""),
-            anchor="sw"
+            x_left, y_bottom, image=(self.lamp_img or ""), anchor="sw"
         )
-
-        # El efreet va encima, “saliendo” de la lámpara
         self.efreet_item = self.canvas_animation.create_image(
-            320, 380,
-            image="",                 # arranca oculto
-            anchor="sw"
+            320, 380, image="", anchor="sw"
         )
-        # Asegurar orden de capas: genio arriba
-        try:
-            self.canvas_animation.tag_raise(self.efreet_item, self.lamp_item)
-        except Exception:
-            pass
 
-        # Actualizador periódico del estado visual (según rebalance_enabled)
+        # subir efreet sobre lámpara (si el canvas vive)
+        self._safe_tag_raise(self.canvas_animation, self.efreet_item, self.lamp_item)
+
         self.animar(250, self._update_lamp_genie)
 
         # Antorcha en canvas_center
         first_torch = self.torch_frames[0] if self.torch_frames else self.torch_off
-        self.torch_item = self.canvas_center.create_image(350,250, image=first_torch, anchor='nw')
-        self.hydra_gate_f = self.canvas_center.create_image(200,320, image=self.hydra_gate, anchor='nw')
-        
+        self.torch_item = self.canvas_center.create_image(350, 250, image=first_torch, anchor="nw")
+        self.hydra_gate_f = self.canvas_center.create_image(200, 320, image=self.hydra_gate, anchor="nw")
+
         # Guardián en canvas_various
         guard0 = self.guard_closed_frames[0] if self.guard_closed_frames else None
-        self.guard_item = self.canvas_various.create_image(1800,15, image=guard0, anchor='nw')
+        self.guard_item = self.canvas_various.create_image(1800, 15, image=guard0, anchor="nw")
 
-         # 2) Crea el item en el canvas
+        # Dithmenos item
         if self.dithmenos_frames:
-            self.dithmenos_item = self.canvas_center.create_image(
-                0, 390,
-                image=self.dithmenos_frames[0],
-                anchor='nw'
-            )
-        
+            self.dithmenos_item = self.canvas_center.create_image(0, 390, image=self.dithmenos_frames[0], anchor="nw")
+
         # item sound
-        initial = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
-        self.noise_item = self.canvas_various.create_image(
-            1700, 16,
-            image=initial,
-            anchor='nw'
-        )
-        
-        # Oro e hidra en canvas_animation
-        self.sales_item       = self.canvas_various.create_image(1350,15,  image='', anchor='nw')
+        initial = self.noise_on if getattr(self, "sound_enabled", True) else self.noise_off
+        self.noise_item = self.canvas_various.create_image(1700, 16, image=initial, anchor="nw")
 
-        self.hydra_bottom_it  = self.canvas_center.create_image(230,400, image='', anchor='nw')
-        self.hydra_top_it     = self.canvas_center.create_image(230,350, image='', anchor='nw')
+        # Oro (en various)
+        self.sales_item = self.canvas_various.create_image(1350, 15, image="", anchor="nw")
 
-        # Esqueleto hidra en canvas_center
-        self.skel_buy_it  = self.canvas_center.create_image(360,385, image='', anchor='nw')
-        self.skel_sell_it = self.canvas_center.create_image(100,385, image='', anchor='nw')
+        # Hidra en center
+        self.hydra_bottom_it = self.canvas_center.create_image(230, 400, image="", anchor="nw")
+        self.hydra_top_it = self.canvas_center.create_image(230, 350, image="", anchor="nw")
 
-        # abyssal gate
-        
-        # Crear imagen inicial
+        # Esqueleto hidra en center
+        self.skel_buy_it = self.canvas_center.create_image(360, 385, image="", anchor="nw")
+        self.skel_sell_it = self.canvas_center.create_image(100, 385, image="", anchor="nw")
+
+        # Abyss item
         initial_g = self.abyss_static_img or (self.abyss_frames[0] if self.abyss_frames else "")
-        self.abyss_item = self.canvas_center.create_image(
-            650, 400,
-            image=initial_g,
-            anchor="center"
-        )
+        self.abyss_item = self.canvas_center.create_image(650, 400, image=initial_g, anchor="center")
 
-
-        # Garantizar que esté al frente después de que todo cargue
-        #self.canvas_uno.tag_raise(self.abyss_item)
-        # ─── HISTORIAL: ELDRITCH / KRAKEN (solo ENDS y HEAD, sin corners/segments) ───
+        # ─── HISTORIAL: ELDRITCH / KRAKEN ───
         base_dir_hist = os.path.join("imagenes", "deco", "lianas")
+        tokens_hist = ("north", "south", "east", "west")
 
-        tokens_hist = ("north","south","east","west")
-        # Inicializar mapas vacíos para evitar AttributeError si las carpetas están vacías
         self.eldritch_seq = {t: [] for t in tokens_hist}
-        self.kraken_seq   = {t: [] for t in tokens_hist}
+        self.kraken_seq = {t: [] for t in tokens_hist}
 
         def _load_sorted(folder, prefix=None):
-            """Carga y ordena por sufijo numérico si existe (…_1, …_2, …)."""
             frames = []
             if not os.path.isdir(folder):
                 return frames
-            # ordenar por número si lo hay; si no, por nombre
+
             def _key(fn):
-                name = fn[:-4]  # sin .png
+                name = fn[:-4]
                 parts = name.split("_")
                 try:
                     return (0, int(parts[-1]))
-                except Exception:
+                except (ValueError, TypeError):
                     return (1, name)
-            for fname in sorted([f for f in os.listdir(folder) if f.lower().endswith(".png")],
-                                key=_key):
+
+            files = [f for f in os.listdir(folder) if f.lower().endswith(".png")]
+            for fname in sorted(files, key=_key):
                 if prefix and not fname.startswith(prefix):
                     continue
+                # Si falla una imagen por TclError (archivo roto), la salteamos
                 try:
-                    frames.append(PhotoImage(file=os.path.join(folder, fname)).zoom(2,2))
-                except Exception:
-                    pass
+                    frames.append(PhotoImage(file=os.path.join(folder, fname)).zoom(2, 2))
+                except tk.TclError:
+                    continue
             return frames
 
-        # --- ELDRITCH: solo ENDS (se aplican a los 4 bordes)
         eld_ends_dir = os.path.join(base_dir_hist, "eldritch", "eldritch_ends")
         eld_ends = _load_sorted(eld_ends_dir, prefix="eldritch_tentacle_")
-        # Mapear Eldritch ENDS a los cuatro bordes
         self.eldritch_seq = {t: list(eld_ends) for t in tokens_hist}
 
-        # --- KRAKEN: cabeza (2 frames) y tentáculos separados ---
         kra_head_dir = os.path.join(base_dir_hist, "kraken", "kraken_head")
         kra_ends_dir = os.path.join(base_dir_hist, "kraken", "kraken_ends")
 
-        # cabeza (2 frames)
-        self.kraken_head_frames = _load_sorted(kra_head_dir, prefix="kraken_head_")[:2]  # solo new / old
-        # tentáculos
+        self.kraken_head_frames = _load_sorted(kra_head_dir, prefix="kraken_head_")[:2]
         kra_tentacles = _load_sorted(kra_ends_dir, prefix="kraken_tentacle_")
-
-        # mapas: tentáculos en los cuatro bordes
         self.kraken_seq = {t: list(kra_tentacles) for t in tokens_hist}
 
-        # ─── ITEMS DEL BORDE DEL HISTORIAL (canvas_right) ───
         self.hist_items = []
 
         def _dim(seq, k, kind):
             arr = seq.get(k, [])
-            if not arr: 
+            if not arr:
                 return 0
-            return arr[0].width() if kind=="w" else arr[0].height()
+            return arr[0].width() if kind == "w" else arr[0].height()
 
         try:
             WH = int(self.canvas_right["width"])
             HH = int(self.canvas_right["height"])
-        except Exception:
+        except (ValueError, tk.TclError, KeyError):
             WH, HH = 640, 360
 
-        w_top     = max(_dim(self.eldritch_seq,"north","w"), _dim(self.kraken_seq,"north","w"))
-        w_bottom  = max(_dim(self.eldritch_seq,"south","w"), _dim(self.kraken_seq,"south","w"))
-        h_left    = max(_dim(self.eldritch_seq,"west","h"),  _dim(self.kraken_seq,"west","h"))
-        h_right   = max(_dim(self.eldritch_seq,"east","h"),  _dim(self.kraken_seq,"east","h"))
-        w_right   = max(_dim(self.eldritch_seq,"east","w"),  _dim(self.kraken_seq,"east","w"))
-        h_bottom  = max(_dim(self.eldritch_seq,"south","h"), _dim(self.kraken_seq,"south","h"))
+        w_top = max(_dim(self.eldritch_seq, "north", "w"), _dim(self.kraken_seq, "north", "w"))
+        w_bottom = max(_dim(self.eldritch_seq, "south", "w"), _dim(self.kraken_seq, "south", "w"))
+        h_left = max(_dim(self.eldritch_seq, "west", "h"), _dim(self.kraken_seq, "west", "h"))
+        h_right = max(_dim(self.eldritch_seq, "east", "h"), _dim(self.kraken_seq, "east", "h"))
+        w_right = max(_dim(self.eldritch_seq, "east", "w"), _dim(self.kraken_seq, "east", "w"))
+        h_bottom = max(_dim(self.eldritch_seq, "south", "h"), _dim(self.kraken_seq, "south", "h"))
 
-        # Creación por orden de flujo (quedan arriba sin usar tags)
         if w_top > 0:
             for x in range(0, WH, w_top):
                 iid = self.canvas_right.create_image(x, 0, image="", anchor="nw")
@@ -525,83 +540,75 @@ class AnimationMixin:
                 iid = self.canvas_right.create_image(xr, y, image="", anchor="nw")
                 self.hist_items.append(("east", iid))
 
-        # Agrupar items por borde para poder “mover” el tentáculo
-        self.hist_slots = {t: [] for t in ("north","south","east","west")}
+        self.hist_slots = {t: [] for t in ("north", "south", "east", "west")}
         for borde, iid in self.hist_items:
             self.hist_slots[borde].append(iid)
 
-        # Índices por borde: uno para el frame y otro para el “slot” (posición)
         self.hist_frame_idx = {t: 0 for t in self.hist_slots}
-        self.hist_slot_idx  = {t: 0 for t in self.hist_slots}
+        self.hist_slot_idx = {t: 0 for t in self.hist_slots}
 
-        # ─── Cabeza Kraken independiente ───
-        self.kraken_head_frames = self.kraken_head_frames  # ya cargadas antes (2 frames)
-        self.kraken_head_item   = None
-        self._kh_frame_idx      = 0         # índice de frame (0..1)
-        self._kh_move_ctr       = 0         # contador para mover
-        self._kh_move_every     = 3         # mover cada N ticks
+        self.kraken_head_item = None
+        self._kh_frame_idx = 0
+        self._kh_move_ctr = 0
+        self._kh_move_every = 3
 
-        # ─── BUQUES INDEPENDIENTES ───
-        self.animar(100,  self._animate_torch)
-        self.animar(100,  self._animate_guard)
+        # ─── LOOP ANIMACIONES ───
+        self.animar(100, self._animate_torch)
+        self.animar(100, self._animate_guard)
         self.animar(300, self._animate_dithmenos)
-        self.animar(500,  self._update_sales)
-        self.animar(500,  self._update_hydra)
-        self.animar(500,  self._update_skeleton)
+        self.animar(500, self._update_sales)
+        self.animar(500, self._update_hydra)
+        self.animar(500, self._update_skeleton)
         self.animar(200, self._update_noise_icon)
         self.animar(250, self._animate_vines)
         self.animar(500, self._update_abyss)
+
         self.searing_index = 0
         self.animar(250, self._update_searing_magic)
+
         self.animar(800, self._animate_historial_tentacles)
 
+    # ---------------------------
+    # Animaciones / updates
+    # ---------------------------
+
     def _update_searing_magic(self):
-        # ⛔️ Si el bot NO está corriendo, ocultar siempre y salir
-        if not getattr(self, 'bot', None) or not self.bot.running:
-            # aseguro que no se vea nada antes de iniciar
-            try:
-                self.canvas_various.itemconfig(self.searing_item, image='')
-            except Exception:
-                pass
+        if not getattr(self, "bot", None) or not self.bot.running:
+            self._safe_itemconfig(self.canvas_various, self.searing_item, image="")
             self.animar(250, self._update_searing_magic)
             return
-        
+
         total = (self.bot.usdt or 0) + (self.bot.btc_usdt or 0)
-        guia  = self.bot.hold_usdt_var or 0
+        guia = self.bot.hold_usdt_var or 0
 
-        img = ''
         frames = None
-
         if total > guia and self.searing_frames:
             frames = self.searing_frames
         elif total < guia and self.magic_frames:
             frames = self.magic_frames
-        else:
-            frames = None  # iguales → nada
 
         if frames:
             self.searing_index = (self.searing_index + 1) % len(frames)
             img = frames[self.searing_index]
-
-        self.canvas_various.itemconfig(self.searing_item, image=(img if frames else ''))
+            self._safe_itemconfig(self.canvas_various, self.searing_item, image=img)
+        else:
+            self._safe_itemconfig(self.canvas_various, self.searing_item, image="")
 
         self.animar(250, self._update_searing_magic)
 
     def _is_valid_image_item(self, canvas, item_id):
-        try:
-            return canvas.type(item_id) == 'image'
-        except Exception:
-            return False
+        return self._safe_type(canvas, item_id) == "image"
 
     def cancelar_animaciones(self):
-        if not hasattr(self, '_after_ids'):
+        if not hasattr(self, "_after_ids"):
             self._after_ids = []
-            return  # No hay nada que cancelar aún
+            return
 
-        for aid in self._after_ids:
+        for aid in list(self._after_ids):
             try:
                 self.root.after_cancel(aid)
-            except Exception:
+            except tk.TclError:
+                # after_id inválido porque ya se ejecutó/canceló o root muerto
                 pass
 
         self._after_ids.clear()
@@ -615,14 +622,13 @@ class AnimationMixin:
         if not frames:
             return None, index
         index = (index + 1) % len(frames)
-        return frames[index], index    
-    
+        return frames[index], index
+
     def _rand_kraken_head_coords(self, frame_img):
-        """Devuelve (x,y) en un borde aleatorio del canvas_right, sin salirse."""
         try:
             WH = int(self.canvas_right["width"])
             HH = int(self.canvas_right["height"])
-        except Exception:
+        except (ValueError, tk.TclError, KeyError):
             WH, HH = 640, 360
 
         if not frame_img:
@@ -641,60 +647,41 @@ class AnimationMixin:
         elif side == "east":
             x = max(0, WH - w)
             y = random.randint(0, max(0, HH - h))
-        else:  # west
+        else:
             x = 0
             y = random.randint(0, max(0, HH - h))
         return x, y
 
-
     def _ensure_abyss_item(self):
-        """Garantiza que abyss_item exista y sea tipo 'image' en canvas_center."""
         if not hasattr(self, "canvas_center"):
+            return False
+
+        img0 = getattr(self, "abyss_static_img", None) or (
+            self.abyss_frames[0] if getattr(self, "abyss_frames", None) else None
+        )
+        if img0 is None:
             return False
 
         c = self.canvas_center
 
-        # Si no hay imagen cargada aún, no hay nada que dibujar
-        img0 = getattr(self, "abyss_static_img", None) or (self.abyss_frames[0] if getattr(self, "abyss_frames", None) else None)
-        if img0 is None:
-            return False
+        if getattr(self, "abyss_item", None) and self._safe_type(c, self.abyss_item) == "image":
+            return True
 
-        # ¿abyss_item existe y es image?
-        try:
-            if getattr(self, "abyss_item", None) and c.type(self.abyss_item) == "image":
-                return True
-        except Exception:
-            pass
+        # si existía algo inválido, lo borramos (si se puede)
+        if getattr(self, "abyss_item", None):
+            self._safe_delete(c, self.abyss_item)
 
-        # Si había algo raro, intentar borrar
-        try:
-            if getattr(self, "abyss_item", None):
-                c.delete(self.abyss_item)
-        except Exception:
-            pass
-
-        # Crear de nuevo (coordenadas como las tuyas)
-        self.abyss_item = c.create_image(
-            650, 400,
-            image=img0,
-            anchor="center"
-        )
+        self.abyss_item = c.create_image(650, 400, image=img0, anchor="center")
         return True
 
-
     def _abyss_set_image(self, img):
-        """Setea imagen al abyss solo si el item es válido."""
-        try:
-            if img is None:
-                return
-            if not self._ensure_abyss_item():
-                return
-            if self.canvas_center.type(self.abyss_item) != "image":
-                return
-            self.canvas_center.itemconfig(self.abyss_item, image=img)
-        except Exception:
-            pass
-
+        if img is None:
+            return
+        if not self._ensure_abyss_item():
+            return
+        if self._safe_type(self.canvas_center, self.abyss_item) != "image":
+            return
+        self._safe_itemconfig(self.canvas_center, self.abyss_item, image=img)
 
     def _update_abyss(self):
         bot = getattr(self, "bot", None)
@@ -704,180 +691,114 @@ class AnimationMixin:
             frame, self.abyss_frame_index = self._safe_next_frame(self.abyss_frames, self.abyss_frame_index)
             self._abyss_set_image(frame)
         else:
-            # siempre mostrar estática cuando no hay animación
             static_img = getattr(self, "abyss_static_img", None)
             if static_img is not None:
                 self._abyss_set_image(static_img)
-            else:
-                # fallback: si no existe estática pero hay frames, usar el primero
-                if getattr(self, "abyss_frames", None):
-                    self._abyss_set_image(self.abyss_frames[0])
+            elif getattr(self, "abyss_frames", None):
+                self._abyss_set_image(self.abyss_frames[0])
 
         self.animar(500, self._update_abyss)
 
-
     def _update_lamp_genie(self):
-        """
-        Muestra el efreet si rebalance_enabled está activo.
-        Acepta True/False, 'ON'/'OFF', 'true'/'false', '1'/'0', 'sí'/'no'.
-        """
-        try:
-            raw = getattr(self, "bot", None) and getattr(self.bot, "rebalance_enabled", False)
-            if isinstance(raw, str):
-                show_genie = raw.strip().lower() in ("on", "true", "1", "sí", "si", "yes")
-            else:
-                show_genie = bool(raw)
-        except Exception:
-            show_genie = False
+        raw = getattr(self, "bot", None) and getattr(self.bot, "rebalance_enabled", False)
+        if isinstance(raw, str):
+            show_genie = raw.strip().lower() in ("on", "true", "1", "sí", "si", "yes")
+        else:
+            show_genie = bool(raw)
 
         if getattr(self, "lamp_item", None) is not None:
-            self.canvas_animation.itemconfig(self.lamp_item, image=(self.lamp_img or ""))
+            self._safe_itemconfig(self.canvas_animation, self.lamp_item, image=(self.lamp_img or ""))
 
         if getattr(self, "efreet_item", None) is not None:
-            self.canvas_animation.itemconfig(self.efreet_item, image=(self.efreet_img if show_genie else ""))
-            try:
-                self.canvas_animation.tag_raise(self.efreet_item)
-            except Exception:
-                pass
+            self._safe_itemconfig(self.canvas_animation, self.efreet_item, image=(self.efreet_img if show_genie else ""))
+            self._safe_tag_raise(self.canvas_animation, self.efreet_item)
 
         self.animar(400, self._update_lamp_genie)
 
     def set_take_profit_state(self, state: str):
-        """
-        state: 'inactive' | 'armed' | 'hit'
-        - inactive  → Jiyva
-        - armed     → base
-        - hit       → Gozag
-        """
         self._tp_state = state
         self._refresh_altar_image(kind="tp")
 
-        # Cuando TP = hit → destruir el otro altar (SL), ocultar su base e ícono
         if state == "hit":
-            try:
-                self._sl_state = "inactive"
-                self._refresh_altar_image(kind="sl")  # apaga ícono del SL si estaba 'armed'
+            self._sl_state = "inactive"
+            self._refresh_altar_image(kind="sl")
 
-                # mostrar ashenzari en SL y ocultar TODO lo de abajo
-                self.canvas_various.itemconfigure(self.destroy_sl_item, state='normal')   # overlay destruido
-                self.canvas_various.itemconfigure(self.sl_icon_item,   state='hidden')    # escudo fuera
-                self.canvas_various.itemconfigure(self.altar_sl_item,  state='hidden')    # ⬅️ base verde fuera
-                self.canvas_various.tag_raise(self.destroy_sl_item)                        # overlay arriba
-            except Exception:
-                pass
+            self._safe_itemconfigure(self.canvas_various, self.destroy_sl_item, state="normal")
+            self._safe_itemconfigure(self.canvas_various, self.sl_icon_item, state="hidden")
+            self._safe_itemconfigure(self.canvas_various, self.altar_sl_item, state="hidden")
+            self._safe_tag_raise(self.canvas_various, self.destroy_sl_item)
         else:
-            # Si TP no está en 'hit', apagamos el destruido del otro lado y restauramos su base
-            try:
-                self.canvas_various.itemconfigure(self.destroy_sl_item, state='hidden')
-                self.canvas_various.itemconfigure(self.altar_sl_item,   state='normal')   # ⬅️ restaurar base
-            except Exception:
-                pass
+            self._safe_itemconfigure(self.canvas_various, self.destroy_sl_item, state="hidden")
+            self._safe_itemconfigure(self.canvas_various, self.altar_sl_item, state="normal")
 
     def set_stop_loss_state(self, state: str):
-        """
-        state: 'inactive' | 'armed' | 'hit'
-        - inactive  → Jiyva
-        - armed     → base
-        - hit       → Trog
-        """
         self._sl_state = state
         self._refresh_altar_image(kind="sl")
 
-        # Cuando SL = hit → destruir el otro altar (TP), ocultar su base e ícono
         if state == "hit":
-            try:
-                self._tp_state = "inactive"
-                self._refresh_altar_image(kind="tp")  # apaga espada si estaba 'armed'
+            self._tp_state = "inactive"
+            self._refresh_altar_image(kind="tp")
 
-                # mostrar ashenzari en TP y ocultar TODO lo de abajo
-                self.canvas_various.itemconfigure(self.destroy_tp_item, state='normal')   # overlay destruido
-                self.canvas_various.itemconfigure(self.tp_icon_item,    state='hidden')   # espada fuera
-                self.canvas_various.itemconfigure(self.altar_tp_item,   state='hidden')   # ⬅️ base verde fuera
-                self.canvas_various.tag_raise(self.destroy_tp_item)                        # overlay arriba
-            except Exception:
-                pass
+            self._safe_itemconfigure(self.canvas_various, self.destroy_tp_item, state="normal")
+            self._safe_itemconfigure(self.canvas_various, self.tp_icon_item, state="hidden")
+            self._safe_itemconfigure(self.canvas_various, self.altar_tp_item, state="hidden")
+            self._safe_tag_raise(self.canvas_various, self.destroy_tp_item)
         else:
-            # Si SL no está en 'hit', apagar destruido del otro lado y restaurar su base
-            try:
-                self.canvas_various.itemconfigure(self.destroy_tp_item, state='hidden')
-                self.canvas_various.itemconfigure(self.altar_tp_item,   state='normal')   # ⬅️ restaurar base
-            except Exception:
-                pass
+            self._safe_itemconfigure(self.canvas_various, self.destroy_tp_item, state="hidden")
+            self._safe_itemconfigure(self.canvas_various, self.altar_tp_item, state="normal")
 
     def _refresh_altar_image(self, kind: str):
-        # decide imagen según estado actual y frame
         if kind == "tp":
             state = self._tp_state
-            item  = self.altar_tp_item
+            item = self.altar_tp_item
             icon_item = self.tp_icon_item
         else:
             state = self._sl_state
-            item  = self.altar_sl_item
+            item = self.altar_sl_item
             icon_item = self.sl_icon_item
 
         if state == "hit":
-            img = (self.gozag_frames[self._altar_frame % len(self.gozag_frames)]
-                   if self.gozag_frames else self.altar_base)
+            img = (self.gozag_frames[self._altar_frame % len(self.gozag_frames)] if self.gozag_frames else self.altar_base)
             if kind == "sl":
-                # para SL 'hit' es TROG (estático)
                 img = self.altar_trog or self.altar_base
         elif state == "inactive":
-            img = (self.jiyva_frames[self._altar_frame % len(self.jiyva_frames)]
-                   if self.jiyva_frames else self.altar_base)
-        else:  # 'armed'
+            img = (self.jiyva_frames[self._altar_frame % len(self.jiyva_frames)] if self.jiyva_frames else self.altar_base)
+        else:
             img = self.altar_base
 
-        self.canvas_various.itemconfig(item, image=img or '')
-    # ⬇️ Mostrar ícono solo si está 'armed' o 'hit'; ocultar si 'inactive'
-        visible = 'normal' if state == 'armed' else 'hidden'
-        self.canvas_various.itemconfigure(icon_item, state=visible)
-        
+        self._safe_itemconfig(self.canvas_various, item, image=(img or ""))
+
+        visible = "normal" if state == "armed" else "hidden"
+        self._safe_itemconfigure(self.canvas_various, icon_item, state=visible)
+
     def _animate_altars(self):
-        # Si el bot NO está corriendo, mantener la imagen Fedhas fija en ambos altares
-        # y ocultar los íconos. No avanzar frames ni refrescar altares verdes.
-        if (not getattr(self, 'bot', None) or not self.bot.running) and getattr(self, 'altar_fedhas', None):
-            try:
-                self.canvas_various.itemconfig(self.altar_tp_item, image=self.altar_fedhas)
-                self.canvas_various.itemconfig(self.altar_sl_item, image=self.altar_fedhas)
-                self.canvas_various.itemconfigure(self.tp_icon_item, state='hidden')
-                self.canvas_various.itemconfigure(self.sl_icon_item, state='hidden')
-            except Exception:
-                pass
+        if (not getattr(self, "bot", None) or not self.bot.running) and getattr(self, "altar_fedhas", None):
+            self._safe_itemconfig(self.canvas_various, self.altar_tp_item, image=self.altar_fedhas)
+            self._safe_itemconfig(self.canvas_various, self.altar_sl_item, image=self.altar_fedhas)
+            self._safe_itemconfigure(self.canvas_various, self.tp_icon_item, state="hidden")
+            self._safe_itemconfigure(self.canvas_various, self.sl_icon_item, state="hidden")
             self.animar(600, self._animate_altars)
             return
 
-        # alterna frames de jiyva/gozag si corresponde (bot corriendo)
         self._altar_frame += 1
         self._refresh_altar_image("tp")
         self._refresh_altar_image("sl")
         self.animar(600, self._animate_altars)
- 
+
     def _update_elephant(self):
-        """
-        Cada 500 ms revisamos self.bot.contador_compras_fantasma y reemplazamos la imagen:
-        - Si contador == 0: mostramos elephant_statue.
-        - Si 1 <= contador <= 6: mostramos elephants[contador-1] (o clamp a max índice).
-        - Si contador > 6, mostramos siempre elephant_5.
-        """
-        cnt = getattr(self, 'bot', None) and self.bot.contador_compras_fantasma or 0
+        cnt = getattr(self, "bot", None) and self.bot.contador_compras_fantasma or 0
 
         if cnt <= 0:
-            # Si el bot marcó que el reequilibrio se concretó, mostrar la jade; si no, la estatua normal.
-            base_img = self.elephant_statue
-            img = base_img
-
+            img = self.elephant_statue
         elif 1 <= cnt <= len(self.elephants):
-            # Mapeamos “1 compra fantasma” → elephants[0], “2” → elephants[1], … hasta elephants[7]
-            idx = min(cnt-1, len(self.elephants)-1)
+            idx = min(cnt - 1, len(self.elephants) - 1)
             img = self.elephants[idx]
         else:
-            # Si hay más de 8 compras fantasma, mostramos siempre el último elefante
-            img = self.elephants[-1]
+            img = self.elephants[-1] if self.elephants else None
 
         if img:
-            self.canvas_animation.itemconfig(self.elephant_item, image=img)
+            self._safe_itemconfig(self.canvas_animation, self.elephant_item, image=img)
 
-        # Volver a programar dentro de 500 ms
         self.animar(500, self._update_elephant)
 
     def _animate_torch(self):
@@ -885,82 +806,77 @@ class AnimationMixin:
             frame, self.torch_frame_index = self._safe_next_frame(self.torch_frames, self.torch_frame_index)
         else:
             frame = self.torch_off
-        if frame and self.canvas_center.type(self.torch_item) == 'image':
-            self.canvas_center.itemconfig(self.torch_item, image=frame)
+
+        if frame and self._safe_type(self.canvas_center, self.torch_item) == "image":
+            self._safe_itemconfig(self.canvas_center, self.torch_item, image=frame)
+
         self.animar(100, self._animate_torch)
 
     def _update_noise_icon(self):
-        frame = self.noise_on if getattr(self, 'sound_enabled', True) else self.noise_off
-        if frame and self.canvas_various.type(self.noise_item) == 'image':
-            self.canvas_various.itemconfig(self.noise_item, image=frame)
+        frame = self.noise_on if getattr(self, "sound_enabled", True) else self.noise_off
+        if frame and self._safe_type(self.canvas_various, self.noise_item) == "image":
+            self._safe_itemconfig(self.canvas_various, self.noise_item, image=frame)
         self.animar(200, self._update_noise_icon)
 
     def _animate_guard(self):
-        frames = self.guard_open_frames if self.bot and self.bot.running else self.guard_closed_frames
+        frames = self.guard_open_frames if (self.bot and self.bot.running) else self.guard_closed_frames
         if frames:
             frame, self.guard_frame_index = self._safe_next_frame(frames, self.guard_frame_index)
-            if frame and self.canvas_various.type(self.guard_item) == 'image':
-                self.canvas_various.itemconfig(self.guard_item, image=frame)
+            if frame and self._safe_type(self.canvas_various, self.guard_item) == "image":
+                self._safe_itemconfig(self.canvas_various, self.guard_item, image=frame)
         self.animar(100, self._animate_guard)
 
     def _sales_index(self, cnt):
-        ths = list(range(1,11)) + [16,19,23,25]
+        ths = list(range(1, 11)) + [16, 19, 23, 25]
         idx = 0
         for i, t in enumerate(ths):
-            if cnt >= t: idx = i
-        return min(idx, len(self.sales_frames)-1)
+            if cnt >= t:
+                idx = i
+        return min(idx, len(self.sales_frames) - 1) if self.sales_frames else 0
 
     def _update_sales(self):
-        cnt = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
-        img = self.sales_frames[self._sales_index(cnt)] if cnt>0 else ''
-        self.canvas_various.itemconfig(self.sales_item, image=img)
+        cnt = getattr(self, "bot", None) and self.bot.contador_ventas_reales or 0
+        img = self.sales_frames[self._sales_index(cnt)] if (cnt > 0 and self.sales_frames) else ""
+        self._safe_itemconfig(self.canvas_various, self.sales_item, image=img)
         self.animar(500, self._update_sales)
 
     def _hydra_key(self, cnt):
         keys = sorted(self.hydra_bottom)
-        lower = [k for k in keys if k<=cnt]
+        lower = [k for k in keys if k <= cnt]
         return (lower or keys)[-1]
 
     def _update_hydra(self):
-        cnt = getattr(self, 'bot', None) and self.bot.contador_ventas_fantasma or 0
-        if cnt > 0:
+        cnt = getattr(self, "bot", None) and self.bot.contador_ventas_fantasma or 0
+        if cnt > 0 and self.hydra_bottom:
             key = self._hydra_key(cnt)
             bot_img = self.hydra_bottom.get(key)
             top_img = self.hydra_top[min(cnt - 1, len(self.hydra_top) - 1)] if self.hydra_top else None
         else:
-            bot_img = top_img = None
+            bot_img = None
+            top_img = None
 
         if bot_img and self._is_valid_image_item(self.canvas_center, self.hydra_bottom_it):
-            self.canvas_center.itemconfig(self.hydra_bottom_it, image=bot_img)
+            self._safe_itemconfig(self.canvas_center, self.hydra_bottom_it, image=bot_img)
         if top_img and self._is_valid_image_item(self.canvas_center, self.hydra_top_it):
-            self.canvas_center.itemconfig(self.hydra_top_it, image=top_img)
+            self._safe_itemconfig(self.canvas_center, self.hydra_top_it, image=top_img)
 
         self.animar(500, self._update_hydra)
 
     def _update_skeleton(self):
-        buy = getattr(self, 'bot', None) and self.bot.contador_compras_reales or 0
-        sell = getattr(self, 'bot', None) and self.bot.contador_ventas_reales or 0
+        buy = getattr(self, "bot", None) and self.bot.contador_compras_reales or 0
+        sell = getattr(self, "bot", None) and self.bot.contador_ventas_reales or 0
 
         def _resolve_image(count, frames):
-            """
-            - count <= 0     → limpiar
-            - 1..n           → frame count-1 (muestra TODAS, incluida la n-ésima)
-            - n+1, 2(n+1)…   → limpiar (reset visual para que no quede pegado)
-            - demás > n+1    → cicla 1..n
-            """
             if not frames:
                 return None, False
             n = len(frames)
             if count <= 0:
                 return "", True
-
             if 1 <= count <= n:
                 return frames[count - 1], False
-
-            # ciclo con “slot” de limpieza cada n+1
-            r = count % (n + 1)    # r ∈ {0,1..n}
+            r = count % (n + 1)
             if r == 0:
-                return "", True    # limpiar en n+1
+                return "", True
             return frames[r - 1], False
 
         img_b, clear_b = _resolve_image(buy, self.skel_buy)
@@ -968,38 +884,35 @@ class AnimationMixin:
 
         if self._is_valid_image_item(self.canvas_center, self.skel_buy_it):
             if clear_b:
-                self.canvas_center.itemconfig(self.skel_buy_it, image="")
+                self._safe_itemconfig(self.canvas_center, self.skel_buy_it, image="")
             elif img_b:
-                self.canvas_center.itemconfig(self.skel_buy_it, image=img_b)
+                self._safe_itemconfig(self.canvas_center, self.skel_buy_it, image=img_b)
 
         if self._is_valid_image_item(self.canvas_center, self.skel_sell_it):
             if clear_s:
-                self.canvas_center.itemconfig(self.skel_sell_it, image="")
+                self._safe_itemconfig(self.canvas_center, self.skel_sell_it, image="")
             elif img_s:
-                self.canvas_center.itemconfig(self.skel_sell_it, image=img_s)
+                self._safe_itemconfig(self.canvas_center, self.skel_sell_it, image=img_s)
 
         self.animar(500, self._update_skeleton)
 
     def _animate_dithmenos(self):
         if self.dithmenos_frames:
-            # Si no hay conexión (precio_actual = None) → dejar fijo en el primer frame
             if getattr(self, "bot", None) and self.bot.precio_actual is None:
                 frame = self.dithmenos_frames[0]
             else:
-                frame, self.dithmenos_index = self._safe_next_frame(
-                    self.dithmenos_frames, self.dithmenos_index
-                )
-            if frame and self.canvas_center.type(self.dithmenos_item) == 'image':
-                self.canvas_center.itemconfig(self.dithmenos_item, image=frame)
+                frame, self.dithmenos_index = self._safe_next_frame(self.dithmenos_frames, self.dithmenos_index)
+
+            if frame and self._safe_type(self.canvas_center, self.dithmenos_item) == "image":
+                self._safe_itemconfig(self.canvas_center, self.dithmenos_item, image=frame)
 
         self.animar(300, self._animate_dithmenos)
 
     def _animate_vines(self):
-        if not hasattr(self, 'vine_items') or not hasattr(self, 'vine_indices'):
+        if not hasattr(self, "vine_items") or not hasattr(self, "vine_indices"):
             self.animar(12000, self._animate_vines)
             return
 
-        # Usar secuencia según la variación
         if self.bot.contador_compras_reales == 0:
             seq_map = None
         else:
@@ -1013,44 +926,36 @@ class AnimationMixin:
 
         for border, iid in self.vine_items:
             if not seq_map or border not in seq_map or not seq_map[border]:
-                img = None  # oculta
+                img = None
             else:
                 frames = seq_map[border]
                 idx = (self.vine_indices[border] + 1) % len(frames)
                 self.vine_indices[border] = idx
                 img = frames[idx]
 
-            if img and self.canvas_right_b.type(iid) == 'image':
-                self.canvas_right_b.itemconfig(iid, image=img)
+            if img and self._safe_type(self.canvas_right_b, iid) == "image":
+                self._safe_itemconfig(self.canvas_right_b, iid, image=img)
 
         self.animar(12000, self._animate_vines)
 
     def _animate_historial_tentacles(self):
-        """Anima el borde del historial:
-        - Eldritch: tentáculos múltiples.
-        - Kraken: tentáculos + UNA cabeza (2 frames) que se desplaza.
-        """
-        # Bot parado → limpiar y reintentar
-        if not getattr(self, 'bot', None) or not self.bot.running:
+        if not getattr(self, "bot", None) or not self.bot.running:
             for _, iid in getattr(self, "hist_items", []):
-                try:
-                    self.canvas_right.itemconfig(iid, image="")
-                except Exception:
-                    pass
-            if getattr(self, "kraken_head_item", None):
-                try:
-                    self.canvas_right.delete(self.kraken_head_item)
-                    self.kraken_head_item = None
-                except Exception:
-                    pass
-            return self.animar(800, self._animate_historial_tentacles)
+                self._safe_itemconfig(self.canvas_right, iid, image="")
 
-        bot   = getattr(self, "bot", None)
+            if getattr(self, "kraken_head_item", None):
+                self._safe_delete(self.canvas_right, self.kraken_head_item)
+                self.kraken_head_item = None
+
+            self.animar(800, self._animate_historial_tentacles)
+            return
+
+        bot = getattr(self, "bot", None)
         slots = getattr(self, "hist_slots", {})
         if not bot or not slots:
-            return self.animar(800, self._animate_historial_tentacles)
+            self.animar(800, self._animate_historial_tentacles)
+            return
 
-        # 🔸 Leer la decisión ya cocinada por el bot
         familia_activa = getattr(bot, "hist_tentacles", None)
         if familia_activa == "eldritch":
             seq_map = self.eldritch_seq
@@ -1058,91 +963,54 @@ class AnimationMixin:
             seq_map = self.kraken_seq
         else:
             seq_map = None
-            # 🔹 LIMPIEZA completa si no hay familia activa
             for _, iid in getattr(self, "hist_items", []):
-                try:
-                    self.canvas_right.itemconfig(iid, image="")
-                except Exception:
-                    pass
-            # 🔹 Borrar cabeza de Kraken si existía
+                self._safe_itemconfig(self.canvas_right, iid, image="")
             if getattr(self, "kraken_head_item", None):
-                try:
-                    self.canvas_right.delete(self.kraken_head_item)
-                except Exception:
-                    pass
+                self._safe_delete(self.canvas_right, self.kraken_head_item)
                 self.kraken_head_item = None
-            return self.animar(800, self._animate_historial_tentacles)
+            self.animar(800, self._animate_historial_tentacles)
+            return
 
-        # -------- ELDRITCH (restaurado) --------
         if familia_activa == "eldritch":
-             # 🔹 Borrar cabeza de Kraken si quedaba en pantalla
             if getattr(self, "kraken_head_item", None):
-                try:
-                    self.canvas_right.delete(self.kraken_head_item)
-                except Exception:
-                    pass
+                self._safe_delete(self.canvas_right, self.kraken_head_item)
                 self.kraken_head_item = None
-            # Limpia únicamente lo que va a redibujar por borde
+
             for borde, iids in slots.items():
                 frames = seq_map.get(borde, [])
                 if not frames or not iids:
-                    # limpia si no hay frames para ese borde
                     for iid in iids:
-                        try:
-                            self.canvas_right.itemconfig(iid, image="")
-                        except Exception:
-                            pass
+                        self._safe_itemconfig(self.canvas_right, iid, image="")
                     continue
 
-                # avanza frame y slot exactamente como antes
                 self.hist_frame_idx[borde] = (self.hist_frame_idx[borde] + 1) % len(frames)
-                self.hist_slot_idx[borde]  = (self.hist_slot_idx[borde]  + 1) % len(iids)
+                self.hist_slot_idx[borde] = (self.hist_slot_idx[borde] + 1) % len(iids)
 
                 frame = frames[self.hist_frame_idx[borde]]
                 target_iid = iids[self.hist_slot_idx[borde]]
 
-                # limpia todas las posiciones de ese borde...
                 for iid in iids:
-                    try:
-                        self.canvas_right.itemconfig(iid, image="")
-                    except Exception:
-                        pass
-                # ...y enciende sólo la elegida (idéntico comportamiento previo)
-                try:
-                    self.canvas_right.itemconfig(target_iid, image=frame)
-                except Exception:
-                    pass
+                    self._safe_itemconfig(self.canvas_right, iid, image="")
+                self._safe_itemconfig(self.canvas_right, target_iid, image=frame)
 
-        # -------- KRAKEN (tentáculos + UNA cabeza en 2 frames) --------
         elif familia_activa == "kraken":
-            # Tentáculos (mismo esquema que Eldritch)
             for borde, iids in slots.items():
                 frames = seq_map.get(borde, [])
                 if not frames or not iids:
                     for iid in iids:
-                        try:
-                            self.canvas_right.itemconfig(iid, image="")
-                        except Exception:
-                            pass
+                        self._safe_itemconfig(self.canvas_right, iid, image="")
                     continue
 
                 self.hist_frame_idx[borde] = (self.hist_frame_idx[borde] + 1) % len(frames)
-                self.hist_slot_idx[borde]  = (self.hist_slot_idx[borde]  + 1) % len(iids)
+                self.hist_slot_idx[borde] = (self.hist_slot_idx[borde] + 1) % len(iids)
 
                 frame = frames[self.hist_frame_idx[borde]]
                 target_iid = iids[self.hist_slot_idx[borde]]
 
                 for iid in iids:
-                    try:
-                        self.canvas_right.itemconfig(iid, image="")
-                    except Exception:
-                        pass
-                try:
-                    self.canvas_right.itemconfig(target_iid, image=frame)
-                except Exception:
-                    pass
+                    self._safe_itemconfig(self.canvas_right, iid, image="")
+                self._safe_itemconfig(self.canvas_right, target_iid, image=frame)
 
-            # Cabeza ÚNICA (2 frames, se mueve por bordes al azar cada N ticks)
             if getattr(self, "kraken_head_frames", None):
                 if len(self.kraken_head_frames) >= 2:
                     self._kh_frame_idx = (self._kh_frame_idx + 1) % 2
@@ -1152,19 +1020,11 @@ class AnimationMixin:
                     x, y = self._rand_kraken_head_coords(head_frame)
                     self.kraken_head_item = self.canvas_right.create_image(x, y, image=head_frame, anchor="nw")
                 else:
-                    self.canvas_right.itemconfig(self.kraken_head_item, image=head_frame)
-
+                    self._safe_itemconfig(self.canvas_right, self.kraken_head_item, image=head_frame)
                     self._kh_move_ctr += 1
                     if self._kh_move_ctr >= self._kh_move_every:
                         self._kh_move_ctr = 0
                         x, y = self._rand_kraken_head_coords(head_frame)
-                        try:
-                            self.canvas_right.coords(self.kraken_head_item, x, y)
-                        except Exception:
-                            pass
+                        self._safe_coords(self.canvas_right, self.kraken_head_item, x, y)
 
         self.animar(800, self._animate_historial_tentacles)
-
-
-
-

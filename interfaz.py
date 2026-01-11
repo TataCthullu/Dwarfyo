@@ -1435,32 +1435,70 @@ class BotInterfaz(AnimationMixin):
         def guardar_config():
 
             def _parse_decimal_user(txt: str) -> Decimal:
-                s = (txt or "").strip().replace(" ", "")
+                s = (txt or "").strip()
+
+                # vacío
                 if not s:
                     return Decimal("0")
 
-                # AR/EU: 1.234,56
+                # permitir signo
+                sign = ""
+                if s[0] in "+-":
+                    sign, s = s[0], s[1:].strip()
+
+                # limpiar: dejá solo dígitos y separadores
+                # (esto te salva si algún día escribís "$ 3.000" o "3 000")
+                s = s.replace(" ", "")
+                s = re.sub(r"[^0-9\.,]", "", s)
+
+                if not s:
+                    return Decimal("0")
+
+                # Caso 1: tiene coma y punto → el ÚLTIMO separador es el decimal
                 if "," in s and "." in s:
-                    if s.rfind(",") > s.rfind("."):
-                        s = s.replace(".", "").replace(",", ".")
-                    else:
-                        s = s.replace(",", "")
-
-                # Solo coma: "12,5" o "5,000"
-                elif "," in s:
-                    parts = s.split(",")
-                    if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit() and len(parts[1]) == 3:
-                        s = parts[0] + parts[1]  # miles
-                    else:
+                    last_comma = s.rfind(",")
+                    last_dot = s.rfind(".")
+                    if last_comma > last_dot:
+                        # decimal = coma → quitar puntos de miles
+                        s = s.replace(".", "")
                         s = s.replace(",", ".")
+                    else:
+                        # decimal = punto → quitar comas de miles
+                        s = s.replace(",", "")
+                    return Decimal(sign + s)
 
-                # Solo punto: "12.5" o "5.000" o "1.234.567"
-                elif "." in s:
+                # Caso 2: solo coma
+                if "," in s:
+                    parts = s.split(",")
+                    if len(parts) != 2:
+                        raise InvalidOperation(f"Formato inválido: {txt!r}")
+
+                    left, right = parts[0], parts[1]
+
+                    # si right son 3 dígitos y left >= 1 dígito → interpretarlo como miles (5,000 => 5000)
+                    if left.isdigit() and right.isdigit() and len(right) == 3:
+                        return Decimal(sign + left + right)
+
+                    # si no, coma decimal (12,5 => 12.5)
+                    s = left + "." + right
+                    return Decimal(sign + s)
+
+                # Caso 3: solo punto
+                if "." in s:
                     parts = s.split(".")
-                    if len(parts) > 1 and all(p.isdigit() for p in parts) and all(len(p) == 3 for p in parts[1:]):
-                        s = "".join(parts)  # miles
+                    # 1.234.567 (todos los grupos después del primero son 3 dígitos) => miles
+                    if len(parts) > 2 and all(p.isdigit() for p in parts) and all(len(p) == 3 for p in parts[1:]):
+                        return Decimal(sign + "".join(parts))
 
-                return Decimal(s)
+                    # 5.000 => miles (grupo decimal "000" con 3 dígitos)
+                    if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit() and len(parts[1]) == 3 and parts[1] == "000":
+                        return Decimal(sign + parts[0] + parts[1])
+
+                    # si no, punto decimal normal
+                    return Decimal(sign + s)
+
+                # Caso 4: entero puro
+                return Decimal(sign + s)
 
             try:
                 # 1) Leemos la cadena exacta
@@ -1738,7 +1776,7 @@ class BotInterfaz(AnimationMixin):
                     if old_val == new_val:
                         return
                     # Para Decimals / números
-                    if isinstance(old_val, (Decimal, int, float)) and isinstance(new_val, (Decimal, int, float)):
+                    if isinstance(old_val, (Decimal, int)) and isinstance(new_val, (Decimal, int)):
                         old_s = self.format_var(old_val, simbolo)
                         new_s = self.format_var(new_val, simbolo)
                     else:
@@ -1916,7 +1954,7 @@ class BotInterfaz(AnimationMixin):
         if valor is None:
             return ""
 
-        # siempre intentar Decimal (aunque venga string o float)
+        # siempre intentar Decimal (aunque venga string )
         try:
             d = Decimal(str(valor))
         except Exception:
@@ -1955,7 +1993,81 @@ class BotInterfaz(AnimationMixin):
 
         return f"{simbolo} {s}" if simbolo else s
 
+    
 
+    def _parse_decimal_user(txt: str) -> Decimal:
+        s = (txt or "").strip().replace(" ", "")
+        if not s:
+            return Decimal("0")
+
+        # permitir signo
+        sign = ""
+        if s[0] in "+-":
+            sign, s = s[0], s[1:]
+            s = s.strip()
+            if not s:
+                return Decimal("0")
+
+        # ✅ regla clave: si arranca con 0. / 0, entonces ES decimal (ej: 0.005)
+        # (esto evita que "0.005" se interprete como miles)
+        if s.startswith("0.") or s.startswith("0,"):
+            s = s.replace(",", ".")
+            return Decimal(sign + s)
+
+        # AR/EU: 1.234,56  (miles con punto, decimal con coma)
+        if "," in s and "." in s:
+            if s.rfind(",") > s.rfind("."):
+                s = s.replace(".", "").replace(",", ".")
+            else:
+                # US: 1,234.56 (miles con coma)
+                s = s.replace(",", "")
+            return Decimal(sign + s)
+
+        # Solo coma: "12,5" o "5,000"
+        if "," in s:
+            parts = s.split(",")
+            # si parece miles estilo "5,000"
+            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit() and len(parts[1]) == 3:
+                s = parts[0] + parts[1]
+            else:
+                s = s.replace(",", ".")
+            return Decimal(sign + s)
+
+        # Solo punto: "12.5" o "5.000" o "1.234.567"
+        if "." in s:
+            parts = s.split(".")
+            # múltiples puntos y grupos de 3 => miles (1.234.567)
+            if len(parts) > 2 and all(p.isdigit() for p in parts) and all(len(p) == 3 for p in parts[1:]):
+                s = "".join(parts)
+                return Decimal(sign + s)
+
+            # un solo punto:
+            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                entero, frac = parts
+
+                # ✅ si frac es 000 => casi seguro miles (5.000 -> 5000)
+                if len(frac) == 3 and frac == "000":
+                    s = entero + frac
+                    return Decimal(sign + s)
+
+                # ✅ si entero NO es "0" y frac tiene 3 dígitos, lo tratamos como miles (12.345 -> 12345)
+                # (pero 0.005 ya quedó cubierto arriba)
+                if len(frac) == 3 and entero != "0":
+                    s = entero + frac
+                    return Decimal(sign + s)
+
+                # caso normal: decimal con punto (12.5 -> 12.5)
+                return Decimal(sign + entero + "." + frac)
+
+            # si llega acá y no matchea, que Decimal decida (puede tirar InvalidOperation)
+            return Decimal(sign + s)
+
+        # Entero puro
+        return Decimal(sign + s)
+
+
+
+    
     def format_fijo(self, clave, valor):
         if isinstance(valor, tuple):
             valor_real, simbolo = valor

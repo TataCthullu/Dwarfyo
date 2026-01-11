@@ -1513,7 +1513,7 @@ class TradingBot:
 
             self.log(
                 f"🟪 DUM: depósito aplicado.\n"
-                f" · Slot: {self.format_fn(self.usdt, '$')} / $ {self.dum_cap}\n"
+                f" · Operando con: {self.format_fn(self.usdt, '$')}\n"
                 f" · Excedente: {self.format_fn(self.dum_extra_obsidiana, '$')}\n"
                 f" · Total depositado: {self.format_fn(self.dum_deposit_total, '$')}"
             )
