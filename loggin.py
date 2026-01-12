@@ -221,65 +221,70 @@ def main_menu(nombre: str):
 
         app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
+    from decimal import Decimal
+
     def abrir_khazad_dum():
-        
+        # evitar doble ventana (si ya lo manejás arriba, dejalo; si no, podés sumar esto)
+        if khazad_dum_win["open"]:
+            try:
+                khazad_dum_win["app"].root.lift()
+                khazad_dum_win["app"].root.focus_force()
+            except Exception:
+                pass
+            return
+
         bot = TradingBot()
         bot.modo_app = "dum"
 
-        # =========================
-        # Dum: depositar slot desde wallet -> bot
-        # =========================
-        cap = get_dum_slot_cap(nombre)
-        obs_actual, quad_actual = get_wallet(nombre)
-        delta = obs_actual if obs_actual < cap else cap
+        # ✅ arrancar Dum con 0 adentro (NO tocar wallet acá)
+        bot.inv_inic = Decimal("0")
+        bot.usdt = Decimal("0")
 
-        deposito = depositar_a_bot(nombre, bot, delta, cap)
-
-        if deposito <= 0:
-            print("No hay obsidiana disponible para depositar en Dum.")
-            return
-
-        # Guardar estado dum en perfil (para HUD)
+        # ✅ marcar estado dum para HUD / idempotencia
         perfil = cargar_perfil(nombre)
         if not isinstance(perfil, dict):
             perfil = {}
         dum_state = (perfil.get("dum", {}) or {})
-        dum_state["deposito"] = str(deposito)
-        dum_state["slot_used_last"] = str(deposito)  # lo usado en esta run al inicio
+        dum_state["deposito"] = "0"
+        dum_state["slot_used_last"] = "0"
         perfil["dum"] = dum_state
         guardar_perfil(nombre, perfil)
+
         refrescar_menu()
 
-        # =========================
-        # Dum: translator + persistencia a wallet
-        # =========================
-        dum_persistido = {"ok": False}  # evita doble persistencia
+        dum_persistido = {"ok": False}
 
         def persistir_dum(resultado):
-            # Evitar doble ejecución
+            # 1) guard local: evitar doble callback
             if dum_persistido["ok"]:
                 return
             dum_persistido["ok"] = True
 
-            # 1) devolver a wallet lo que corresponde
+            # 2) guard fuerte: si ya está reseteado, NO pagues de nuevo
+            perfil_check = cargar_perfil(resultado.usuario)
+            if not isinstance(perfil_check, dict):
+                perfil_check = {}
+            dum_check = (perfil_check.get("dum", {}) or {})
+
+            # Si ya está en 0, significa que ya se liquidó esta run
+            if str(dum_check.get("deposito", "0")) == "0":
+                return
+
+            # ✅ acá recién acreditamos (una sola vez)
             obs_actual, quad_actual = get_wallet(resultado.usuario)
             nuevo_obs = obs_actual + resultado.obsidiana_vuelve
             nuevo_quad = quad_actual + resultado.quad_ganado
             set_wallet(resultado.usuario, nuevo_obs, nuevo_quad)
 
-            # 2) actualizar perfil dum para HUD (deposito vuelve a 0)
-            perfil = cargar_perfil(resultado.usuario)
-            if not isinstance(perfil, dict):
-                perfil = {}
-            dum_state = (perfil.get("dum", {}) or {})
-            dum_state["deposito"] = "0"
-            dum_state["slot_used_last"] = str(resultado.slot)
-            perfil["dum"] = dum_state
-            guardar_perfil(resultado.usuario, perfil)
+            # reset perfil dum
+            dum_check["deposito"] = "0"
+            dum_check["slot_used_last"] = str(getattr(resultado, "slot", "0"))
+            perfil_check["dum"] = dum_check
+            guardar_perfil(resultado.usuario, perfil_check)
+
             refrescar_menu()
 
         dum_translator = DumTranslator(persist_callback=persistir_dum)
-
 
         app = BotInterfaz(bot, master=ventana_loggin, usuario=nombre)
 
@@ -306,14 +311,12 @@ def main_menu(nombre: str):
                 print("Error DumTranslator.cerrar_run:", e)
 
             khazad_dum_win["open"] = False
-            
             try:
                 app.root.destroy()
             except Exception:
                 pass
-            
-            refrescar_menu()
 
+            refrescar_menu()
 
         app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
 

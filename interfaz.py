@@ -1512,31 +1512,6 @@ class BotInterfaz(AnimationMixin):
                 tp          = _parse_decimal_user(txt_tp)
                 sl          = _parse_decimal_user(txt_sl)
 
-
-                # =========================
-                # DUM: permitir sumar obsidiana cuando quieras (hasta 5000) y NO permitir bajar
-                # =========================
-                if getattr(self.bot, "modo_app", "") == "dum":
-                    res = dum_deposit_to_target(self.usuario, self.bot, usdtinit)
-                    if not res["ok"]:
-                        self.log_en_consola(res["msg"])
-                        self.log_en_consola("- - - - - - - - - -")
-                        return
-
-                    # Si depositó algo, lo logueamos
-                    if res["deposited"] > 0:
-                        # opcional: formatear con tu format_var
-                        self.log_en_consola(
-                            f"🟨 Dum depósito: +{self.format_var(res['deposited'], '$')} "
-                            f"(slot ahora: {self.format_var(res['total'], '$')})"
-                        )
-                        self.log_en_consola("- - - - - - - - - -")
-
-                    # asegurar que usdtinit refleje el depósito real del bot
-                    usdtinit = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-
-               
-
                 # 1) SNAPSHOT de configuración anterior (para detectar cambios)
                 old_cfg = {
                     "porc_desde_compra":   getattr(self.bot, "porc_desde_compra", Decimal("0")),
@@ -1559,8 +1534,36 @@ class BotInterfaz(AnimationMixin):
 
                     "compra_en_venta_fantasma": getattr(self.bot, "compra_en_venta_fantasma", False),
                 }
-
                 
+                # =========================
+                # DUM: permitir sumar obsidiana cuando quieras (hasta 5000) y NO permitir bajar
+                # =========================
+                if getattr(self.bot, "modo_app", "") == "dum":
+                    res = dum_deposit_to_target(self.usuario, self.bot, usdtinit)
+                    if not res["ok"]:
+                        self.log_en_consola(res["msg"])
+                        self.log_en_consola("- - - - - - - - - -")
+                        return
+
+                    # Si depositó algo, lo logueamos
+                    if res["deposited"] > 0:
+                        # opcional: formatear con tu format_var
+                        self.log_en_consola(
+                            f"🟨 Dum depósito: +{self.format_var(res['deposited'], '$')} "
+                            f"(slot ahora: {self.format_var(res['total'], '$')})"
+                        )
+                        self.log_en_consola("- - - - - - - - - -")
+
+                    # asegurar que usdtinit refleje el depósito real del bot
+                   
+                    usdtinit = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
+
+                    # 🔄 refrescar HUD (DumWindow) para ver el wallet actualizado
+                    try:
+                        if hasattr(self, "_refrescar_main_menu") and callable(self._refrescar_main_menu):
+                            self._refrescar_main_menu()
+                    except Exception:
+                        pass
                 
                 self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
                  # porcentaje EXACTO como lo escribió el usuario
@@ -1613,7 +1616,6 @@ class BotInterfaz(AnimationMixin):
                         self.log_en_consola("⚠️ El % de rebalance debe estar entre 1 y 100.")
                         self.log_en_consola("- - - - - - - - - -")
                         return
-
                 
                 # 3) Validaciones > 0
                 if porc_compra <= 0:
@@ -1661,6 +1663,10 @@ class BotInterfaz(AnimationMixin):
                     self.bot.porc_profit_x_venta = porc_profit
                     self.bot.porc_inv_por_compra = porc_inv
                     self.bot.inv_inic = usdtinit
+                    # ✅ Dum: el USDT ficticio debe reflejar el depósito
+                    if getattr(self.bot, "modo_app", "") == "dum":
+                        self.bot.usdt = self.bot.inv_inic
+
                     self.bot.take_profit_pct = (tp if tp > 0 else None)
                     self.bot.stop_loss_pct = (sl if sl > 0 else None)
                     self.bot.tp_enabled = self.var_tp_enabled.get()
@@ -1687,7 +1693,6 @@ class BotInterfaz(AnimationMixin):
 
                 old_inv_inic = old_cfg["inv_inic"]  # Decimal
                 
-
                 # Ajuste de capital según si el bot está corriendo o no
                 if self.bot.running:
                     # En modo normal (no dum) permitís ajuste vivo, si querés
@@ -1702,7 +1707,6 @@ class BotInterfaz(AnimationMixin):
                     # detenido: fijar capital (modo normal)
                     if getattr(self.bot, "modo_app", "") != "dum":
                         self.bot.usdt = usdtinit
-
 
                 # ✅ Recalcular tamaños dependientes de la inversión / % por operación
                 # (sin duplicar fórmulas)
@@ -1723,7 +1727,6 @@ class BotInterfaz(AnimationMixin):
                     self.bot.actualizar_balance()
                 except Exception:
                     pass
-
 
                 # 5) Calculamos fixed_buyer y validamos
                 #self.bot.fixed_buyer = (self.bot.inv_inic * self.bot.porc_inv_por_compra) / Decimal('100')
@@ -1826,7 +1829,7 @@ class BotInterfaz(AnimationMixin):
             self.stop_altar_animation()
         except Exception:
             pass
-        
+
         detener_musica_fondo()
         # 1) Cancelar after programado si existe
         if hasattr(self, 'loop_id') and self.loop_id is not None:

@@ -258,8 +258,14 @@ def depositar_a_bot(usuario: str, bot, delta: Decimal, cap: Decimal):
 
     bot.dum_deposito_total = dep_new
 
+    try:
+        cb = getattr(bot, "_refrescar_main_menu", None)
+        if callable(cb):
+            cb()
+    except Exception:
+        pass
+    
     return delta
-
 
 # lock dummy para no romper si bot no tiene .lock
 class dummy_lock:
@@ -378,21 +384,14 @@ class DumWindow:
 
         self.wallet_text_id = self.canvas.create_text(
             375, 105,
-            text="Obsidiana: ...  |  Quad: ...",
+            text="Obsidiana: ...  \n  Quad: ...",
             fill="Orange",
             font=("Carolingia", 14),
             anchor="center"
         )
 
 
-        self.dum_text_id = self.canvas.create_text(
-            375, 130,
-            text="Dum · Cap: ... | Depósito: ... | Restante: ... | Slot usado: ...",
-            fill="Gold",
-            font=("Carolingia", 16),
-            anchor="center"
-        )
-
+       
 
         # Botón Khazad (Dum) bot (si te pasaron el callback)
         if callable(self.open_khazad_dum_fn):
@@ -431,44 +430,11 @@ class DumWindow:
             obs_d = Decimal("0")
             quad_d = Decimal("0")
 
-        # >>> AQUI: actualizar wallet_text_id
         self.canvas.itemconfig(
             self.wallet_text_id,
             text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}"
         )
-
-        # perfil dum
-        perfil = cargar_perfil(self.usuario)
-        if not isinstance(perfil, dict):
-            perfil = {}
-        di = (perfil.get("dum", {}) or {})
-
-        try:
-            dep = Decimal(str(di.get("deposito", "0") or "0"))
-        except Exception:
-            dep = Decimal("0")
-
-        try:
-            su = Decimal(str(di.get("slot_used_last", "0") or "0"))
-        except Exception:
-            su = Decimal("0")
-
-        cap = get_dum_slot_cap(self.usuario)
-        try:
-            cap = Decimal(str(cap))
-        except Exception:
-            cap = Decimal("5000")
-
-        # restante del CAP real debería depender del slot actual dentro del bot (su),
-        # no del deposito total acumulado (dep)
-        restante = cap - su
-        if restante < 0:
-            restante = Decimal("0")
-
-        self.canvas.itemconfig(
-            self.dum_text_id,
-            text=f"Dum · Cap: {cap} | Depósito: {dep} | Restante: {restante} | Slot usado: {su}"
-        )
+        
 
 
 # ------------------------------------------------------------
