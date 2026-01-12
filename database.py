@@ -164,22 +164,37 @@ def get_wallet(nombre: str):
             return _d(row[0]), _d(row[1])
     return Decimal("0"), Decimal("0")
 
+
+
 def set_wallet(nombre: str, obsidiana, quad):
     nombre = (nombre or "").strip()
     if not nombre:
         return
 
-    def _s(x):
+    def _canon(x) -> str:
         try:
             s = str(x).strip()
             if s in ("", "None", "null", "NULL"):
                 s = "0"
-            return str(Decimal(s))
+            d = Decimal(s)
+
+            # FORZAR NOTACIÓN FIJA (evita 5E+3)
+            txt = format(d, "f")
+
+            # sacar ceros finales
+            if "." in txt:
+                txt = txt.rstrip("0").rstrip(".")
+
+            # evitar "-0"
+            if txt in ("", "-0"):
+                txt = "0"
+
+            return txt
         except Exception:
             return "0"
 
-    obs = _s(obsidiana)
-    qd  = _s(quad)
+    obs = _canon(obsidiana)
+    qd  = _canon(quad)
 
     if DEBUG_DB:
         print("DEBUG set_wallet DATA:", nombre, obs, qd)
@@ -193,6 +208,7 @@ def set_wallet(nombre: str, obsidiana, quad):
                 quad      = excluded.quad
         """, (nombre, obs, qd))
         con.commit()
+
 
 
 def debug_wallet_raw(nombre: str):
