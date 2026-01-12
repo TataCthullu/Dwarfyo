@@ -361,6 +361,11 @@ class DumWindow:
         self.obs_value_id = None
         self.quad_label_id = None
         self.quad_value_id = None
+        
+        # Avatar HUD
+        self.avatar_text_id = None
+        self.avatar_img_id = None
+        self.btn_crear_avatar = None
 
     def open(self):
         if self.win is not None and self.win.winfo_exists():
@@ -393,13 +398,56 @@ class DumWindow:
             font=("Carolingia", 20),
             anchor="center"
         )
+        # =========================
+        # Avatar HUD (perfil)
+        # =========================
+        self.avatar_text_id = self.canvas.create_text(
+            375, 75,
+            text="Sin avatar",
+            fill="Gold",
+            font=("Carolingia", 14),
+            anchor="center"
+        )
+
+        self.avatar_img_id = self.canvas.create_image(
+            375, 135,
+            image="",
+            anchor="center"
+        )
+
+        av = get_avatar(self.usuario)
+        av_name = (av.get("name") or "").strip()
+        av_img  = (av.get("img") or "").strip()
+
+        if av_name and av_img and os.path.isfile(av_img):
+            self.canvas.itemconfig(self.avatar_text_id, text=av_name)
+
+            ph = load_avatar_thumbnail(av_img, size=(96, 96))
+            if ph:
+                self.canvas.avatar_photo = ph
+                self.canvas.itemconfig(self.avatar_img_id, image=ph)
+        else:
+            self.btn_crear_avatar = tk.Button(
+                self.win,
+                text="Crear avatar",
+                font=("Carolingia", 14),
+                command=lambda: crear_avatar(
+                    self.usuario,
+                    self.canvas,
+                    self.avatar_text_id,
+                    self.avatar_img_id,
+                    self.btn_crear_avatar
+                )
+            )
+            self.canvas.create_window(375, 200, window=self.btn_crear_avatar, anchor="center")
 
                 # ===== Wallet HUD (Opción B) =====
         # Coordenadas base (podés ajustarlas a gusto)
         x_label = 330   # donde termina el label (alineado a derecha)
         x_value = 350   # donde arranca el número (alineado a izquierda)
-        y_obs   = 110
-        y_quad  = 140
+        y_obs   = 260
+        y_quad  = 290
+
 
         self.obs_label_id = self.canvas.create_text(
             x_label, y_obs,
@@ -443,7 +491,7 @@ class DumWindow:
                 font=("Carolingia", 14),
                 command=self.open_khazad_dum_fn
             )
-            self.canvas.create_window(375, 180, window=btn, anchor="center")
+            self.canvas.create_window(375, 340, window=btn, anchor="center")
 
         self.refresh()
 
@@ -480,6 +528,29 @@ class DumWindow:
         except Exception:
             pass
 
+        # Avatar (opcional: refrescar si ya se eligió)
+        try:
+            av = get_avatar(self.usuario)
+            av_name = (av.get("name") or "").strip()
+            av_img  = (av.get("img") or "").strip()
+
+            if self.avatar_text_id is not None and av_name:
+                self.canvas.itemconfig(self.avatar_text_id, text=av_name)
+
+            if self.avatar_img_id is not None and av_img and os.path.isfile(av_img):
+                ph = load_avatar_thumbnail(av_img, size=(96, 96))
+                if ph:
+                    self.canvas.avatar_photo = ph
+                    self.canvas.itemconfig(self.avatar_img_id, image=ph)
+
+                if self.btn_crear_avatar is not None:
+                    try:
+                        self.btn_crear_avatar.destroy()
+                    except Exception:
+                        pass
+                    self.btn_crear_avatar = None
+        except Exception:
+            pass
 
 # ------------------------------------------------------------
 # DUM SERVICE (API de alto nivel para UI/Bot)
