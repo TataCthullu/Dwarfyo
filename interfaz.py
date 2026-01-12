@@ -79,11 +79,15 @@ class BotInterfaz(AnimationMixin):
 
         def _chained_stop_cb(motivo=None):
             try:
-                self._on_bot_stop(motivo)
-            except Exception:
-                pass
+                if self.root.winfo_exists():
+                    self.root.after(0, lambda: self._on_bot_stop(motivo))
+            except Exception as e:
+                # al menos loguealo
+                try:
+                    self.log_en_consola(f"⚠️ stop_cb error: {type(e).__name__}: {e}")
+                except Exception:
+                    pass
 
-            # En modo Dum: NO encadenar callbacks viejos para evitar doble cierre/persistencia.
             if getattr(self.bot, "modo_app", "") == "dum":
                 return
 
@@ -95,7 +99,6 @@ class BotInterfaz(AnimationMixin):
                         _old_stop_cb()
             except Exception:
                 pass
-
 
         self.bot.ui_callback_on_stop = _chained_stop_cb
 
@@ -297,15 +300,18 @@ class BotInterfaz(AnimationMixin):
             if not getattr(self, "_dum_run_closed", False):
                 self._dum_run_closed = True
 
+        # DUM: al detener, cerrar run y devolver (obsidiana/quad)
+        if getattr(self.bot, "modo_app", "") == "dum":
+            if not getattr(self, "_dum_run_closed", False):
+                self._dum_run_closed = True
+
                 try:
-                    with self.bot.lock:
-                        usdt_final = Decimal(str(getattr(self.bot, "usdt", "0") or "0"))
+                    usdt_final = Decimal(str(getattr(self.bot, "usdt", "0") or "0"))
                 except Exception:
                     usdt_final = Decimal("0")
 
                 try:
                     obs_v, quad_g = cerrar_run_dum(self.usuario, usdt_final)
-                    # (opcional) log mínimo para debug visual
                     try:
                         self.log_en_consola(
                             f"🧾 Dum cierre: vuelve {self.format_var(obs_v, '')} obsidiana | gana {self.format_var(quad_g, '')} quad"
@@ -313,9 +319,14 @@ class BotInterfaz(AnimationMixin):
                         self.log_en_consola("- - - - - - - - - -")
                     except Exception:
                         pass
-                except Exception:
-                    # si falla, no rompemos el stop
-                    pass
+                except Exception as e:
+                    # NO lo tapes: loguealo, si no nunca sabés qué falló
+                    try:
+                        self.log_en_consola(f"⚠️ Error cerrando run Dum: {type(e).__name__}: {e}")
+                        self.log_en_consola("- - - - - - - - - -")
+                    except Exception:
+                        pass
+
 
         # Parada automática por TP/SL (nuevo y compat con el viejo "TP/SL")
         if motivo in ("TP", "SL", "TP/SL"):
@@ -1022,9 +1033,7 @@ class BotInterfaz(AnimationMixin):
             self.bot.detener()
             if self.sound_enabled:
                 reproducir_sonido("Sounds/detener.wav")
-            self.canvas_various.itemconfigure(self.btn_inicio_id, state='hidden')
-            self.canvas_various.itemconfigure(self.btn_limpiar_id, state='normal')
-            self.canvas_various.itemconfigure(self.btn_confi_id, state='hidden')
+            
         else:
             if getattr(self.bot, "modo_app", "") == "dum":
                 dep = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
@@ -1433,6 +1442,32 @@ class BotInterfaz(AnimationMixin):
 
         # ===== guardar_config =====
         def guardar_config():
+            def _wallet_obs_to_decimal(wallet) -> Decimal:
+                """
+                Acepta wallet como:
+                - número / Decimal / str numérico
+                - dict con keys tipo 'obsidiana', 'obs', 'balance_obs'
+                - tupla/lista (obsidiana, quad) -> toma [0]
+                """
+                if wallet is None:
+                    return Decimal("0")
+
+                # dict
+                if isinstance(wallet, dict):
+                    for k in ("obsidiana", "obs", "balance_obs"):
+                        if k in wallet:
+                            return Decimal(str(wallet[k] or "0"))
+                    # si no está, fallback:
+                    return Decimal("0")
+
+                # tupla/lista
+                if isinstance(wallet, (tuple, list)):
+                    if len(wallet) >= 1:
+                        return Decimal(str(wallet[0] or "0"))
+                    return Decimal("0")
+
+                # número directo / string
+                return Decimal(str(wallet or "0"))
 
             def _parse_decimal_user(txt: str) -> Decimal:
                 s = (txt or "").strip()
@@ -1525,7 +1560,8 @@ class BotInterfaz(AnimationMixin):
                 # =========================
                 if getattr(self.bot, "modo_app", "") == "dum":
                     cap = get_dum_slot_cap(self.usuario)          # 5000 o 10000 según slot
-                    wallet_obs = get_wallet(self.usuario)         # tu función real
+                    wallet_raw = get_wallet(self.usuario)
+                    wallet_obs = _wallet_obs_to_decimal(wallet_raw)        # tu función real
                     actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
 
                     # no permitir bajar (retirar) durante la run (o incluso siempre)
@@ -1544,7 +1580,7 @@ class BotInterfaz(AnimationMixin):
                     delta = usdtinit - actual
                     if delta > 0:
                         # validar contra wallet
-                        if Decimal(str(wallet_obs)) < delta:
+                        if wallet_obs < delta:
                             self.log_en_consola("⚠️ Dum: no tenés suficiente obsidiana en wallet para ese depósito.")
                             self.log_en_consola("- - - - - - - - - -")
                             return
@@ -1831,8 +1867,9 @@ class BotInterfaz(AnimationMixin):
                 self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
                 cerrar_config()
 
-            except (InvalidOperation, IndexError):
-                self.log_en_consola("Error: ingresa valores numericos validos.")
+            except (InvalidOperation, IndexError) as e:
+                self.log_en_consola(f"⚠️ Error numérico: {type(e).__name__}: {e}")
+                self.log_en_consola("- - - - - - - - - -")
 
         # ===== Botón Guardar (centrado abajo; se adapta si la ventana cambia) =====
         def _place_save_btn(event=None):
