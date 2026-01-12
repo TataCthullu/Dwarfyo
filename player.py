@@ -381,6 +381,13 @@ class DumWindow:
 
         # Asegurar wallet
         init_wallet(self.usuario)
+        self.title_dum = self.canvas.create_text(
+            375, 40,                  # centrado horizontal, más abajo
+            text="Dum",
+            fill="Gold",              
+            font=("Carolingia", 20),
+            anchor="center"
+        )
 
         self.wallet_text_id = self.canvas.create_text(
             375, 105,
