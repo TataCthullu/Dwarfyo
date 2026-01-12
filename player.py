@@ -354,8 +354,13 @@ class DumWindow:
 
         self.win = None
         self.canvas = None
-        self.wallet_text_id = None
+        
         self.dum_text_id = None
+        
+        self.obs_label_id = None
+        self.obs_value_id = None
+        self.quad_label_id = None
+        self.quad_value_id = None
 
     def open(self):
         if self.win is not None and self.win.winfo_exists():
@@ -389,13 +394,43 @@ class DumWindow:
             anchor="center"
         )
 
-        self.wallet_text_id = self.canvas.create_text(
-            375, 105,
-            text="Obsidiana: ...  \n  Quad: ...",
+                # ===== Wallet HUD (Opción B) =====
+        # Coordenadas base (podés ajustarlas a gusto)
+        x_label = 330   # donde termina el label (alineado a derecha)
+        x_value = 350   # donde arranca el número (alineado a izquierda)
+        y_obs   = 110
+        y_quad  = 140
+
+        self.obs_label_id = self.canvas.create_text(
+            x_label, y_obs,
+            text="Obsidiana:",
             fill="Orange",
             font=("Carolingia", 14),
-            anchor="center"
+            anchor="e"
         )
+        self.obs_value_id = self.canvas.create_text(
+            x_value, y_obs,
+            text="0",
+            fill="Orange",
+            font=("Carolingia", 14),
+            anchor="w"
+        )
+
+        self.quad_label_id = self.canvas.create_text(
+            x_label, y_quad,
+            text="Quad:",
+            fill="Gold",
+            font=("Carolingia", 14),
+            anchor="e"
+        )
+        self.quad_value_id = self.canvas.create_text(
+            x_value, y_quad,
+            text="0",
+            fill="Gold",
+            font=("Carolingia", 14),
+            anchor="w"
+        )
+
 
 
        
@@ -428,7 +463,6 @@ class DumWindow:
         if self.win is None or not self.win.winfo_exists() or self.canvas is None:
             return
 
-        # wallet
         try:
             obs, quad = get_wallet(self.usuario)
             obs_d = Decimal(str(obs))
@@ -437,11 +471,14 @@ class DumWindow:
             obs_d = Decimal("0")
             quad_d = Decimal("0")
 
-        self.canvas.itemconfig(
-            self.wallet_text_id,
-            text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}"
-        )
-        
+        # Solo actualizar los valores (los labels no cambian)
+        try:
+            if self.obs_value_id is not None:
+                self.canvas.itemconfig(self.obs_value_id, text=str(obs_d))
+            if self.quad_value_id is not None:
+                self.canvas.itemconfig(self.quad_value_id, text=str(quad_d))
+        except Exception:
+            pass
 
 
 # ------------------------------------------------------------
