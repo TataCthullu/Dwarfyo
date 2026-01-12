@@ -15,8 +15,8 @@ import re
 import csv
 from datetime import datetime
 from dum import DumTranslator
-from player import cerrar_run_dum, get_dum_slot_cap, depositar_a_bot
-from database import dum_deposit_to_target, dum_start_run, dum_close_run_once
+
+from player import dum_deposit_to_target, dum_start_run, dum_close_run_once
 
 
 class BotInterfaz(AnimationMixin):
@@ -1056,12 +1056,19 @@ class BotInterfaz(AnimationMixin):
         
         # 1) Preservar StringVars que NO deben limpiarse
         preservar_ids = set()
+        
         try:
             preservar_ids.add(id(self.modus))
         except Exception:
             pass
+        
         try:
             preservar_ids.add(id(self.display_mode))
+        except Exception:
+            pass
+        
+        try:
+            self.stop_altar_animation()
         except Exception:
             pass
 
@@ -1815,6 +1822,11 @@ class BotInterfaz(AnimationMixin):
         self.cfg_canvas.bind("<Configure>", _place_save_btn)
 
     def _on_close(self):
+        try:
+            self.stop_altar_animation()
+        except Exception:
+            pass
+        
         detener_musica_fondo()
         # 1) Cancelar after programado si existe
         if hasattr(self, 'loop_id') and self.loop_id is not None:

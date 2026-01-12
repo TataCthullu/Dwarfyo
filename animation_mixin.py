@@ -10,9 +10,19 @@ from tkinter import PhotoImage
 class AnimationMixin:
     MAX_CABEZAS = 9
 
+    
     # ---------------------------
     # Helpers seguros (sin "except Exception")
     # ---------------------------
+    def stop_altar_animation(self):
+        # cancela el after del loop de altares si existe
+        aid = getattr(self, "_altar_anim_after_id", None)
+        if aid is not None:
+            try:
+                self.root.after_cancel(aid)
+            except Exception:
+                pass
+        self._altar_anim_after_id = None
 
     def _canvas_is_alive(self, canvas) -> bool:
         try:
@@ -29,17 +39,18 @@ class AnimationMixin:
         except tk.TclError:
             return None
 
-    def _safe_itemconfig(self, canvas, item_id, **kwargs) -> bool:
-        """Itemconfig tolerante a items borrados/destruidos."""
-        if not self._canvas_is_alive(canvas) or not item_id:
-            return False
-        if self._safe_type(canvas, item_id) is None:
-            return False
+    def _safe_itemconfig(self, canvas, item_id, **kwargs):
         try:
+            if canvas is None or not canvas.winfo_exists():
+                return
+            # item inexistente => type devuelve "" (string vacío)
+            if not item_id or canvas.type(item_id) == "":
+                return
             canvas.itemconfig(item_id, **kwargs)
-            return True
-        except tk.TclError:
-            return False
+        except Exception:
+            # TclError y otros: ignorar silencioso
+            return
+
 
     def _safe_itemconfigure(self, canvas, item_id, **kwargs) -> bool:
         if not self._canvas_is_alive(canvas) or not item_id:
@@ -96,6 +107,9 @@ class AnimationMixin:
 
         if not hasattr(self, "_after_ids"):
             self._after_ids = []
+
+        if getattr(self, "_altar_anim_after_id", None) is None:
+                self._altar_anim_after_id = self.root.after(120, self._animate_altars)
 
         # ─── PEDESTAL ───
         pedestal_path = "imagenes/deco/rebalance/pedestal.png"
@@ -772,18 +786,35 @@ class AnimationMixin:
         self._safe_itemconfigure(self.canvas_various, icon_item, state=visible)
 
     def _animate_altars(self):
-        if (not getattr(self, "bot", None) or not self.bot.running) and getattr(self, "altar_fedhas", None):
-            self._safe_itemconfig(self.canvas_various, self.altar_tp_item, image=self.altar_fedhas)
-            self._safe_itemconfig(self.canvas_various, self.altar_sl_item, image=self.altar_fedhas)
-            self._safe_itemconfigure(self.canvas_various, self.tp_icon_item, state="hidden")
-            self._safe_itemconfigure(self.canvas_various, self.sl_icon_item, state="hidden")
-            self.animar(600, self._animate_altars)
+        # Guard: si la ventana ya no existe, cortá
+        try:
+            if not self.root.winfo_exists():
+                return
+        except Exception:
             return
 
-        self._altar_frame += 1
+        # Guard: si no hay canvas_various (todavía no se creó o ya se destruyó)
+        canvas = getattr(self, "canvas_various", None)
+        if canvas is None:
+            return
+
+        # Guard: canvas destruido
+        try:
+            if not canvas.winfo_exists():
+                return
+        except Exception:
+            return
+
+        # (tu lógica actual)
         self._refresh_altar_image("tp")
         self._refresh_altar_image("sl")
-        self.animar(600, self._animate_altars)
+
+        # reprogramar y guardar el id
+        try:
+            self._altar_anim_after_id = self.root.after(120, self._animate_altars)
+        except Exception:
+            self._altar_anim_after_id = None
+
 
     def _update_elephant(self):
         cnt = getattr(self, "bot", None) and self.bot.contador_compras_fantasma or 0

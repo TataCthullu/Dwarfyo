@@ -378,19 +378,21 @@ class DumWindow:
 
         self.wallet_text_id = self.canvas.create_text(
             375, 105,
-            text="Obsidiana: 0  |  Quad: 0",
+            text="Obsidiana: ...  |  Quad: ...",
             fill="Orange",
             font=("Carolingia", 14),
             anchor="center"
         )
 
+
         self.dum_text_id = self.canvas.create_text(
             375, 130,
-            text="Dum · Slot cap: 0 | Depósito: 0 | Slot usado: 0",
+            text="Dum · Cap: ... | Depósito: ... | Restante: ... | Slot usado: ...",
             fill="Gold",
             font=("Carolingia", 16),
             anchor="center"
         )
+
 
         # Botón Khazad (Dum) bot (si te pasaron el callback)
         if callable(self.open_khazad_dum_fn):
@@ -414,10 +416,7 @@ class DumWindow:
 
         self.win.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
-    def get_dum_slot_cap(usuario: str) -> Decimal:
-        perfil = cargar_perfil(usuario)
-        slot = int(perfil.get("dum_slot", 1))
-        return SLOTS_CAP.get(slot, Decimal("5000"))
+    
 
     def refresh(self):
         if self.win is None or not self.win.winfo_exists() or self.canvas is None:
@@ -431,6 +430,12 @@ class DumWindow:
         except Exception:
             obs_d = Decimal("0")
             quad_d = Decimal("0")
+
+        # >>> AQUI: actualizar wallet_text_id
+        self.canvas.itemconfig(
+            self.wallet_text_id,
+            text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}"
+        )
 
         # perfil dum
         perfil = cargar_perfil(self.usuario)
@@ -454,8 +459,9 @@ class DumWindow:
         except Exception:
             cap = Decimal("5000")
 
-
-        restante = cap - dep
+        # restante del CAP real debería depender del slot actual dentro del bot (su),
+        # no del deposito total acumulado (dep)
+        restante = cap - su
         if restante < 0:
             restante = Decimal("0")
 
@@ -464,8 +470,6 @@ class DumWindow:
             text=f"Dum · Cap: {cap} | Depósito: {dep} | Restante: {restante} | Slot usado: {su}"
         )
 
-
-from decimal import Decimal
 
 # ------------------------------------------------------------
 # DUM SERVICE (API de alto nivel para UI/Bot)

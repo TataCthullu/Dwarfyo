@@ -3,7 +3,7 @@
 
 import tkinter as tk
 from PIL import Image, ImageTk
-
+from decimal import Decimal
 from database import (
     init_db,
     agregar_usuario,
@@ -16,8 +16,8 @@ from database import (
     set_wallet,
 )
 
-from player import DumWindow, depositar_a_bot
-from dum import DumTranslator
+from player import DumWindow, depositar_a_bot, get_dum_slot_cap
+from dum import DumTranslator, SLOT_1_OBSIDIANA
 from codigo_principala import TradingBot
 from interfaz import BotInterfaz
 
@@ -121,7 +121,7 @@ def crear_user():
 
         if agregar_usuario(nombre, password):
             print("Usuario creado correctamente")
-            init_wallet(nombre)
+           
             guardar_perfil(nombre, {"dum": {"deposito": "0", "slot_used_last": "0"}, "avatar": {}})
             crear_user_win = False
             user_win.destroy()
@@ -222,21 +222,19 @@ def main_menu(nombre: str):
         app.root.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
     def abrir_khazad_dum():
-        if khazad_dum_win["open"]:
-            try:
-                khazad_dum_win["app"].root.lift()
-                khazad_dum_win["app"].root.focus_force()
-            except Exception:
-                pass
-            return
-
+        
         bot = TradingBot()
         bot.modo_app = "dum"
+
         # =========================
         # Dum: depositar slot desde wallet -> bot
         # =========================
-        deposito = depositar_a_bot(nombre, bot)
-        
+        cap = get_dum_slot_cap(nombre)
+        obs_actual, quad_actual = get_wallet(nombre)
+        delta = obs_actual if obs_actual < cap else cap
+
+        deposito = depositar_a_bot(nombre, bot, delta, cap)
+
         if deposito <= 0:
             print("No hay obsidiana disponible para depositar en Dum.")
             return
