@@ -4,7 +4,7 @@
 import sqlite3
 import json
 from decimal import Decimal
-from dum import SLOT_1_OBSIDIANA
+from dum import SLOT_1_OBSIDIANA,OBS_LOTE_INICIAL
 import os
 DB_NAME = os.path.join(os.path.dirname(__file__), "usuarios.db")
 DEBUG_DB = False
@@ -104,6 +104,7 @@ def cargar_perfil(nombre):
         return {}
 
 def init_wallet(nombre: str):
+    """"Recordar, en Dum, el usuario tiene 5000 obsidianas cuando crea su cuenta por primera vez; luego, las que le queden quedaran guardadas. Es decir: usa 5000, pierde 200, le quedan 4800. Lo que quiero aclarar es que el slot 1 puede ser amiguo: uno es la cantidad de obsidiana (usdt) que puede meter al bot como maximo -> 5000 (slot 1); tambien estaria el lote de obsidiana que se le da a cada jugador cuando crea su cuenta por primera vez, a este le vamos a llamar obs_lote_inicial; que tampoco se debe confundir con la billetera de obsidiana de cada jugador, donde las guarda, las saca."""
     nombre = (nombre or "").strip()
 
     if not nombre:
@@ -113,7 +114,7 @@ def init_wallet(nombre: str):
     with _conn() as con:
         con.execute(
             "INSERT OR IGNORE INTO wallet (nombre, obsidiana, quad) VALUES (?, ?, ?)",
-            (nombre, str(SLOT_1_OBSIDIANA), "0")
+            (nombre, str(OBS_LOTE_INICIAL), "0")
         )
         con.commit()
 

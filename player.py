@@ -13,7 +13,7 @@ from database import (
     set_wallet,
 )
 
-from dum import SLOT_1_OBSIDIANA
+
 
 
 AVATAR_DIR = os.path.join("imagenes", "deco", "Player", "AvatarBase")
@@ -170,14 +170,48 @@ def crear_avatar(usuario, canvas_menu, avatar_text_id, avatar_img_id, btn_crear_
 # Dum helpers / Player HUD
 # =========================
 
-def depositar_a_bot(usuario: str, bot):
-    """
-    Lógica de player (Dum): toma del wallet y carga al bot.
-    Acumula el depósito total de la run en perfil["dum"]["deposito"].
-    """
-    obs, quad = get_wallet(usuario)
 
-    # Normalizar
+def depositar_a_bot(usuario: str, bot, delta: Decimal, cap: Decimal):
+    """
+    Dum: deposita 'delta' desde wallet -> bot, respetando cap (slot).
+    - No permite delta <= 0.
+    - No permite superar cap total dentro del bot (inv_inic).
+    - Descuenta de wallet.
+    - Acumula perfil["dum"]["deposito"] (depósito TOTAL de la run).
+    - Setea bot.inv_inic y bot.usdt acorde.
+    """
+    # normalizar
+    try:
+        delta = Decimal(str(delta))
+    except Exception:
+        delta = Decimal("0")
+
+    if delta <= 0:
+        return Decimal("0")
+
+    cap = Decimal(str(cap or "0"))
+    if cap < 0:
+        cap = Decimal("0")
+
+    # cuánto ya hay adentro del bot (depósito actual)
+    try:
+        actual = Decimal(str(getattr(bot, "inv_inic", "0") or "0"))
+    except Exception:
+        actual = Decimal("0")
+
+    if actual < 0:
+        actual = Decimal("0")
+
+    # no permitir superar cap
+    max_delta = cap - actual
+    if max_delta <= 0:
+        return Decimal("0")
+
+    if delta > max_delta:
+        delta = max_delta
+
+    # leer wallet
+    obs, quad = get_wallet(usuario)
     try:
         obs = Decimal(str(obs))
     except Exception:
@@ -187,47 +221,52 @@ def depositar_a_bot(usuario: str, bot):
     except Exception:
         quad = Decimal("0")
 
-    if obs < 0:
-        obs = Decimal("0")
+    if obs < delta:
+        return Decimal("-1")  # señal: no alcanza
 
-    # Cap del slot: como máximo SLOT_1_OBSIDIANA por depósito
-    deposito = min(obs, SLOT_1_OBSIDIANA)
+    # descontar wallet
+    set_wallet(usuario, obs - delta, quad)
 
-    # retirar del wallet (queda "bloqueado" en la run)
-    set_wallet(usuario, obs - deposito, quad)
-
-    # cargar al bot (SUMA, no pisa)
-    try:
+    # sumar al bot (depósito actual)
+    with getattr(bot, "lock", dummy_lock()):
+        # inv_inic en Dum = depósito actual dentro del bot
+        bot.inv_inic = actual + delta
+        # usdt del bot en Dum debe reflejar ese depósito (si tu bot usa usdt + btc_usdt, esto es la base)
         bot.usdt = Decimal(str(getattr(bot, "usdt", "0") or "0"))
-    except Exception:
-        bot.usdt = Decimal("0")
+        bot.usdt = bot.inv_inic
 
-    bot.usdt += deposito
+        # tracking
+        bot.dum_slot_used = bot.inv_inic  # "lo que hay adentro ahora"
+        bot._dum_slot_frozen = bot.inv_inic
 
-    # tracking en bot (opcional pero ya lo usás)
-    bot.dum_slot_used = deposito
-
-    # Persistir dum: depósito acumulado + último slot usado
+    # acumular depósito total de la run en perfil
     perfil = cargar_perfil(usuario)
     if not isinstance(perfil, dict):
         perfil = {}
-
     dum = (perfil.get("dum", {}) or {})
+
     try:
         dep_prev = Decimal(str(dum.get("deposito", "0") or "0"))
     except Exception:
         dep_prev = Decimal("0")
 
-    dep_new = dep_prev + deposito
-    dum["deposito"] = str(dep_new)              # depósito TOTAL acumulado de la run
-    dum["slot_used_last"] = str(deposito)       # último depósito (slot usado)
+    dep_new = dep_prev + delta
+    dum["deposito"] = str(dep_new)            # total depositado durante la run
+    dum["slot_used_last"] = str(bot.inv_inic) # cuánto hay dentro ahora
     perfil["dum"] = dum
     guardar_perfil(usuario, perfil)
 
-    # también guardo en bot por si te sirve
     bot.dum_deposito_total = dep_new
 
-    return deposito
+    return delta
+
+
+# lock dummy para no romper si bot no tiene .lock
+class dummy_lock:
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc, tb): return False
+
+
 
 def cerrar_run_dum(usuario: str, usdt_final):
     """
@@ -375,6 +414,11 @@ class DumWindow:
 
         self.win.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
+    def get_dum_slot_cap(usuario: str) -> Decimal:
+        perfil = cargar_perfil(usuario)
+        slot = int(perfil.get("dum_slot", 1))
+        return SLOTS_CAP.get(slot, Decimal("5000"))
+
     def refresh(self):
         if self.win is None or not self.win.winfo_exists() or self.canvas is None:
             return
@@ -404,11 +448,151 @@ class DumWindow:
         except Exception:
             su = Decimal("0")
 
-        slot_cap = min(obs_d, SLOT_1_OBSIDIANA)
+        cap = get_dum_slot_cap(self.usuario)
+        try:
+            cap = Decimal(str(cap))
+        except Exception:
+            cap = Decimal("5000")
 
-        self.canvas.itemconfig(self.wallet_text_id, text=f"Obsidiana: {obs_d}  |  Quad: {quad_d}")
-        self.canvas.itemconfig(self.dum_text_id, text=f"Dum · Slot cap: {slot_cap} | Depósito: {dep} | Slot usado: {su}")
+
+        restante = cap - dep
+        if restante < 0:
+            restante = Decimal("0")
+
+        self.canvas.itemconfig(
+            self.dum_text_id,
+            text=f"Dum · Cap: {cap} | Depósito: {dep} | Restante: {restante} | Slot usado: {su}"
+        )
 
 
+from decimal import Decimal
 
+# ------------------------------------------------------------
+# DUM SERVICE (API de alto nivel para UI/Bot)
+# ------------------------------------------------------------
+
+def dum_deposit_to_target(usuario, bot, target_total: Decimal):
+    """
+    Ajusta el depósito total de la run hacia ARRIBA hasta target_total.
+    Reglas Dum:
+    - No se puede bajar el total (no hay retiros durante run).
+    - No se puede superar cap del slot.
+    - Descuenta obsidiana del wallet usando depositar_a_bot().
+    Retorna dict con info:
+      { "ok": bool, "msg": str, "deposited": Decimal, "total": Decimal, "cap": Decimal }
+    """
+    cap = get_dum_slot_cap(usuario)
+    try:
+        target_total = Decimal(str(target_total or "0"))
+    except Exception:
+        target_total = Decimal("0")
+
+    actual = Decimal(str(getattr(bot, "inv_inic", "0") or "0"))
+
+    # No permitir bajar
+    if target_total < actual:
+        return {
+            "ok": False,
+            "msg": "⚠️ Dum: no se puede retirar obsidiana hasta terminar la run.",
+            "deposited": Decimal("0"),
+            "total": actual,
+            "cap": cap,
+        }
+
+    # Cap
+    if target_total > cap:
+        return {
+            "ok": False,
+            "msg": f"⚠️ Dum: tu tope de slot es {cap}.",
+            "deposited": Decimal("0"),
+            "total": actual,
+            "cap": cap,
+        }
+
+    delta = target_total - actual
+    if delta <= 0:
+        return {
+            "ok": True,
+            "msg": "🟨 Dum: depósito sin cambios.",
+            "deposited": Decimal("0"),
+            "total": actual,
+            "cap": cap,
+        }
+
+    # Depositar (usa tu función existente)
+    dep = depositar_a_bot(usuario, bot, delta, cap)
+
+    # Mantengo tu contrato: -1 => sin wallet suficiente
+    if dep == Decimal("-1"):
+        return {
+            "ok": False,
+            "msg": "⚠️ Dum: no tenés suficiente obsidiana en wallet para ese depósito.",
+            "deposited": Decimal("0"),
+            "total": actual,
+            "cap": cap,
+        }
+
+    if dep <= 0:
+        return {
+            "ok": False,
+            "msg": "⚠️ Dum: no se pudo depositar (cap alcanzado o delta inválido).",
+            "deposited": Decimal("0"),
+            "total": Decimal(str(getattr(bot, "inv_inic", actual) or actual)),
+            "cap": cap,
+        }
+
+    total = Decimal(str(getattr(bot, "inv_inic", "0") or "0"))
+    return {
+        "ok": True,
+        "msg": f"🟨 Dum depósito: +{dep} (slot ahora: {total})",
+        "deposited": dep,
+        "total": total,
+        "cap": cap,
+    }
+
+
+def dum_start_run(usuario, bot):
+    """
+    Prepara el bot para comenzar run Dum:
+    - Sincroniza usdt = inv_inic (usdt ficticio).
+    - Congela el depósito de inicio (_dum_slot_frozen) para la run.
+    Nota: El depósito total (inv_inic) puede seguir subiendo durante run
+          vía dum_deposit_to_target(); lo congelado es para coherencia de arranque.
+    """
+    dep_actual = Decimal(str(getattr(bot, "inv_inic", "0") or "0"))
+    if dep_actual <= 0:
+        return {"ok": False, "msg": "⚠️ Dum: configurá el depósito antes de iniciar.", "deposit": dep_actual}
+
+    with bot.lock:
+        bot.usdt = dep_actual
+        bot.dum_slot_used = dep_actual
+        bot._dum_slot_frozen = dep_actual
+
+    return {"ok": True, "msg": "🟨 Dum: run preparada.", "deposit": dep_actual}
+
+
+def dum_close_run_once(usuario, bot, usdt_final: Decimal, ui_guard=None):
+    """
+    Cierra la run Dum (settlement) de forma idempotente.
+    - ui_guard: si querés, pasale un objeto con atributo booleano (ej. self) para marcar una sola vez.
+      Ej: dum_close_run_once(usuario, bot, usdt_final, ui_guard=self) y que self tenga _dum_run_closed.
+    Devuelve dict:
+      { "ok": bool, "msg": str }
+    """
+    # Idempotencia: si ui_guard ya marcó cerrado, no repetir.
+    if ui_guard is not None:
+        if getattr(ui_guard, "_dum_run_closed", False):
+            return {"ok": True, "msg": "🟨 Dum: run ya estaba cerrada."}
+        setattr(ui_guard, "_dum_run_closed", True)
+
+    try:
+        usdt_final = Decimal(str(usdt_final or "0"))
+    except Exception:
+        usdt_final = Decimal("0")
+
+    try:
+        cerrar_run_dum(usuario, usdt_final)
+        return {"ok": True, "msg": "🟨 Dum: run cerrada y saldo devuelto a wallet."}
+    except Exception as e:
+        return {"ok": False, "msg": f"⚠️ Dum: error al cerrar run: {e}"}
 

@@ -10,7 +10,7 @@ from typing import Callable, Optional, Any
 
 
 SLOT_1_OBSIDIANA = Decimal("5000")
-
+OBS_LOTE_INICIAL = Decimal("5000")         # pack inicial al crear usuario (1 sola vez)
 
 @dataclass(frozen=True)
 class DumResultado:

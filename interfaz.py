@@ -15,8 +15,8 @@ import re
 import csv
 from datetime import datetime
 from dum import DumTranslator
-from player import cerrar_run_dum, get_dum_slot_cap
-from database import get_wallet
+from player import cerrar_run_dum, get_dum_slot_cap, depositar_a_bot
+from database import dum_deposit_to_target, dum_start_run, dum_close_run_once
 
 
 class BotInterfaz(AnimationMixin):
@@ -296,36 +296,18 @@ class BotInterfaz(AnimationMixin):
         # =========================
         # DUM: al detener, cerrar run y devolver (obsidiana/quad) según depósito acumulado
         # =========================
-        if getattr(self.bot, "modo_app", "") == "dum":
-            if not getattr(self, "_dum_run_closed", False):
-                self._dum_run_closed = True
+        
 
         # DUM: al detener, cerrar run y devolver (obsidiana/quad)
         if getattr(self.bot, "modo_app", "") == "dum":
-            if not getattr(self, "_dum_run_closed", False):
-                self._dum_run_closed = True
+            try:
+                usdt_final = Decimal(str(getattr(self.bot, "usdt_mas_btc", "0") or "0"))
+            except Exception:
+                usdt_final = Decimal("0")
 
-                try:
-                    usdt_final = Decimal(str(getattr(self.bot, "usdt", "0") or "0"))
-                except Exception:
-                    usdt_final = Decimal("0")
-
-                try:
-                    obs_v, quad_g = cerrar_run_dum(self.usuario, usdt_final)
-                    try:
-                        self.log_en_consola(
-                            f"🧾 Dum cierre: vuelve {self.format_var(obs_v, '')} obsidiana | gana {self.format_var(quad_g, '')} quad"
-                        )
-                        self.log_en_consola("- - - - - - - - - -")
-                    except Exception:
-                        pass
-                except Exception as e:
-                    # NO lo tapes: loguealo, si no nunca sabés qué falló
-                    try:
-                        self.log_en_consola(f"⚠️ Error cerrando run Dum: {type(e).__name__}: {e}")
-                        self.log_en_consola("- - - - - - - - - -")
-                    except Exception:
-                        pass
+            res = dum_close_run_once(self.usuario, self.bot, usdt_final, ui_guard=self)
+            self.log_en_consola(res["msg"])
+            self.log_en_consola("- - - - - - - - - -")
 
 
         # Parada automática por TP/SL (nuevo y compat con el viejo "TP/SL")
@@ -1022,54 +1004,48 @@ class BotInterfaz(AnimationMixin):
         
 
     def toggle_bot(self):
-        if getattr(self.bot, "modo_app", "") == "dum":
-            if not hasattr(self.bot, "dum_slot_used") or self.bot.dum_slot_used in (None, "", 0):
-                self.bot.dum_slot_used = Decimal(str(getattr(self.bot, "dum_deposito", "0")))
-        
-        if getattr(self.bot, "modo_app", "") == "dum":
-            self.bot.dum_slot_used = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-
         if self.bot.running:
             self.bot.detener()
             if self.sound_enabled:
                 reproducir_sonido("Sounds/detener.wav")
-            
-        else:
-            if getattr(self.bot, "modo_app", "") == "dum":
-                dep = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-                if dep <= 0:
-                    self.log_en_consola("⚠️ Dum: configurá el depósito antes de iniciar.")
-                    self.log_en_consola("- - - - - - - - - -")
-                    return
-            # DUM: al iniciar una run, habilitar cierre futuro
-            if getattr(self.bot, "modo_app", "") == "dum":
-                self._dum_run_closed = False
+            return
 
-            self.bot.iniciar()
-            if not self.bot.running:
-                self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa configuración de operativa y coloca números válidos.")
+        # --- iniciar ---
+        if getattr(self.bot, "modo_app", "") == "dum":
+            res = dum_start_run(self.usuario, self.bot)
+            if not res["ok"]:
+                self.log_en_consola(res["msg"])
+                self.log_en_consola("- - - - - - - - - -")
                 return
-            if self.sound_enabled:
-                reproducir_sonido("Sounds/inicio.wav")
+            self._dum_run_closed = False
 
-            self.inicializar_valores_iniciales()
 
-            self.btn_inicio.config(text="Detener")
-            self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
-            self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
-            self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
-            # ⬅️ AÑADIR: reflejar configuración actual en altares al iniciar
-            if getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or 0) > 0:
-                self.set_take_profit_state("armed")
-            else:
-                self.set_take_profit_state("inactive")
+        self.bot.iniciar()
 
-            if getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct or 0) > 0:
-                self.set_stop_loss_state("armed")
-            else:
-                self.set_stop_loss_state("inactive")
+        if not self.bot.running:
+            self.log_en_consola("⚠️ El bot no pudo iniciarse. Revisa configuración de operativa y coloca números válidos.")
+            return
+        if self.sound_enabled:
+            reproducir_sonido("Sounds/inicio.wav")
 
-            self._loop()
+        self.inicializar_valores_iniciales()
+
+        self.btn_inicio.config(text="Detener")
+        self.canvas_various.itemconfigure(self.btn_inicio_id, state='normal')
+        self.canvas_various.itemconfigure(self.btn_limpiar_id, state='hidden')
+        self.canvas_various.itemconfigure(self.btn_confi_id, state='normal')
+        # ⬅️ AÑADIR: reflejar configuración actual en altares al iniciar
+        if getattr(self.bot, "tp_enabled", False) and (self.bot.take_profit_pct or 0) > 0:
+            self.set_take_profit_state("armed")
+        else:
+            self.set_take_profit_state("inactive")
+
+        if getattr(self.bot, "sl_enabled", False) and (self.bot.stop_loss_pct or 0) > 0:
+            self.set_stop_loss_state("armed")
+        else:
+            self.set_stop_loss_state("inactive")
+
+        self._loop()
 
     def clear_bot(self):
         if self.bot.running:
@@ -1442,32 +1418,7 @@ class BotInterfaz(AnimationMixin):
 
         # ===== guardar_config =====
         def guardar_config():
-            def _wallet_obs_to_decimal(wallet) -> Decimal:
-                """
-                Acepta wallet como:
-                - número / Decimal / str numérico
-                - dict con keys tipo 'obsidiana', 'obs', 'balance_obs'
-                - tupla/lista (obsidiana, quad) -> toma [0]
-                """
-                if wallet is None:
-                    return Decimal("0")
-
-                # dict
-                if isinstance(wallet, dict):
-                    for k in ("obsidiana", "obs", "balance_obs"):
-                        if k in wallet:
-                            return Decimal(str(wallet[k] or "0"))
-                    # si no está, fallback:
-                    return Decimal("0")
-
-                # tupla/lista
-                if isinstance(wallet, (tuple, list)):
-                    if len(wallet) >= 1:
-                        return Decimal(str(wallet[0] or "0"))
-                    return Decimal("0")
-
-                # número directo / string
-                return Decimal(str(wallet or "0"))
+            
 
             def _parse_decimal_user(txt: str) -> Decimal:
                 s = (txt or "").strip()
@@ -1559,44 +1510,22 @@ class BotInterfaz(AnimationMixin):
                 # DUM: permitir sumar obsidiana cuando quieras (hasta 5000) y NO permitir bajar
                 # =========================
                 if getattr(self.bot, "modo_app", "") == "dum":
-                    cap = get_dum_slot_cap(self.usuario)          # 5000 o 10000 según slot
-                    wallet_raw = get_wallet(self.usuario)
-                    wallet_obs = _wallet_obs_to_decimal(wallet_raw)        # tu función real
-                    actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-
-                    # no permitir bajar (retirar) durante la run (o incluso siempre)
-                    if usdtinit < actual:
-                        self.log_en_consola("⚠️ Dum: no se puede retirar obsidiana hasta terminar la run.")
+                    res = dum_deposit_to_target(self.usuario, self.bot, usdtinit)
+                    if not res["ok"]:
+                        self.log_en_consola(res["msg"])
                         self.log_en_consola("- - - - - - - - - -")
                         return
 
-                    # cap por slot
-                    if usdtinit > cap:
-                        self.log_en_consola(f"⚠️ Dum: tu tope de slot es {self.format_var(cap, '$')}.")
+                    # Si depositó algo, lo logueamos
+                    if res["deposited"] > 0:
+                        # opcional: formatear con tu format_var
+                        self.log_en_consola(
+                            f"🟨 Dum depósito: +{self.format_var(res['deposited'], '$')} "
+                            f"(slot ahora: {self.format_var(res['total'], '$')})"
+                        )
                         self.log_en_consola("- - - - - - - - - -")
-                        return
 
-                    # diferencia a depositar
-                    delta = usdtinit - actual
-                    if delta > 0:
-                        # validar contra wallet
-                        if wallet_obs < delta:
-                            self.log_en_consola("⚠️ Dum: no tenés suficiente obsidiana en wallet para ese depósito.")
-                            self.log_en_consola("- - - - - - - - - -")
-                            return
-
-                        ok = self.bot.dum_depositar_obsidiana(delta)  # debería descontar wallet y sumar depósito
-                        if not ok:
-                            self.log_en_consola("⚠️ Dum: no se pudo aplicar el depósito.")
-                            self.log_en_consola("- - - - - - - - - -")
-                            return
-
-                        # actualizar slot efectivo
-                        with self.bot.lock:
-                            self.bot.inv_inic = actual + delta
-                            self.bot.usdt = self.bot.inv_inic
-
-                    # desde acá, el valor real es el que quedó
+                    # asegurar que usdtinit refleje el depósito real del bot
                     usdtinit = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
 
                
@@ -1628,12 +1557,8 @@ class BotInterfaz(AnimationMixin):
                 
                 self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
                  # porcentaje EXACTO como lo escribió el usuario
-                raw = (self.var_comision_pct.get() or "").replace(",", ".")
-                try:
-                    self.bot.comision_pct = Decimal(raw)   # 4, 0.03, 200, etc. tal cual
-                except (InvalidOperation, ValueError):
-                    self.bot.comision_pct = Decimal("0")   # fallback
-                
+                self.bot.comision_pct = _parse_decimal_user(self.var_comision_pct.get())
+
                 if self.bot.comision_pct < 0:
                     self.bot.comision_pct = Decimal("0")
 
