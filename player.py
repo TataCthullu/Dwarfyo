@@ -391,70 +391,35 @@ class DumWindow:
 
         # Asegurar wallet
         init_wallet(self.usuario)
+
+        # Reset refs
+        self.btn_crear_avatar = None
+
+        # =========================
+        # 1) Título centrado
+        # =========================
         self.title_dum = self.canvas.create_text(
-            375, 40,                  # centrado horizontal, más abajo
+            375, 40,
             text="Dum",
-            fill="Gold",              
+            fill="Gold",
             font=("Carolingia", 20),
             anchor="center"
         )
+
         # =========================
-        # Avatar HUD (perfil)
+        # 2) Wallet a la izquierda
         # =========================
-        self.avatar_text_id = self.canvas.create_text(
-            375, 75,
-            text="Sin avatar",
-            fill="Gold",
-            font=("Carolingia", 14),
-            anchor="center"
-        )
-
-        self.avatar_img_id = self.canvas.create_image(
-            375, 135,
-            image="",
-            anchor="center"
-        )
-
-        av = get_avatar(self.usuario)
-        av_name = (av.get("name") or "").strip()
-        av_img  = (av.get("img") or "").strip()
-
-        if av_name and av_img and os.path.isfile(av_img):
-            self.canvas.itemconfig(self.avatar_text_id, text=av_name)
-
-            ph = load_avatar_thumbnail(av_img, size=(96, 96))
-            if ph:
-                self.canvas.avatar_photo = ph
-                self.canvas.itemconfig(self.avatar_img_id, image=ph)
-        else:
-            self.btn_crear_avatar = tk.Button(
-                self.win,
-                text="Crear avatar",
-                font=("Carolingia", 14),
-                command=lambda: crear_avatar(
-                    self.usuario,
-                    self.canvas,
-                    self.avatar_text_id,
-                    self.avatar_img_id,
-                    self.btn_crear_avatar
-                )
-            )
-            self.canvas.create_window(375, 200, window=self.btn_crear_avatar, anchor="center")
-
-                # ===== Wallet HUD (Opción B) =====
-        # Coordenadas base (podés ajustarlas a gusto)
-        x_label = 330   # donde termina el label (alineado a derecha)
-        x_value = 350   # donde arranca el número (alineado a izquierda)
-        y_obs   = 260
-        y_quad  = 290
-
+        x_label = 40
+        x_value = 60
+        y_obs   = 95
+        y_quad  = 125
 
         self.obs_label_id = self.canvas.create_text(
             x_label, y_obs,
             text="Obsidiana:",
             fill="Orange",
             font=("Carolingia", 14),
-            anchor="e"
+            anchor="w"
         )
         self.obs_value_id = self.canvas.create_text(
             x_value, y_obs,
@@ -469,7 +434,7 @@ class DumWindow:
             text="Quad:",
             fill="Gold",
             font=("Carolingia", 14),
-            anchor="e"
+            anchor="w"
         )
         self.quad_value_id = self.canvas.create_text(
             x_value, y_quad,
@@ -479,20 +444,75 @@ class DumWindow:
             anchor="w"
         )
 
-
-
-       
-
-        # Botón Khazad (Dum) bot (si te pasaron el callback)
+        # =========================
+        # 3) Botón Khazad Dum (ANTES del avatar)
+        # =========================
+        self.btn_khazad_dum = None
         if callable(self.open_khazad_dum_fn):
-            btn = tk.Button(
+            self.btn_khazad_dum = tk.Button(
                 self.win,
                 text="Khazad bot (Dum)",
                 font=("Carolingia", 14),
                 command=self.open_khazad_dum_fn
             )
-            self.canvas.create_window(375, 340, window=btn, anchor="center")
+            self.canvas.create_window(375, 250, window=self.btn_khazad_dum, anchor="center")
 
+        # =========================
+        # 4) Avatar centrado + nombre abajo + crear avatar (si falta)
+        # =========================
+        avatar_center_x = 375
+        avatar_img_y    = 550
+        avatar_name_y   = 620
+        avatar_btn_y    = 650
+
+        self.avatar_img_id = self.canvas.create_image(
+            avatar_center_x, avatar_img_y,
+            image="",
+            anchor="center"
+        )
+
+        self.avatar_text_id = self.canvas.create_text(
+            avatar_center_x, avatar_name_y,
+            text="Sin avatar",
+            fill="Gold",
+            font=("Carolingia", 14),
+            anchor="center"
+        )
+
+        av = get_avatar(self.usuario)
+        av_name = (av.get("name") or "").strip()
+        av_img  = (av.get("img") or "").strip()
+
+        tiene_avatar = bool(av_name and av_img and os.path.isfile(av_img))
+
+        if tiene_avatar:
+            self.canvas.itemconfig(self.avatar_text_id, text=av_name)
+
+            ph = load_avatar_thumbnail(av_img, size=(96, 96))
+            if ph:
+                self.canvas.avatar_photo = ph
+                self.canvas.itemconfig(self.avatar_img_id, image=ph)
+
+        else:
+            self.btn_crear_avatar = tk.Button(
+                self.win,
+                text="Crear avatar",
+                font=("Carolingia", 14),
+                command=lambda: crear_avatar(
+                    self.usuario,
+                    self.canvas,
+                    self.avatar_text_id,
+                    self.avatar_img_id,
+                    self.btn_crear_avatar
+                )
+            )
+            self.canvas.create_window(
+                avatar_center_x, avatar_btn_y,
+                window=self.btn_crear_avatar,
+                anchor="center"
+            )
+
+        # refresco inicial
         self.refresh()
 
         def _al_cerrar():
@@ -505,12 +525,15 @@ class DumWindow:
 
         self.win.protocol("WM_DELETE_WINDOW", _al_cerrar)
 
-    
+
 
     def refresh(self):
         if self.win is None or not self.win.winfo_exists() or self.canvas is None:
             return
 
+        # -------------------------
+        # Wallet
+        # -------------------------
         try:
             obs, quad = get_wallet(self.usuario)
             obs_d = Decimal(str(obs))
@@ -519,7 +542,6 @@ class DumWindow:
             obs_d = Decimal("0")
             quad_d = Decimal("0")
 
-        # Solo actualizar los valores (los labels no cambian)
         try:
             if self.obs_value_id is not None:
                 self.canvas.itemconfig(self.obs_value_id, text=str(obs_d))
@@ -528,29 +550,41 @@ class DumWindow:
         except Exception:
             pass
 
-        # Avatar (opcional: refrescar si ya se eligió)
+        # -------------------------
+        # Avatar
+        # -------------------------
         try:
             av = get_avatar(self.usuario)
             av_name = (av.get("name") or "").strip()
             av_img  = (av.get("img") or "").strip()
+            tiene_avatar = bool(av_name and av_img and os.path.isfile(av_img))
 
-            if self.avatar_text_id is not None and av_name:
-                self.canvas.itemconfig(self.avatar_text_id, text=av_name)
+            if tiene_avatar:
+                if self.avatar_text_id is not None:
+                    self.canvas.itemconfig(self.avatar_text_id, text=av_name)
 
-            if self.avatar_img_id is not None and av_img and os.path.isfile(av_img):
-                ph = load_avatar_thumbnail(av_img, size=(96, 96))
-                if ph:
-                    self.canvas.avatar_photo = ph
-                    self.canvas.itemconfig(self.avatar_img_id, image=ph)
+                if self.avatar_img_id is not None:
+                    ph = load_avatar_thumbnail(av_img, size=(96, 96))
+                    if ph:
+                        self.canvas.avatar_photo = ph
+                        self.canvas.itemconfig(self.avatar_img_id, image=ph)
 
-                if self.btn_crear_avatar is not None:
+                # si ya tiene avatar, borrar botón crear si existía
+                if getattr(self, "btn_crear_avatar", None) is not None:
                     try:
                         self.btn_crear_avatar.destroy()
                     except Exception:
                         pass
                     self.btn_crear_avatar = None
+
+            else:
+                if self.avatar_text_id is not None:
+                    self.canvas.itemconfig(self.avatar_text_id, text="Sin avatar")
+
         except Exception:
             pass
+
+
 
 # ------------------------------------------------------------
 # DUM SERVICE (API de alto nivel para UI/Bot)
