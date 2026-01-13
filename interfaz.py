@@ -2195,7 +2195,7 @@ class BotInterfaz(AnimationMixin):
 
         try:
             # Si el bot está corriendo, procedemos (no volvemos a fetchear en UI)
-            if self.bot.running:
+            if self.bot.running and getattr(self.bot, "modo_app", "") != "dum":
                 # Detectar reconexión basándose en que precio anterior era None
                 prev = getattr(self, "_prev_price_ui", None)
                 actual = self.bot.precio_actual
