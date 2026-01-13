@@ -1259,7 +1259,12 @@ class BotInterfaz(AnimationMixin):
         win_w, win_h = 900, 700
         self.config_ventana.geometry(f"{win_w}x{win_h}")
         self.config_ventana.resizable(False, False)
-        
+        # Reset del campo depósito para poder volver a sumar
+        try:
+            entries[4].set("0")
+        except Exception:
+            pass
+
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
@@ -1408,7 +1413,7 @@ class BotInterfaz(AnimationMixin):
             ("% Desde venta, para compra: -%", self.bot.porc_desde_venta),
             ("% Para venta, desde compra: %", self.bot.porc_profit_x_venta),
             ("% A invertir por operaciones: %", self.bot.porc_inv_por_compra),
-            ("Total Usdt: $", self.bot.inv_inic),
+            ("Depositar Usdt: $", Decimal("0")),
             ("Take Profit: %", self.bot.take_profit_pct or Decimal("0")),
             ("Stop Loss: -%", self.bot.stop_loss_pct or Decimal("0")),
         ]
@@ -1634,10 +1639,11 @@ class BotInterfaz(AnimationMixin):
                     self.log_en_consola("⚠️ El porcentaje de inversión por compra debe ser mayor que 0.")
                     self.log_en_consola("- - - - - - - - - -")
                     return
-                if usdtinit <= 0:
-                    self.log_en_consola("⚠️ El capital inicial debe ser mayor que 0.")
+                if usdtinit < 0:
+                    self.log_en_consola("⚠️ El depósito no puede ser negativo.")
                     self.log_en_consola("- - - - - - - - - -")
                     return
+
                 if tp < 0:
                     self.log_en_consola("⚠️ El Take Profit debe ser mayor a 0.")
                     self.log_en_consola("- - - - - - - - - -")
@@ -1662,10 +1668,43 @@ class BotInterfaz(AnimationMixin):
                     self.bot.porc_desde_venta = porc_venta
                     self.bot.porc_profit_x_venta = porc_profit
                     self.bot.porc_inv_por_compra = porc_inv
-                    self.bot.inv_inic = usdtinit
-                    # ✅ Dum: el USDT ficticio debe reflejar el depósito
+                    # --- DEPÓSITO (solo sumar) ---
+                deposito = usdtinit
+
+                if deposito > 0:
                     if getattr(self.bot, "modo_app", "") == "dum":
-                        self.bot.usdt = self.bot.inv_inic
+                        res = dum_deposit_to_target(self.usuario, self.bot, deposito)
+                        if not res["ok"]:
+                            self.log_en_consola(res["msg"])
+                            self.log_en_consola("- - - - - - - - - -")
+                            return
+
+                        if res["deposited"] > 0:
+                            self.log_en_consola(
+                                f"🟨 Dum depósito: +{self.format_var(res['deposited'], '$')} "
+                                f"(slot ahora: {self.format_var(res['total'], '$')})"
+                            )
+                            self.log_en_consola("- - - - - - - - - -")
+
+                        # refrescar HUD si aplica
+                        try:
+                            if hasattr(self, "_refrescar_main_menu") and callable(self._refrescar_main_menu):
+                                self._refrescar_main_menu()
+                        except Exception:
+                            pass
+
+                    else:
+                        # LIBRE: sumar al capital del bot
+                        try:
+                            ok = self.bot.libre_depositar_usdt(deposito)
+                        except Exception:
+                            ok = False
+
+                        if not ok:
+                            self.log_en_consola("⚠️ No se pudo aplicar el depósito.")
+                            self.log_en_consola("- - - - - - - - - -")
+                            return
+
 
                     self.bot.take_profit_pct = (tp if tp > 0 else None)
                     self.bot.stop_loss_pct = (sl if sl > 0 else None)
@@ -1691,22 +1730,7 @@ class BotInterfaz(AnimationMixin):
                     except Exception:
                         pass
 
-                old_inv_inic = old_cfg["inv_inic"]  # Decimal
                 
-                # Ajuste de capital según si el bot está corriendo o no
-                if self.bot.running:
-                    # En modo normal (no dum) permitís ajuste vivo, si querés
-                    if getattr(self.bot, "modo_app", "") != "dum":
-                        delta = usdtinit - old_inv_inic
-                        if delta != 0:
-                            self.bot.usdt += delta
-                            self.log_en_consola(
-                                f"💰 Capital ajustado en vivo: {self.format_var(delta, '$')} → nuevo USDT: {self.format_var(self.bot.usdt, '$')}"
-                            )
-                else:
-                    # detenido: fijar capital (modo normal)
-                    if getattr(self.bot, "modo_app", "") != "dum":
-                        self.bot.usdt = usdtinit
 
                 # ✅ Recalcular tamaños dependientes de la inversión / % por operación
                 # (sin duplicar fórmulas)
