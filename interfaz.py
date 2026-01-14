@@ -1585,9 +1585,12 @@ class BotInterfaz(AnimationMixin):
                     return
 
                 if deposito > 0:
-                    if getattr(self.bot, "modo_app", "") == "dum":
+                    modo = getattr(self.bot, "modo_app", "libre")
+
+                    if modo == "dum":
+                        # --- DUM: tu helper con cap/target ---
                         actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-                        target = actual + deposito  # <- el input es delta, lo convierto a target
+                        target = actual + deposito  # input es delta
 
                         res = dum_deposit_to_target(self.usuario, self.bot, target)
                         if not res["ok"]:
@@ -1609,22 +1612,20 @@ class BotInterfaz(AnimationMixin):
                             pass
 
                     else:
-                        # Libre: delta directo
-                        if self.bot.modo_app == "dum":
-                            ok = self.bot.dum_depositar_obsidiana(deposito)
-                        else:
-                            ok = self.bot.libre_depositar_usdt(deposito)
-
+                        # --- LIBRE: delta directo ---
+                        ok = self.bot.libre_depositar_usdt(deposito)
                         if not ok:
                             self.log_en_consola("⚠️ No se pudo aplicar el depósito.")
                             self.log_en_consola("- - - - - - - - - -")
                             return
 
-                    # siempre dejar el input en 0
+                    # ✅ siempre dejar el input en "0" (Entry)
                     try:
-                        entries[4].set("0")
+                        entries[4].delete(0, "end")
+                        entries[4].insert(0, "0")
                     except Exception:
                         pass
+
 
 
 

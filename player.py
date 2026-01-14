@@ -671,21 +671,23 @@ def dum_deposit_to_target(usuario, bot, target_total: Decimal):
 
 
 def dum_start_run(usuario, bot):
-    """
-    Prepara el bot para comenzar run Dum:
-    - Sincroniza usdt = inv_inic (usdt ficticio).
-    - Congela el depósito de inicio (_dum_slot_frozen) para la run.
-    Nota: El depósito total (inv_inic) puede seguir subiendo durante run
-          vía dum_deposit_to_target(); lo congelado es para coherencia de arranque.
-    """
     dep_actual = Decimal(str(getattr(bot, "inv_inic", "0") or "0"))
     if dep_actual <= 0:
         return {"ok": False, "msg": "⚠️ Dum: configurá el depósito antes de iniciar.", "deposit": dep_actual}
 
+    cap = get_dum_slot_cap(usuario)
+
     with bot.lock:
-        bot.usdt = dep_actual
-        bot.dum_slot_used = dep_actual
-        bot._dum_slot_frozen = dep_actual
+        bot.modo_app = "dum"
+        bot.dum_cap = cap
+        bot.dum_run_abierta = True
+
+        # el slot operable es usdt (no debería exceder cap)
+        bot.usdt = min(dep_actual, cap)
+
+        # opcional: si por alguna razón dep_actual > cap, guardarlo como excedente
+        if dep_actual > cap:
+            bot.dum_extra_obsidiana = (getattr(bot, "dum_extra_obsidiana", Decimal("0")) or Decimal("0")) + (dep_actual - cap)
 
     return {"ok": True, "msg": "🟨 Dum: run preparada.", "deposit": dep_actual}
 
