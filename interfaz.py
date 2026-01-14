@@ -1259,12 +1259,7 @@ class BotInterfaz(AnimationMixin):
         win_w, win_h = 900, 700
         self.config_ventana.geometry(f"{win_w}x{win_h}")
         self.config_ventana.resizable(False, False)
-        # Reset del campo depósito para poder volver a sumar
-        try:
-            entries[4].set("0")
-        except Exception:
-            pass
-
+        
         def cerrar_config():
             detener_sonido_y_cerrar(self.config_ventana)
             self.config_ventana.destroy()
@@ -1426,78 +1421,18 @@ class BotInterfaz(AnimationMixin):
             entries.append(var)
             y += row
 
-        
+        # Reset del campo depósito para poder volver a sumar
+        try:
+            entries[4].set("0")
+        except Exception:
+            pass
+
 
         # ===== guardar_config =====
         def guardar_config():
             
 
-            def _parse_decimal_user(txt: str) -> Decimal:
-                s = (txt or "").strip()
-
-                # vacío
-                if not s:
-                    return Decimal("0")
-
-                # permitir signo
-                sign = ""
-                if s[0] in "+-":
-                    sign, s = s[0], s[1:].strip()
-
-                # limpiar: dejá solo dígitos y separadores
-                # (esto te salva si algún día escribís "$ 3.000" o "3 000")
-                s = s.replace(" ", "")
-                s = re.sub(r"[^0-9\.,]", "", s)
-
-                if not s:
-                    return Decimal("0")
-
-                # Caso 1: tiene coma y punto → el ÚLTIMO separador es el decimal
-                if "," in s and "." in s:
-                    last_comma = s.rfind(",")
-                    last_dot = s.rfind(".")
-                    if last_comma > last_dot:
-                        # decimal = coma → quitar puntos de miles
-                        s = s.replace(".", "")
-                        s = s.replace(",", ".")
-                    else:
-                        # decimal = punto → quitar comas de miles
-                        s = s.replace(",", "")
-                    return Decimal(sign + s)
-
-                # Caso 2: solo coma
-                if "," in s:
-                    parts = s.split(",")
-                    if len(parts) != 2:
-                        raise InvalidOperation(f"Formato inválido: {txt!r}")
-
-                    left, right = parts[0], parts[1]
-
-                    # si right son 3 dígitos y left >= 1 dígito → interpretarlo como miles (5,000 => 5000)
-                    if left.isdigit() and right.isdigit() and len(right) == 3:
-                        return Decimal(sign + left + right)
-
-                    # si no, coma decimal (12,5 => 12.5)
-                    s = left + "." + right
-                    return Decimal(sign + s)
-
-                # Caso 3: solo punto
-                if "." in s:
-                    parts = s.split(".")
-                    # 1.234.567 (todos los grupos después del primero son 3 dígitos) => miles
-                    if len(parts) > 2 and all(p.isdigit() for p in parts) and all(len(p) == 3 for p in parts[1:]):
-                        return Decimal(sign + "".join(parts))
-
-                    # 5.000 => miles (grupo decimal "000" con 3 dígitos)
-                    if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit() and len(parts[1]) == 3 and parts[1] == "000":
-                        return Decimal(sign + parts[0] + parts[1])
-
-                    # si no, punto decimal normal
-                    return Decimal(sign + s)
-
-                # Caso 4: entero puro
-                return Decimal(sign + s)
-
+           
             try:
                 # 1) Leemos la cadena exacta
                 txt_compra = entries[0].get().strip()   # p.e. "0.0003234" o "5"
@@ -1509,13 +1444,13 @@ class BotInterfaz(AnimationMixin):
                 txt_sl  = entries[6].get().strip()
 
                 # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
-                porc_compra = _parse_decimal_user(txt_compra)
-                porc_venta  = _parse_decimal_user(txt_venta)
-                porc_profit = _parse_decimal_user(txt_profit)
-                porc_inv    = _parse_decimal_user(txt_porc_inv)
-                usdtinit    = _parse_decimal_user(txt_usdt_inic)
-                tp          = _parse_decimal_user(txt_tp)
-                sl          = _parse_decimal_user(txt_sl)
+                porc_compra = self._parse_decimal_user(txt_compra)
+                porc_venta  = self._parse_decimal_user(txt_venta)
+                porc_profit = self._parse_decimal_user(txt_profit)
+                porc_inv    = self._parse_decimal_user(txt_porc_inv)
+                usdtinit    = self._parse_decimal_user(txt_usdt_inic)
+                tp          = self._parse_decimal_user(txt_tp)
+                sl          = self._parse_decimal_user(txt_sl)
 
                 # 1) SNAPSHOT de configuración anterior (para detectar cambios)
                 old_cfg = {
@@ -1540,39 +1475,11 @@ class BotInterfaz(AnimationMixin):
                     "compra_en_venta_fantasma": getattr(self.bot, "compra_en_venta_fantasma", False),
                 }
                 
-                # =========================
-                # DUM: permitir sumar obsidiana cuando quieras (hasta 5000) y NO permitir bajar
-                # =========================
-                if getattr(self.bot, "modo_app", "") == "dum":
-                    res = dum_deposit_to_target(self.usuario, self.bot, usdtinit)
-                    if not res["ok"]:
-                        self.log_en_consola(res["msg"])
-                        self.log_en_consola("- - - - - - - - - -")
-                        return
-
-                    # Si depositó algo, lo logueamos
-                    if res["deposited"] > 0:
-                        # opcional: formatear con tu format_var
-                        self.log_en_consola(
-                            f"🟨 Dum depósito: +{self.format_var(res['deposited'], '$')} "
-                            f"(slot ahora: {self.format_var(res['total'], '$')})"
-                        )
-                        self.log_en_consola("- - - - - - - - - -")
-
-                    # asegurar que usdtinit refleje el depósito real del bot
-                   
-                    usdtinit = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
-
-                    # 🔄 refrescar HUD (DumWindow) para ver el wallet actualizado
-                    try:
-                        if hasattr(self, "_refrescar_main_menu") and callable(self._refrescar_main_menu):
-                            self._refrescar_main_menu()
-                    except Exception:
-                        pass
                 
+
                 self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
                  # porcentaje EXACTO como lo escribió el usuario
-                self.bot.comision_pct = _parse_decimal_user(self.var_comision_pct.get())
+                self.bot.comision_pct = self._parse_decimal_user(self.var_comision_pct.get())
 
                 if self.bot.comision_pct < 0:
                     self.bot.comision_pct = Decimal("0")
@@ -1668,25 +1575,32 @@ class BotInterfaz(AnimationMixin):
                     self.bot.porc_desde_venta = porc_venta
                     self.bot.porc_profit_x_venta = porc_profit
                     self.bot.porc_inv_por_compra = porc_inv
-                    # --- DEPÓSITO (solo sumar) ---
-                deposito = usdtinit
+                # --- DEPÓSITO (solo sumar; Dum y Libre; nunca retirar) ---
+                deposito = usdtinit  # viene de entries[4]
+
+                if deposito < 0:
+                    self.log_en_consola("⚠️ El depósito no puede ser negativo.")
+                    self.log_en_consola("- - - - - - - - - -")
+                    return
 
                 if deposito > 0:
                     if getattr(self.bot, "modo_app", "") == "dum":
-                        res = dum_deposit_to_target(self.usuario, self.bot, deposito)
+                        actual = Decimal(str(getattr(self.bot, "inv_inic", "0") or "0"))
+                        target = actual + deposito  # <- el input es delta, lo convierto a target
+
+                        res = dum_deposit_to_target(self.usuario, self.bot, target)
                         if not res["ok"]:
                             self.log_en_consola(res["msg"])
                             self.log_en_consola("- - - - - - - - - -")
                             return
 
-                        if res["deposited"] > 0:
+                        if res.get("deposited", Decimal("0")) > 0:
                             self.log_en_consola(
                                 f"🟨 Dum depósito: +{self.format_var(res['deposited'], '$')} "
                                 f"(slot ahora: {self.format_var(res['total'], '$')})"
                             )
                             self.log_en_consola("- - - - - - - - - -")
 
-                        # refrescar HUD si aplica
                         try:
                             if hasattr(self, "_refrescar_main_menu") and callable(self._refrescar_main_menu):
                                 self._refrescar_main_menu()
@@ -1694,41 +1608,44 @@ class BotInterfaz(AnimationMixin):
                             pass
 
                     else:
-                        # LIBRE: sumar al capital del bot
-                        try:
-                            ok = self.bot.libre_depositar_usdt(deposito)
-                        except Exception:
-                            ok = False
-
+                        # Libre: delta directo
+                        ok = self.bot.libre_depositar_usdt(deposito)
                         if not ok:
                             self.log_en_consola("⚠️ No se pudo aplicar el depósito.")
                             self.log_en_consola("- - - - - - - - - -")
                             return
 
-
-                    self.bot.take_profit_pct = (tp if tp > 0 else None)
-                    self.bot.stop_loss_pct = (sl if sl > 0 else None)
-                    self.bot.tp_enabled = self.var_tp_enabled.get()
-                    self.bot.sl_enabled = self.var_sl_enabled.get()
-                    # ⬅️ reflejar en altares la config recién guardada
-                    if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:
-                        self.set_take_profit_state("armed")
-                    else:
-                        self.set_take_profit_state("inactive")
-
-                    if self.bot.sl_enabled and (self.bot.stop_loss_pct or 0) > 0:
-                        self.set_stop_loss_state("armed")
-                    else:
-                        self.set_stop_loss_state("inactive")
-
-                    self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
-                    self.bot.rebalance_threshold = rb_thr
-                    self.bot.rebalance_pct = rb_pct
-
+                    # siempre dejar el input en 0
                     try:
-                        self._update_lamp_genie()
+                        entries[4].set("0")
                     except Exception:
                         pass
+
+
+
+                self.bot.take_profit_pct = (tp if tp > 0 else None)
+                self.bot.stop_loss_pct = (sl if sl > 0 else None)
+                self.bot.tp_enabled = self.var_tp_enabled.get()
+                self.bot.sl_enabled = self.var_sl_enabled.get()
+                # ⬅️ reflejar en altares la config recién guardada
+                if self.bot.tp_enabled and (self.bot.take_profit_pct or 0) > 0:
+                    self.set_take_profit_state("armed")
+                else:
+                    self.set_take_profit_state("inactive")
+
+                if self.bot.sl_enabled and (self.bot.stop_loss_pct or 0) > 0:
+                    self.set_stop_loss_state("armed")
+                else:
+                    self.set_stop_loss_state("inactive")
+
+                self.bot.rebalance_enabled = self.var_rebalance_enabled.get()
+                self.bot.rebalance_threshold = rb_thr
+                self.bot.rebalance_pct = rb_pct
+
+                try:
+                    self._update_lamp_genie()
+                except Exception:
+                    pass
 
                 
 
