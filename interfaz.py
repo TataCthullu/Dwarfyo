@@ -3,7 +3,8 @@
 
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
-from utils import reproducir_sonido, detener_sonido_y_cerrar, reproducir_musica_fondo, detener_musica_fondo
+from utils import reproducir_sonido, detener_sonido_y_cerrar, reproducir_musica_fondo, detener_musica_fondo, parse_decimal_user
+
 from codigo_principala import TradingBot
 #from calculador import CalculatorWindow
 from PIL import ImageGrab, Image, ImageTk
@@ -1444,13 +1445,13 @@ class BotInterfaz(AnimationMixin):
                 txt_sl  = entries[6].get().strip()
 
                 # 2) Construimos Decimal desde cadena (sin pasar por Decimal)
-                porc_compra = self._parse_decimal_user(txt_compra)
-                porc_venta  = self._parse_decimal_user(txt_venta)
-                porc_profit = self._parse_decimal_user(txt_profit)
-                porc_inv    = self._parse_decimal_user(txt_porc_inv)
-                usdtinit    = self._parse_decimal_user(txt_usdt_inic)
-                tp          = self._parse_decimal_user(txt_tp)
-                sl          = self._parse_decimal_user(txt_sl)
+                porc_compra = parse_decimal_user(txt_compra)
+                porc_venta  = parse_decimal_user(txt_venta)
+                porc_profit = parse_decimal_user(txt_profit)
+                porc_inv    = parse_decimal_user(txt_porc_inv)
+                usdtinit    = parse_decimal_user(txt_usdt_inic)
+                tp          = parse_decimal_user(txt_tp)
+                sl          = parse_decimal_user(txt_sl)
 
                 # 1) SNAPSHOT de configuración anterior (para detectar cambios)
                 old_cfg = {
@@ -1479,7 +1480,7 @@ class BotInterfaz(AnimationMixin):
 
                 self.bot.comisiones_enabled = self.var_comisiones_enabled.get()
                  # porcentaje EXACTO como lo escribió el usuario
-                self.bot.comision_pct = self._parse_decimal_user(self.var_comision_pct.get())
+                self.bot.comision_pct = parse_decimal_user(self.var_comision_pct.get())
 
                 if self.bot.comision_pct < 0:
                     self.bot.comision_pct = Decimal("0")
@@ -1609,7 +1610,11 @@ class BotInterfaz(AnimationMixin):
 
                     else:
                         # Libre: delta directo
-                        ok = self.bot.libre_depositar_usdt(deposito)
+                        if self.bot.modo_app == "dum":
+                            ok = self.bot.dum_depositar_obsidiana(deposito)
+                        else:
+                            ok = self.bot.libre_depositar_usdt(deposito)
+
                         if not ok:
                             self.log_en_consola("⚠️ No se pudo aplicar el depósito.")
                             self.log_en_consola("- - - - - - - - - -")
@@ -1910,80 +1915,6 @@ class BotInterfaz(AnimationMixin):
             s = "0"
 
         return f"{simbolo} {s}" if simbolo else s
-
-    
-
-    def _parse_decimal_user(txt: str) -> Decimal:
-        s = (txt or "").strip().replace(" ", "")
-        if not s:
-            return Decimal("0")
-
-        # permitir signo
-        sign = ""
-        if s[0] in "+-":
-            sign, s = s[0], s[1:]
-            s = s.strip()
-            if not s:
-                return Decimal("0")
-
-        # ✅ regla clave: si arranca con 0. / 0, entonces ES decimal (ej: 0.005)
-        # (esto evita que "0.005" se interprete como miles)
-        if s.startswith("0.") or s.startswith("0,"):
-            s = s.replace(",", ".")
-            return Decimal(sign + s)
-
-        # AR/EU: 1.234,56  (miles con punto, decimal con coma)
-        if "," in s and "." in s:
-            if s.rfind(",") > s.rfind("."):
-                s = s.replace(".", "").replace(",", ".")
-            else:
-                # US: 1,234.56 (miles con coma)
-                s = s.replace(",", "")
-            return Decimal(sign + s)
-
-        # Solo coma: "12,5" o "5,000"
-        if "," in s:
-            parts = s.split(",")
-            # si parece miles estilo "5,000"
-            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit() and len(parts[1]) == 3:
-                s = parts[0] + parts[1]
-            else:
-                s = s.replace(",", ".")
-            return Decimal(sign + s)
-
-        # Solo punto: "12.5" o "5.000" o "1.234.567"
-        if "." in s:
-            parts = s.split(".")
-            # múltiples puntos y grupos de 3 => miles (1.234.567)
-            if len(parts) > 2 and all(p.isdigit() for p in parts) and all(len(p) == 3 for p in parts[1:]):
-                s = "".join(parts)
-                return Decimal(sign + s)
-
-            # un solo punto:
-            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
-                entero, frac = parts
-
-                # ✅ si frac es 000 => casi seguro miles (5.000 -> 5000)
-                if len(frac) == 3 and frac == "000":
-                    s = entero + frac
-                    return Decimal(sign + s)
-
-                # ✅ si entero NO es "0" y frac tiene 3 dígitos, lo tratamos como miles (12.345 -> 12345)
-                # (pero 0.005 ya quedó cubierto arriba)
-                if len(frac) == 3 and entero != "0":
-                    s = entero + frac
-                    return Decimal(sign + s)
-
-                # caso normal: decimal con punto (12.5 -> 12.5)
-                return Decimal(sign + entero + "." + frac)
-
-            # si llega acá y no matchea, que Decimal decida (puede tirar InvalidOperation)
-            return Decimal(sign + s)
-
-        # Entero puro
-        return Decimal(sign + s)
-
-
 
     
     def format_fijo(self, clave, valor):
