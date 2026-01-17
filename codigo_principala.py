@@ -201,25 +201,22 @@ class TradingBot:
             if valor == 0:
                 return f"{simbolo} 0" if simbolo else "0"
 
-            # salida plana (sin E+…)
-            texto = format(valor, "f")  # ej "123.450000"
+            texto = format(valor, "f")
 
-            # recortar ceros finales SIEMPRE (como venías)
-            texto = texto.rstrip("0").rstrip(".") or "0"
+            # recortar ceros SOLO si hay decimales (no romper enteros)
+            if "." in texto:
+                texto = texto.rstrip("0").rstrip(".") or "0"
 
-            # evitar "-0"
             if texto in ("-0", "-0.0"):
                 texto = "0"
 
             modo = getattr(self, "modo_vista", "decimal")
 
-            # ✅ MODO "4": limitar a 4 decimales (sin redondear)
-            
+            # MODO "4": limitar a 4 decimales (sin redondear)
             if modo in ("4", "4_decimales", "cuatro"):
                 if "." in texto:
                     ent, dec = texto.split(".", 1)
-                    dec = dec[:4]  # ← recorta (NO redondea)
-                    # limpiar si quedan ceros
+                    dec = dec[:4]
                     dec = dec.rstrip("0")
                     texto = ent if dec == "" else f"{ent}.{dec}"
 
@@ -227,6 +224,7 @@ class TradingBot:
 
         except (InvalidOperation, ValueError, TypeError):
             return f"{simbolo} {valor}" if simbolo else str(valor)
+
 
 
     def estado_compra_func(self):
@@ -950,6 +948,10 @@ class TradingBot:
                 return False
 
             with self.lock:
+                _dbg_usdt_before = self.usdt
+                _dbg_base_before = self.inv_inic_libre_usdt
+
+                self.actualizar_balance()
                 usdt_actual = self.usdt if isinstance(self.usdt, Decimal) else Decimal(str(self.usdt or "0"))
                 self.usdt = usdt_actual + m
 
@@ -960,17 +962,40 @@ class TradingBot:
 
                 # compatibilidad: inv_inic refleja el baseline del modo actual
                 self.inv_inic = self.inv_inic_libre_usdt
+                
+                # DEBUG
+                _dbg_usdt_1 = self.usdt
+                _dbg_base_1 = self.inv_inic_libre_usdt
 
                 # recalcular tamaño fijo / métricas
                 self.fixed_buyer = self.cant_inv()
                 self.update_btc_fixed_seller()
-                self.actualizar_balance()
+                
+                # DEBUG
+                _dbg_usdt_2 = self.usdt
+                _dbg_base_2 = self.inv_inic_libre_usdt
+
+          
 
             self.log(
+                "🟦 LIBRE: depósito aplicado.\n"
+                f" · m: {m}\n"
+                f" · USDT (before/raw): {_dbg_usdt_before}\n"
+                f" · Baseline (before/raw): {_dbg_base_before}\n"
+                f" · USDT (post-suma/raw): {_dbg_usdt_1}\n"
+                f" · Baseline (post-suma/raw): {_dbg_base_1}\n"
+                f" · USDT (post-cant_inv/update/raw): {_dbg_usdt_2}\n"
+                f" · Baseline (post-cant_inv/update/raw): {_dbg_base_2}\n"
+                f" · USDT (fmt): {type(self).format_fn(self, self.usdt, '$')}\n"
+                f" · Baseline libre (fmt): {type(self).format_fn(self, self.inv_inic_libre_usdt, '$')}"
+            )
+
+
+            """self.log(
                 f"🟦 LIBRE: depósito aplicado.\n"
                 f" · USDT: {self.format_fn(self.usdt, '$')}\n"
                 f" · Baseline libre: {self.format_fn(self.inv_inic_libre_usdt, '$')}"
-            )
+            )"""
             self.log("- - - - - - - - - -")
             return True
 

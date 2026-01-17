@@ -28,7 +28,7 @@ def reproducir_musica_fondo(ruta, loop=-1, volumen=0.3):
 
 def detener_musica_fondo():
     canal_musica.stop()
-
+from decimal import Decimal, InvalidOperation
 
 def parse_decimal_user(texto) -> Decimal:
     if texto is None:
@@ -41,13 +41,32 @@ def parse_decimal_user(texto) -> Decimal:
     if not s:
         raise InvalidOperation("empty")
 
-    if "," in s and "." in s:
+    s = s.replace(" ", "").replace("\u00A0", "")
+
+    has_dot = "." in s
+    has_com = "," in s
+
+    # Ambos separadores: el último es decimal
+    if has_dot and has_com:
         if s.rfind(",") > s.rfind("."):
             s = s.replace(".", "")
             s = s.replace(",", ".")
         else:
             s = s.replace(",", "")
-    elif "," in s:
-        s = s.replace(",", ".")
+
+    # Un solo separador: decidir miles vs decimal
+    elif has_dot or has_com:
+        sep = "." if has_dot else ","
+        left, right = s.split(sep, 1)
+
+        # miles SOLO si:
+        # - right tiene 3 dígitos
+        # - left es dígitos
+        # - left NO es "0"
+        # - left tiene 1..3 dígitos (ej: 5.000 / 12.345 / 999.999)
+        if right.isdigit() and len(right) == 3 and left.isdigit() and left != "0" and (1 <= len(left) <= 3):
+            s = left + right
+        else:
+            s = left + "." + right  # decimal
 
     return Decimal(s)

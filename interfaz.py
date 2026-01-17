@@ -875,6 +875,8 @@ class BotInterfaz(AnimationMixin):
         self.actualizar_consola()
 
     def _reformat_line(self, s: str) -> str:
+        if "$ " in s or "₿ " in s or "% " in s:
+            return s
         # Reaplica el formateo para $, ₿ y % usando la vista actual
         def sub_money(m):
             try:
@@ -1619,10 +1621,8 @@ class BotInterfaz(AnimationMixin):
                             self.log_en_consola("- - - - - - - - - -")
                             return
 
-                    # ✅ siempre dejar el input en "0" (Entry)
                     try:
-                        entries[4].delete(0, "end")
-                        entries[4].insert(0, "0")
+                        entries[4].set("0")
                     except Exception:
                         pass
 
