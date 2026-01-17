@@ -14,6 +14,8 @@ from decimal import Decimal, InvalidOperation, DivisionByZero, ROUND_UP
 from secrets import token_hex
 import traceback
 
+DEBUG_AUDIT = False  # True = imprime auditoría en consola (VS Code)
+
 class TradingBot:
     def __init__(self):
         self.exchange = ccxt.binance({
@@ -106,12 +108,7 @@ class TradingBot:
         self.var_total_usdt = Decimal("0")
         self.rebalance_gain_total = Decimal("0")
         # --- DEV MODE ---
-        self.dev_mode = False          # si True: imprime en consola VSCode
-        self.dev_mode_ui = False       # si True: también manda DEV a la UI (opcional)
-        self.dev_prefix = "DEV"
-        self._dev_tick = 0
-        self.dev_every = 5   # cada 5 loops (cada 10s si loop=2s)
-
+        
 
         # --- MODOS (NO CONFUNDIR) ---
         # entorno / economía
@@ -147,44 +144,24 @@ class TradingBot:
         except (InvalidOperation, TypeError, ValueError):
             return default
 
-    def _audit_state(self, tag=""):
-        try:
-            btc = self._dec(self.btc)
-            usdt = self._dec(self.usdt)
+  
 
-            if usdt < 0:
-                self.audit(f"USDT negativo: {self.format_fn(usdt, '$')}", tag=f"AUDIT{(':'+tag) if tag else ''}")
-            if btc < 0:
-                self.audit(f"BTC negativo: {self.format_fn(btc, '₿')}", tag=f"AUDIT{(':'+tag) if tag else ''}")
-
-            btc_tx = Decimal("0")
-            for tx in self.transacciones:
-                if tx.get("fantasma", False):
-                    continue
-                if tx.get("estado", "activa") != "activa":
-                    continue
-                b = tx.get("btc", Decimal("0"))
-                if isinstance(b, Decimal) and b > 0:
-                    btc_tx += b
-
-            tol = Decimal("0.00000001")
-            if (btc - btc_tx).copy_abs() > tol:
-                self.audit(
-                    f"drift BTC → bot={self.format_fn(btc, '₿')} vs tx_act={self.format_fn(btc_tx, '₿')}",
-                    tag=f"AUDIT{(':'+tag) if tag else ''}"
-                )
-
-        except Exception as e:
-            self.audit(f"error: {e}", tag=f"AUDIT{(':'+tag) if tag else ''}")
-        
-    def _dev_exc(self, where, e):
-        if getattr(self, "dev_mode", False):
+    def _dbg_print(self, tag: str, **vals):
+        if not DEBUG_AUDIT:
+            return
+        parts = []
+        for k, v in vals.items():
             try:
-                self.dev(f"{where}: {e}", tag="EXC")
-                self.dev(traceback.format_exc(), tag="TRACE")
+                parts.append(f"{k}={v}")
             except Exception:
-                pass
+                parts.append(f"{k}={repr(v)}")
+        print(f"[AUDIT::{tag}] " + " | ".join(parts))
 
+    def _dbg_exc(self, where: str, e: Exception):
+        if not DEBUG_AUDIT:
+            return
+        print(f"[AUDIT::EXC] where={where} | err={e!r}")
+        print(traceback.format_exc())
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -236,48 +213,10 @@ class TradingBot:
         except Exception:
             return False
 # DEV
-    def log(self, mensaje, both: bool = False):
-        # UI log (ScrolledText)
-        if self.log_fn:
-            self.log_fn(mensaje)
+    
+  
 
-        # si querés duplicar algo puntual a consola
-        if both and getattr(self, "dev_mode", False):
-            try:
-                print(mensaje)
-            except Exception:
-                pass
-    def dev(self, mensaje, tag=None):
-        """
-        DEV log: imprime en consola VSCode si dev_mode=True.
-        Si dev_mode_ui=True también lo manda a la UI.
-        """
-        if not getattr(self, "dev_mode", False):
-            return
-
-        pref = getattr(self, "dev_prefix", "DEV")
-        if tag:
-            out = f"[{pref}:{tag}] {mensaje}"
-        else:
-            out = f"[{pref}] {mensaje}"
-
-        # consola VSCode
-        try:
-            print(out)
-        except Exception:
-            pass
-
-        # opcional: duplicar a UI
-        if getattr(self, "dev_mode_ui", False):
-            if self.log_fn:
-                self.log_fn(out)
-
-    def audit(self, mensaje, tag="AUDIT"):
-        """
-        Auditoría: por defecto a consola (dev_mode).
-        """
-        self.dev(mensaje, tag=tag)
-#DEV
+    #DEV
 
     def set_valores_iniciales(self, valores):
         self.valores_iniciales = valores  # un dict con los datos iniciales
@@ -332,9 +271,9 @@ class TradingBot:
             self.usdt_mas_btc = usdt + self.btc_usdt
 
         except (InvalidOperation, TypeError, ValueError) as e:
-            self._dev_exc("actualizar_balance", e)
-            # NO pisar a 0 todo (conserva último estado)
+            self._dbg_exc("actualizar_balance", e)
             return
+
 
 
 
@@ -347,8 +286,10 @@ class TradingBot:
             inv = self.inv_inic if isinstance(self.inv_inic, Decimal) else Decimal(str(self.inv_inic or "0"))
             pct = self.porc_inv_por_compra if isinstance(self.porc_inv_por_compra, Decimal) else Decimal(str(self.porc_inv_por_compra or "0"))
             return (inv * pct) / Decimal("100")
-        except (InvalidOperation, TypeError, ValueError):
+        except (InvalidOperation, TypeError, ValueError) as e:
+            self._dbg_exc("cant_inv", e)
             return Decimal("0")
+
         
     def get_baseline_usdt(self) -> Decimal:
         """
@@ -598,7 +539,7 @@ class TradingBot:
         # ✅ actualizar balances y dejar constancia
         
         self.actualizar_balance()
-        self._audit_state("REBALANCE")
+        
         self.log(
             f"💼 Balance tras rebalance → "
             f"USDT: {self.format_fn(self.usdt, '$')} | "
@@ -704,7 +645,7 @@ class TradingBot:
             # Acumular total de comisiones de compra
             self.total_fees_buy += fee_buy_usdt
             self.actualizar_balance() 
-            self._audit_state("BUY")           
+                      
             self.log("✅ Compra realizada.")
             self.log(f" . Fecha y Hora: {self.timestamp}")
             self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
@@ -963,39 +904,33 @@ class TradingBot:
                 # compatibilidad: inv_inic refleja el baseline del modo actual
                 self.inv_inic = self.inv_inic_libre_usdt
                 
-                # DEBUG
-                _dbg_usdt_1 = self.usdt
-                _dbg_base_1 = self.inv_inic_libre_usdt
+                
 
                 # recalcular tamaño fijo / métricas
                 self.fixed_buyer = self.cant_inv()
                 self.update_btc_fixed_seller()
                 
-                # DEBUG
-                _dbg_usdt_2 = self.usdt
-                _dbg_base_2 = self.inv_inic_libre_usdt
+                
 
           
+                self._dbg_print(
+                    "DEPOSIT_LIBRE",
+                    m=m,
+                    usdt_before=_dbg_usdt_before,
+                    base_before=_dbg_base_before,
+                    usdt_after=self.usdt,
+                    base_after=self.inv_inic_libre_usdt,
+                    fixed_buyer=self.fixed_buyer,
+                )
+
+           
+
 
             self.log(
-                "🟦 LIBRE: depósito aplicado.\n"
-                f" · m: {m}\n"
-                f" · USDT (before/raw): {_dbg_usdt_before}\n"
-                f" · Baseline (before/raw): {_dbg_base_before}\n"
-                f" · USDT (post-suma/raw): {_dbg_usdt_1}\n"
-                f" · Baseline (post-suma/raw): {_dbg_base_1}\n"
-                f" · USDT (post-cant_inv/update/raw): {_dbg_usdt_2}\n"
-                f" · Baseline (post-cant_inv/update/raw): {_dbg_base_2}\n"
-                f" · USDT (fmt): {type(self).format_fn(self, self.usdt, '$')}\n"
-                f" · Baseline libre (fmt): {type(self).format_fn(self, self.inv_inic_libre_usdt, '$')}"
-            )
-
-
-            """self.log(
                 f"🟦 LIBRE: depósito aplicado.\n"
                 f" · USDT: {self.format_fn(self.usdt, '$')}\n"
                 f" · Baseline libre: {self.format_fn(self.inv_inic_libre_usdt, '$')}"
-            )"""
+            )
             self.log("- - - - - - - - - -")
             return True
 
@@ -1057,12 +992,7 @@ class TradingBot:
             st = tx.get("estado", "activa")
             b = tx.get("btc", Decimal("0"))
 
-            # (opcional) auditoría previa
-            if isinstance(b, Decimal) and b > 0:
-                self.audit(
-                    f"tx {tx.get('id')} estado={st} btc={b}",
-                    tag=f"AUDIT:LIQUIDAR:{motivo or 'NA'}"
-                )
+            
 
             if st == "activa" and isinstance(b, Decimal) and b > 0 and not tx.get("fantasma", False):
                 tx["estado"] = estado_cierre
@@ -1070,14 +1000,7 @@ class TradingBot:
                 tx["ejecutado"] = True
                 cerradas += 1
 
-            # (opcional) si querés detectar “drift” de estados raros
-            st2 = tx.get("estado", "activa")
-            b2 = tx.get("btc", Decimal("0"))
-            if st2 != "activa" and isinstance(b2, Decimal) and b2 > 0:
-                self.audit(
-                    f"tx {tx.get('id')} estado={st2} con BTC>0 ({b2})",
-                    tag=f"AUDIT:LIQUIDAR:{motivo or 'NA'}"
-                )
+            
 
         
         
@@ -1564,6 +1487,8 @@ class TradingBot:
 
             self.precio_actual = nuevo_precio
 
+           
+
             # ✅ a partir de acá: lógica común (Dum y Standard)
             self.update_btc_fixed_seller()
 
@@ -1579,37 +1504,98 @@ class TradingBot:
 
             self.actualizar_balance()
             # DEV
-            self._dev_tick += 1
-            if self.dev_mode and (self._dev_tick % self.dev_every == 0):
-                self.dev(
-                    f"px={self.format_fn(self.precio_actual,'$')} | "
-                    f"usdt={self.format_fn(self.usdt,'$')} | btc={self.format_fn(self.btc,'₿')} | "
-                    f"total={self.format_fn(self.usdt_mas_btc,'$')} | "
-                    f"tx={len(self.transacciones)} | "
-                    f"ghost(C/V)={self.contador_compras_fantasma}/{self.contador_ventas_fantasma}",
-                    tag="SNAP"
-                )
-            self._audit_state("LOOP")
+           
             #DEV
             self.hold_btc_var = self.hold_btc()
             self.hold_usdt_var = self.hold_usdt()
             self.var_total = self.variacion_total()
             self.var_total_usdt = self.variacion_total_usdt()
 
+            self._dbg_print(
+                "STATE",
+                precio=self.precio_actual,
+                usdt=self.usdt,
+                btc=self.btc,
+                btc_usdt=self.btc_usdt,
+                usdt_mas_btc=self.usdt_mas_btc,
+                inv_inic=self.inv_inic,
+                fixed_buyer=self.fixed_buyer,
+                btc_fixed_seller=getattr(self, "btc_fixed_seller", None),
+                varCompra=self.varCompra,
+                varVenta=self.varVenta,
+                var_total=self.var_total,
+                var_total_usdt=self.var_total_usdt,
+                comisiones_enabled=self.comisiones_enabled,
+                comision_pct=self.comision_pct,
+            )
+
+           
+
             # Check global TP/SL
             if self.check_take_profit_stop_loss():
                 return
 
+           
+            self._dbg_print(
+                "PRE_SELL",
+                precio=self.precio_actual,
+                btc=self.btc,
+                usdt=self.usdt,
+                varVenta=self.varVenta,
+                porc_profit_x_venta=self.porc_profit_x_venta,
+            )
+
+
             self.vender()
-            self.parametro_compra_desde_compra = self.parametro_compra_A()
-            self.parametro_compra_desde_venta = self.parametro_compra_B()
-            self.parametro_venta_fantasma = self.venta_fantasma()
-            self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()
+
+            self._dbg_print(
+                "PRE_BUY_A",
+                precio=self.precio_actual,
+                usdt=self.usdt,
+                fixed_buyer=self.fixed_buyer,
+                varCompra=self.varCompra,
+                porc_desde_compra=self.porc_desde_compra,
+            )
+
             
+            self.parametro_compra_desde_compra = self.parametro_compra_A()
+
+
+            self._dbg_print(
+                "PRE_BUY_B",
+                precio=self.precio_actual,
+                usdt=self.usdt,
+                fixed_buyer=self.fixed_buyer,
+                varVenta=self.varVenta,
+                porc_desde_venta=self.porc_desde_venta,
+                param_b_enabled=self.param_b_enabled,
+            )
+
+
+            self.parametro_compra_desde_venta = self.parametro_compra_B()
+
+            
+            self.parametro_venta_fantasma = self.venta_fantasma()
+
+            self._dbg_print(
+                "PRE_BUY_C",
+                precio=self.precio_actual,
+                usdt=self.usdt,
+                fixed_buyer=self.fixed_buyer,
+                compra_en_venta_fantasma=self.compra_en_venta_fantasma,
+                activar_compra_tras_vta_fantasma=self.activar_compra_tras_vta_fantasma,
+                venta_fantasma_ocurrida=self.venta_fantasma_ocurrida,
+                precio_vta_fantasma=self.precio_vta_fantasma,
+            )
+
+            self.parametro_compra_desde_venta_fantasma = self.parametro_compra_C()
+
 
             if (self.rebalance_enabled
                 and self.contador_compras_fantasma >= self.rebalance_threshold
                 and self.hay_base_rebalance()):
+               
+
                 self.check_rebalance()
 
             if self.precio_ingreso is None:
@@ -1639,7 +1625,7 @@ class TradingBot:
 
         except Exception as e:
             self.log(f"🔴 Excepción en bucle: {e}")
-            self._dev_exc("loop", e)
+            self._dbg_exc("loop", e)
             if self.sound_enabled:
                 reproducir_sonido("Sounds/error.wav")
         
