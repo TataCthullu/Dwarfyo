@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation, DivisionByZero, ROUND_UP
 from secrets import token_hex
 import traceback
 
-DEBUG_AUDIT = False  # True = imprime auditoría en consola (VS Code)
+DEBUG_AUDIT = True  # True = imprime auditoría en consola (VS Code)
 
 class TradingBot:
     def __init__(self):
@@ -28,7 +28,7 @@ class TradingBot:
         self.start_time = None
         self.run_time = self.get_runtime_str()
         self.inv_inic = Decimal("0")  # compatibilidad (baseline actual según modo)
-        self.inv_inic_libre_usdt = None
+        
         self.inv_inic_dum_usdt = None
         self.usdt = self.inv_inic
         self.btc = Decimal('0')      
@@ -108,7 +108,14 @@ class TradingBot:
         self.var_total_usdt = Decimal("0")
         self.rebalance_gain_total = Decimal("0")
         # --- DEV MODE ---
-        
+                # --- DEBUG / AUDIT (solo consola VS Code) ---
+        self.audit_console = True          # master switch (aparte de DEBUG_AUDIT)
+        self.audit_every = 5               # cada cuántos loops imprime STATE/PRE (ej 5 => cada 10s)
+        self._audit_tick = 0               # contador interno
+        self._audit_last = {}              # para dedupe opcional (tag -> last_str)
+
+        self.inv_inic_libre_usdt = Decimal("0")
+
 
         # --- MODOS (NO CONFUNDIR) ---
         # entorno / economía
@@ -147,21 +154,73 @@ class TradingBot:
   
 
     def _dbg_print(self, tag: str, **vals):
+        # 1) switches
         if not DEBUG_AUDIT:
             return
+        if not getattr(self, "audit_console", True):
+            return
+
+        # 2) definir qué es ruidoso vs crítico
+        noisy_tags = {"STATE", "PRE_SELL", "PRE_BUY_A", "PRE_BUY_B", "PRE_BUY_C"}
+        critical_tags = {
+            "SELL_EXEC", "BUY_EXEC", "REBAL_EXEC",
+            "DEPOSIT_LIBRE", "DEPOSIT_DUM",
+            "CIERRE_TOTAL", "EXC", "ERROR",
+            "BUY_SKIP", "SELL_SKIP",
+        }
+
+        # 3) throttle: si es ruidoso, imprimir cada N ticks
+        if tag in noisy_tags and tag not in critical_tags:
+            every = int(getattr(self, "audit_every", 1) or 1)
+            tick = int(getattr(self, "_audit_tick", 0) or 0)
+            if every > 1 and (tick % every != 0):
+                return
+
+        # 4) construir string estable (para dedupe opcional)
         parts = []
         for k, v in vals.items():
             try:
                 parts.append(f"{k}={v}")
             except Exception:
                 parts.append(f"{k}={repr(v)}")
-        print(f"[AUDIT::{tag}] " + " | ".join(parts))
+        line = f"[AUDIT::{tag}] " + " | ".join(parts)
+
+        # 5) dedupe: si la línea es igual a la anterior para ese tag, no imprimir
+        last = getattr(self, "_audit_last", None)
+        if last is None:
+            self._audit_last = {}
+            last = self._audit_last
+
+        if tag in noisy_tags:
+            if last.get(tag) == line:
+                return
+            last[tag] = line
+
+        print(line)
+
 
     def _dbg_exc(self, where: str, e: Exception):
         if not DEBUG_AUDIT:
             return
         print(f"[AUDIT::EXC] where={where} | err={e!r}")
         print(traceback.format_exc())
+
+    def log(self, mensaje: str):
+        """
+        Log normal del bot hacia la UI (si hay callback).
+        NO es debug: esto es la salida funcional del bot.
+        """
+        try:
+            if self.log_fn:
+                self.log_fn(mensaje)
+            else:
+                # fallback por si ejecutás sin interfaz
+                print(mensaje)
+        except Exception as e:
+            # si falla el callback, no romper el bot
+            if DEBUG_AUDIT:
+                print(f"[AUDIT::LOG_FAIL] err={e!r} | msg={mensaje!r}")
+
 
     def format_fn(self, valor, simbolo=""):
         if valor is None:
@@ -570,114 +629,118 @@ class TradingBot:
         )
 
     def comprar(self, trigger=None):
-            if not self.running or self._stop_flag:
-                return
-            # precio_actual ya fue actualizado por loop()
-            if self.precio_actual is None:
-                return
-            
-            with self.lock:
-                self.update_btc_fixed_seller()
+        if self.usdt < self.fixed_buyer:
+            self._dbg_print("BUY_SKIP", reason="usdt<fixed_buyer", usdt=self.usdt, fixed_buyer=self.fixed_buyer)
+            return
 
-                if not self.condiciones_para_comprar():
-                    self.log("Condiciones inválidas. No se realiza compra")
-                    self.log("- - - - - - - - - -")
-                    return
-                
-                if self.usdt is None or self.usdt < self.fixed_buyer:
-                    self.log("⚠️ Usdt insuficiente para comprar.")
-                    self.log("- - - - - - - - - -")
-                    return
-                
-                if self.precio_actual is None or self.precio_actual == 0:
-                    self.log("⚠️ Precio actual inválido para calcular BTC comprado.")
-                    self.log("- - - - - - - - - -")
-                    return
-                
-                try:
-                    precio = self.precio_actual if isinstance(self.precio_actual, Decimal) else Decimal(str(self.precio_actual))
-                    fixed  = self.fixed_buyer if isinstance(self.fixed_buyer, Decimal) else Decimal(str(self.fixed_buyer))
-                except (InvalidOperation, TypeError, ValueError):
-                    return
-                if precio <= 0 or fixed <= 0:
-                    return
-
-
-            id_op = self._new_id()
-            self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.usdt -= fixed
-            self.precio_ult_comp = precio
-            self.btc_comprado = fixed / precio
-
-            # === Comisión de compra ===
-            # Se cobra en BTC (resta BTC), pero se muestra en USDT al precio de compra
-            comision_btc = Decimal("0")
-            fee_buy_usdt = Decimal("0")
-            if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
-                comision_btc = (self.btc_comprado * self.comision_pct) / Decimal("100")
-                self.btc_comprado -= comision_btc            # afecta realmente al monto en BTC
-                fee_buy_usdt = comision_btc * precio
-                # 🔹 ACUMULADOR GLOBAL DE COMISIÓN EN BTC
-                self.total_fees_btc += comision_btc
-
-            self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
-            self.btc = (self.btc or Decimal("0")) + self.btc_comprado
-            self.contador_compras_reales += 1 
-            self.rebalance_concretado = False
-            valor_compra_usdt = self.btc_comprado * self.precio_actual
-            
-            
-
-            self.transacciones.append({
-                    "compra": self.precio_ult_comp,
-                    "id": id_op,     
-                    "venta_obj": self.precio_objetivo_venta,
-                    "btc": self.btc_comprado,
-                    "invertido_usdt": self.fixed_buyer,
-                    "fee_usdt": fee_buy_usdt,
-                    "fee_btc": comision_btc,
-                    "ejecutado": False,
-                    "numcompra": self.contador_compras_reales,
-                    "valor_en_usdt": valor_compra_usdt,
-                    "timestamp": self.timestamp,
-                    "estado": self.estado_compra_func()
-                })
-            # Acumular total de comisiones de compra
-            self.total_fees_buy += fee_buy_usdt
-            self.actualizar_balance() 
-                      
-            self.log("✅ Compra realizada.")
-            self.log(f" . Fecha y Hora: {self.timestamp}")
-            self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
-            self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
-            self.log(f"🧾 Comisión: -{self.format_fn(fee_buy_usdt, '$')}")
-            if comision_btc != 0:
-                self.log(f"🧾 Comisión Satoshys: -{self.format_fn(comision_btc, '₿')}")
-            self.log(f"🧾 Btc/Usdt comprado: {self.format_fn(valor_compra_usdt, '$')}")
-            self.log(f"🪙 Compra id: {id_op}")
-            self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
-            self.log(f"📜 Estado: {self.transacciones[-1].get('estado', 'activa')}")
-            self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")            
-            # ... al final de comprar(), justo después de self.btc += self.btc_comprado
+        if not self.running or self._stop_flag:
+            return
+        # precio_actual ya fue actualizado por loop()
+        if self.precio_actual is None:
+            return
+        
+        with self.lock:
             self.update_btc_fixed_seller()
 
-            # Excedente de bajada 
-            if trigger == 'A':
-                exceso = abs(self.varCompra) - self.porc_desde_compra
-                if exceso > 0:               
-                    self.excedente_total_compras += exceso
-                    self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
-            elif trigger == 'B':
-                exceso = abs(self.varVenta) - self.porc_desde_venta
-                if exceso > 0:
-                    self.excedente_total_compras += exceso
-                    self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
-
-            if self.sound_enabled:          
-                reproducir_sonido("Sounds/compra.wav")   
+            if not self.condiciones_para_comprar():
+                self.log("Condiciones inválidas. No se realiza compra")
+                self.log("- - - - - - - - - -")
+                return
             
-            self.ultimo_evento = datetime.datetime.now()         
-            self.reportado_trabajando = False
+            if self.usdt is None or self.usdt < self.fixed_buyer:
+                self.log("⚠️ Usdt insuficiente para comprar.")
+                self.log("- - - - - - - - - -")
+                return
+            
+            if self.precio_actual is None or self.precio_actual == 0:
+                self.log("⚠️ Precio actual inválido para calcular BTC comprado.")
+                self.log("- - - - - - - - - -")
+                return
+            
+            try:
+                precio = self.precio_actual if isinstance(self.precio_actual, Decimal) else Decimal(str(self.precio_actual))
+                fixed  = self.fixed_buyer if isinstance(self.fixed_buyer, Decimal) else Decimal(str(self.fixed_buyer))
+            except (InvalidOperation, TypeError, ValueError):
+                return
+            if precio <= 0 or fixed <= 0:
+                return
+
+
+        id_op = self._new_id()
+        self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.usdt -= fixed
+        self.precio_ult_comp = precio
+        self.btc_comprado = fixed / precio
+
+        # === Comisión de compra ===
+        # Se cobra en BTC (resta BTC), pero se muestra en USDT al precio de compra
+        comision_btc = Decimal("0")
+        fee_buy_usdt = Decimal("0")
+        if self.comisiones_enabled and (self.comision_pct or Decimal("0")) > 0:
+            comision_btc = (self.btc_comprado * self.comision_pct) / Decimal("100")
+            self.btc_comprado -= comision_btc            # afecta realmente al monto en BTC
+            fee_buy_usdt = comision_btc * precio
+            # 🔹 ACUMULADOR GLOBAL DE COMISIÓN EN BTC
+            self.total_fees_btc += comision_btc
+
+        self.precio_objetivo_venta = (self.precio_ult_comp * (Decimal('100') + self.porc_profit_x_venta)) / Decimal('100')
+        self.btc = (self.btc or Decimal("0")) + self.btc_comprado
+        self.contador_compras_reales += 1 
+        self.rebalance_concretado = False
+        valor_compra_usdt = self.btc_comprado * self.precio_actual
+        
+        
+
+        self.transacciones.append({
+                "compra": self.precio_ult_comp,
+                "id": id_op,     
+                "venta_obj": self.precio_objetivo_venta,
+                "btc": self.btc_comprado,
+                "invertido_usdt": self.fixed_buyer,
+                "fee_usdt": fee_buy_usdt,
+                "fee_btc": comision_btc,
+                "ejecutado": False,
+                "numcompra": self.contador_compras_reales,
+                "valor_en_usdt": valor_compra_usdt,
+                "timestamp": self.timestamp,
+                "estado": self.estado_compra_func()
+            })
+        # Acumular total de comisiones de compra
+        self.total_fees_buy += fee_buy_usdt
+        self.actualizar_balance() 
+                    
+        self.log("✅ Compra realizada.")
+        self.log(f" . Fecha y Hora: {self.timestamp}")
+        self.log(f"📉 Precio de compra: {self.format_fn(self.precio_actual, '$')}")
+        self.log(f"🪙 Btc comprado: {self.format_fn(self.btc_comprado, '₿')}")
+        self.log(f"🧾 Comisión: -{self.format_fn(fee_buy_usdt, '$')}")
+        if comision_btc != 0:
+            self.log(f"🧾 Comisión Satoshys: -{self.format_fn(comision_btc, '₿')}")
+        self.log(f"🧾 Btc/Usdt comprado: {self.format_fn(valor_compra_usdt, '$')}")
+        self.log(f"🪙 Compra id: {id_op}")
+        self.log(f"🪙 Compra Num: {self.contador_compras_reales}")
+        self.log(f"📜 Estado: {self.transacciones[-1].get('estado', 'activa')}")
+        self.log(f"🎯 Objetivo de venta: {self.format_fn(self.precio_objetivo_venta, '$')}")            
+        # ... al final de comprar(), justo después de self.btc += self.btc_comprado
+        self.update_btc_fixed_seller()
+
+        # Excedente de bajada 
+        if trigger == 'A':
+            exceso = abs(self.varCompra) - self.porc_desde_compra
+            if exceso > 0:               
+                self.excedente_total_compras += exceso
+                self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
+        elif trigger == 'B':
+            exceso = abs(self.varVenta) - self.porc_desde_venta
+            if exceso > 0:
+                self.excedente_total_compras += exceso
+                self.log(f"📊 Excedente de bajada: {self.format_fn(exceso, '%')}")
+
+        if self.sound_enabled:          
+            reproducir_sonido("Sounds/compra.wav")   
+        
+        self.ultimo_evento = datetime.datetime.now()         
+        self.reportado_trabajando = False
 
     def parametro_compra_A(self):
         if not self.param_a_enabled:
@@ -714,6 +777,10 @@ class TradingBot:
         return False
          
     def parametro_compra_B(self):
+        if self.btc <= 0:
+            self._dbg_print("SELL_SKIP", reason="btc<=0", btc=self.btc)
+            return
+
         if self.porc_desde_venta <= Decimal('0'):
             return False
         #Compra con referencia a la ultima venta
@@ -800,7 +867,22 @@ class TradingBot:
                     # Ganancia de esta operación (solo esta venta)
                     self.ganancia_neta = usdt_obtenido - invertido_usdt
 
-                    
+                    self._dbg_print(
+                        "SELL_EXEC",
+                        id_compra=id_compra,
+                        numcompra=transaccion.get("numcompra"),
+                        compra_px=transaccion.get("compra"),
+                        venta_obj=venta_obj,
+                        precio=self.precio_actual,
+                        btc_vender=btc_vender,
+                        usdt_bruto=usdt_bruto,
+                        fee_sell_usdt=fee_sell_usdt,
+                        usdt_obtenido=usdt_obtenido,
+                        invertido_usdt=invertido_usdt,
+                        ganancia_neta=self.ganancia_neta,
+                        total_fees_sell=self.total_fees_sell,
+                    )
+
                     excedente_pct = Decimal("0")
 
                     if self.precio_actual > venta_obj:
@@ -867,13 +949,12 @@ class TradingBot:
                 self.param_b_enabled = True
                 self.param_a_enabled = False
 
-            self.actualizar_balance()    
+            self.actualizar_balance()  
 
     def libre_depositar_usdt(self, monto) -> bool:
         """
         LIBRE: deposita USDT al bot (se SUMA, no setea).
-        - Actualiza baseline libre (inv_inic_libre_usdt) sumando el depósito.
-        - Recalcula fixed_buyer, btc_fixed_seller y balances.
+        Baseline libre = SUMA de depósitos del usuario durante la run.
         """
         try:
             if getattr(self, "modo_app", "libre") != "libre":
@@ -889,30 +970,27 @@ class TradingBot:
                 return False
 
             with self.lock:
+                
+
                 _dbg_usdt_before = self.usdt
                 _dbg_base_before = self.inv_inic_libre_usdt
 
-                self.actualizar_balance()
                 usdt_actual = self.usdt if isinstance(self.usdt, Decimal) else Decimal(str(self.usdt or "0"))
                 self.usdt = usdt_actual + m
 
-                # baseline libre: acumula depósito (porque es capital que entra al sistema)
+                # ✅ baseline libre: suma de depósitos (capital aportado)
                 if self.inv_inic_libre_usdt is None:
                     self.inv_inic_libre_usdt = Decimal("0")
                 self.inv_inic_libre_usdt += m
 
-                # compatibilidad: inv_inic refleja el baseline del modo actual
+                # compatibilidad: baseline activo
                 self.inv_inic = self.inv_inic_libre_usdt
-                
-                
 
-                # recalcular tamaño fijo / métricas
+                # recalcular tamaños
                 self.fixed_buyer = self.cant_inv()
                 self.update_btc_fixed_seller()
-                
-                
+                self.actualizar_balance()
 
-          
                 self._dbg_print(
                     "DEPOSIT_LIBRE",
                     m=m,
@@ -923,19 +1001,17 @@ class TradingBot:
                     fixed_buyer=self.fixed_buyer,
                 )
 
-           
-
-
             self.log(
                 f"🟦 LIBRE: depósito aplicado.\n"
-                f" · USDT: {self.format_fn(self.usdt, '$')}\n"
-                f" · Baseline libre: {self.format_fn(self.inv_inic_libre_usdt, '$')}"
+                f" · USDT operativo: {self.format_fn(self.usdt, '$')}\n"
+                f" · Baseline libre (depósitos acumulados): {self.format_fn(self.inv_inic_libre_usdt, '$')}"
             )
             self.log("- - - - - - - - - -")
             return True
 
         except (InvalidOperation, TypeError, ValueError):
             return False
+
 
 
 
@@ -1467,6 +1543,8 @@ class TradingBot:
         try:
             if not self.running or self._stop_flag:
                 return
+            
+            self._audit_tick = getattr(self, "_audit_tick", 0) + 1
 
             # --- precio: siempre requerido para operar ---
             nuevo_precio = self._fetch_precio()
